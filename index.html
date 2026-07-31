@@ -443,7 +443,11 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .cruise-nav-leg{margin:0 0 10px;font-size:14px;color:var(--ink2);line-height:1.55}
 .cruise-nav-leg:last-child{margin-bottom:0}
 .cruise-nav-leg strong{color:var(--accent);font-family:var(--mono)}
-.cruise-windy-wrap{position:relative;width:100%;aspect-ratio:1/1;min-height:280px;max-height:min(62vh,520px);background:var(--bg);border:1px solid var(--line2);border-radius:10px;overflow:hidden}
+.cruise-windy-duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 2px}
+@media(max-width:720px){.cruise-windy-duo{grid-template-columns:1fr}}
+.cruise-windy-pane{min-width:0}
+.cruise-windy-pane-label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:600;margin:0 0 6px}
+.cruise-windy-wrap{position:relative;width:100%;aspect-ratio:1/1;min-height:240px;max-height:min(48vh,440px);background:var(--bg);border:1px solid var(--line2);border-radius:10px;overflow:hidden}
 .cruise-windy-wrap iframe,.cruise-windy-wrap #windy,.cruise-windy-wrap .windy-host{position:absolute;inset:0;width:100%;height:100%;border:0}
 .cruise-windy-caption{font-size:11px;color:var(--ink3);font-family:var(--mono);margin-top:6px;line-height:1.45}
 
@@ -884,10 +888,21 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
     <section class="tabpanel" id="tab-cruise" data-tab="cruise">
       <p class="prose" style="margin-bottom:10px"><strong>Swell forecast</strong> from <a href="https://www.windy.com" target="_blank" rel="noopener">Windy.com</a>, centered on your boat. Sector table below uses our shadow-adjusted model for ride comfort by heading.</p>
       <div class="grid3" id="cruiseGlance"><div class="skel">Analyzing swell and wind…</div></div>
-      <div class="cruise-windy-wrap" id="cruiseWindyWrap">
-        <iframe id="cruiseWindyEmbed" title="Windy swell forecast" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="about:blank"></iframe>
+      <div class="cruise-windy-duo" id="cruiseWindyDuo">
+        <div class="cruise-windy-pane">
+          <div class="cruise-windy-pane-label">Wave height (ft)</div>
+          <div class="cruise-windy-wrap" id="cruiseWindyWrapWaves">
+            <iframe id="cruiseWindyEmbedWaves" title="Windy wave height forecast" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="about:blank"></iframe>
+          </div>
+        </div>
+        <div class="cruise-windy-pane">
+          <div class="cruise-windy-pane-label">Wind (kt)</div>
+          <div class="cruise-windy-wrap" id="cruiseWindyWrapWind">
+            <iframe id="cruiseWindyEmbedWind" title="Windy wind forecast" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="about:blank"></iframe>
+          </div>
+        </div>
       </div>
-      <p class="cruise-windy-caption">Pan/zoom · marker = boat · waves / primary swell (ft) · Windy logo must remain visible per embed terms.</p>
+      <p class="cruise-windy-caption">Pan/zoom · marker = boat · left: waves (ft) · right: wind (kt) · Windy logo must remain visible per embed terms.</p>
       <div class="sec" id="cruiseListSec">Sector comfort — 5 nm ahead</div>
       <div class="card" id="cruiseList"><div class="skel">Sampling swell by heading…</div></div>
       <div class="sec">Shadow detail</div>
@@ -2214,9 +2229,9 @@ const OV_HAB_THRESH = { watch: 0.25, elevated: 0.45 };
 const OV_CHL_ZONE_IDS = ['sm_bay', 'pv', 'catalina_ch', 'slip'];
 const SURF_MAP_MAX_MARKERS = 20;
 let cruiseWindyLastKey = null;
-/** Windy Map Forecast API key — wave height in ft via store metric_waves + overlays.waves.setMetric('ft') in windy-waves-embed.html. embed2 has no metricWave URL param (only metricWind/Temp/Rain). https://api.windy.com/keys */
+/** Windy Map Forecast API key — waves ft / wind kt via windy-waves-embed.html (?overlay=waves|wind). embed2 has no metricWave URL param (only metricWind/Temp/Rain). https://api.windy.com/keys */
 const WINDY_MAP_API_KEY = 'AkUvStRT3vKB9WjogxlKxVGxkt1SjUyR';
-const CRUISE_WINDY_EMBED_VER = 10;
+const CRUISE_WINDY_EMBED_VER = 11;
 const CRUISE_SECTOR_SAMPLE_NM = 5;
 const CRUISE_WINDY_DEFAULT_ZOOM = 10;
 const CRUISE_SECTOR_LABELS = [
@@ -10251,43 +10266,63 @@ function cruiseWindyUseDirectEmbed(){
   return location.protocol === 'file:';
 }
 
-function windyHostIframeUrl(lat, lon, zoom){
+/** Map Forecast host — overlay=waves|wind; locks ft / kt in the embed. */
+function windyHostIframeUrl(lat, lon, zoom, overlay){
   zoom = zoom == null ? CRUISE_WINDY_DEFAULT_ZOOM : zoom;
+  overlay = overlay === 'wind' ? 'wind' : 'waves';
   const q = 'lat='+lat.toFixed(3)+'&lon='+lon.toFixed(3)+
-    '&zoom='+zoom+'&key='+encodeURIComponent(WINDY_MAP_API_KEY)+
+    '&zoom='+zoom+'&overlay='+overlay+'&key='+encodeURIComponent(WINDY_MAP_API_KEY)+
     '&_v='+CRUISE_WINDY_EMBED_VER;
   return 'windy-waves-embed.html?'+q;
 }
 
-/** Windy public embed — works from file:// parent. overlay=waves only (not invalid overlay=swell).
+/** Windy public embed — works from file:// parent. Use overlay=waves or overlay=wind (never invalid "swell").
  *  embed2.js applies metricWind/metricTemp/metricRain URL params only — there is no metricWave.
  *  Wave height then follows GeoIP isImperial (ft for us/my/lr). Prefer windy-waves-embed.html for locked ft. */
-function windyEmbedDirectUrl(lat, lon, zoom){
+function windyEmbedDirectUrl(lat, lon, zoom, overlay){
   zoom = zoom == null ? CRUISE_WINDY_DEFAULT_ZOOM : zoom;
+  overlay = overlay === 'wind' ? 'wind' : 'waves';
+  const product = overlay === 'wind' ? 'ecmwf' : 'ecmwfWaves';
   const q = 'lat='+lat.toFixed(3)+'&lon='+lon.toFixed(3)+
     '&detailLat='+lat.toFixed(3)+'&detailLon='+lon.toFixed(3)+
-    '&zoom='+zoom+'&level=surface&overlay=waves&product=ecmwfWaves'+
+    '&zoom='+zoom+'&level=surface&overlay='+overlay+'&product='+product+
     '&menu=&message=true&marker=true&calendar=now&pressure=&type=map&location=coordinates&detail='+
     '&metricWind=kt&metricTemp=%C2%B0F&metricRain=in&radarRange=-1'+
     '&_v='+CRUISE_WINDY_EMBED_VER;
   return 'https://embed.windy.com/embed2.html?'+q;
 }
 
-function updateCruiseWindyEmbed(lat, lon, force){
-  const frame = $('cruiseWindyEmbed');
+function cruiseWindyFrameIds(){
+  return ['cruiseWindyEmbedWaves', 'cruiseWindyEmbedWind'];
+}
+
+function cruiseWindyOverlayForFrame(frameId){
+  return frameId === 'cruiseWindyEmbedWind' ? 'wind' : 'waves';
+}
+
+function setCruiseWindyFrameSrc(frame, lat, lon, overlay){
   if(!frame) return;
+  frame.dataset.fallbackLat = String(lat);
+  frame.dataset.fallbackLon = String(lon);
+  frame.dataset.windyOverlay = overlay;
+  const direct = cruiseWindyUseDirectEmbed();
+  frame.src = direct ? windyEmbedDirectUrl(lat, lon, null, overlay) : windyHostIframeUrl(lat, lon, null, overlay);
+  frame.onerror = ()=>{
+    if(!direct && frame.src.indexOf('embed.windy.com') < 0){
+      frame.src = windyEmbedDirectUrl(lat, lon, null, overlay);
+    }
+  };
+}
+
+function updateCruiseWindyEmbed(lat, lon, force){
+  const frames = cruiseWindyFrameIds().map(id => $(id)).filter(Boolean);
+  if(!frames.length) return;
   const key = CRUISE_WINDY_EMBED_VER+':'+lat.toFixed(2)+','+lon.toFixed(2);
   if(!force && key === cruiseWindyLastKey) return;
   cruiseWindyLastKey = key;
-  frame.dataset.fallbackLat = String(lat);
-  frame.dataset.fallbackLon = String(lon);
-  const direct = cruiseWindyUseDirectEmbed();
-  frame.src = direct ? windyEmbedDirectUrl(lat, lon) : windyHostIframeUrl(lat, lon);
-  frame.onerror = ()=>{
-    if(!direct && frame.src.indexOf('embed.windy.com') < 0){
-      frame.src = windyEmbedDirectUrl(lat, lon);
-    }
-  };
+  frames.forEach(frame=>{
+    setCruiseWindyFrameSrc(frame, lat, lon, cruiseWindyOverlayForFrame(frame.id));
+  });
 }
 
 if(!window._cruiseWindyMsgBound){
@@ -10295,14 +10330,16 @@ if(!window._cruiseWindyMsgBound){
   window.addEventListener('message', (ev)=>{
     const data = ev.data;
     if(!data || data.source !== 'windy-waves-embed') return;
-    const frame = $('cruiseWindyEmbed');
-    if(!frame || ev.source !== frame.contentWindow) return;
+    const frames = cruiseWindyFrameIds().map(id => $(id)).filter(Boolean);
+    const frame = frames.find(f => ev.source === f.contentWindow);
+    if(!frame) return;
     if(data.type === 'windy-overlay-failed'){
       const lat = parseFloat(frame.dataset.fallbackLat);
       const lon = parseFloat(frame.dataset.fallbackLon);
+      const overlay = frame.dataset.windyOverlay === 'wind' ? 'wind' : 'waves';
       if(isFinite(lat) && isFinite(lon) && frame.src.indexOf('embed.windy.com') < 0){
-        console.warn('Windy Map Forecast overlay failed — falling back to embed.windy.com');
-        frame.src = windyEmbedDirectUrl(lat, lon);
+        console.warn('Windy Map Forecast overlay failed — falling back to embed.windy.com', overlay);
+        frame.src = windyEmbedDirectUrl(lat, lon, null, overlay);
       }
     }
   });
@@ -10403,8 +10440,8 @@ function renderCruise(){
     const cap = document.querySelector('#tab-cruise .cruise-windy-caption');
     if(cap){
       cap.textContent = cruiseWindyUseDirectEmbed()
-        ? 'Pan/zoom · marker = boat · waves height (ft) · ECMWF waves product · height units from Windy geoIP (US usually ft; may show m elsewhere) · Windy logo must remain visible per embed terms.'
-        : 'Pan/zoom · marker = boat · primary swell or waves height (ft) · GFS/ECMWF waves product (per API tier) · Windy logo must remain visible per embed terms.';
+        ? 'Pan/zoom · marker = boat · left: waves (ft via geoIP; may show m elsewhere) · right: wind (kt) · Windy logo must remain visible per embed terms.'
+        : 'Pan/zoom · marker = boat · left: wave height (ft) · right: wind (kt) · GFS/ECMWF (per API tier) · Windy logo must remain visible per embed terms.';
     }
   }catch(e){ console.error('renderCruise windy', e); }
 }

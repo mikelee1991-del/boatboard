@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
-  <title>Windy waves</title>
+  <title>Windy map</title>
   <style>
     html, body, #windy { margin: 0; padding: 0; width: 100%; height: 100%; background: #0a121c; }
     #windy-status {
@@ -34,14 +34,19 @@
       if(!isFinite(lon)) lon = -118.396;
       var key = params.get('key') || 'AkUvStRT3vKB9WjogxlKxVGxkt1SjUyR';
       var zoom = parseInt(params.get('zoom') || '10', 10);
+      /* overlay=waves|wind — never invalid "swell" (gray map). */
+      var modeRaw = (params.get('overlay') || params.get('mode') || 'waves').toLowerCase();
+      var MODE = modeRaw === 'wind' ? 'wind' : 'waves';
       var statusEl = document.getElementById('windy-status');
       var overlayRendered = false;
       var failTimer = null;
-      var ftGuardBound = false;
+      var metricGuardBound = false;
       /* Map Forecast API / embed2 accept waves + swell1/2 — NOT plain "swell" (breaks map). */
       var WAVE_OVERLAY_PREFER = ['waves', 'swell1', 'swell2', 'wwaves'];
       var WAVE_METRIC_OVERLAYS = ['waves', 'swell1', 'swell2', 'swell3', 'wwaves'];
-      var activeOverlay = 'waves';
+      var activeOverlay = MODE === 'wind' ? 'wind' : 'waves';
+
+      document.title = MODE === 'wind' ? 'Windy wind' : 'Windy waves';
 
       function showStatus(msg){
         statusEl.textContent = msg;
@@ -81,80 +86,95 @@
       }
 
       /**
-       * Wave height units live in store key metric_waves (defaults: ["m","ft"]).
-       * isImperial only seeds the *default*; a saved "m" (or GeoIP race) stays until
-       * store.set('metric_waves','ft') / overlays.waves.setMetric('ft') — same pattern
-       * embed2 uses for metric_wind / metric_temp / metric_rain.
+       * Waves: metric_waves ft. Wind: metric_wind kt.
+       * isImperial only seeds defaults; saved prefs/GeoIP can race until we forceChange.
        */
-      function lockFeet(api){
+      function lockMetrics(api){
         try{
           var store = api.store;
           var overlays = api.overlays;
           if(store){
             store.set('isImperial', true, { forceChange: true });
-            store.set('metric_waves', 'ft', { forceChange: true });
+            if(MODE === 'waves'){
+              store.set('metric_waves', 'ft', { forceChange: true });
+            }
+            store.set('metric_wind', 'kt', { forceChange: true });
           }
-          for(var i = 0; i < WAVE_METRIC_OVERLAYS.length; i++){
-            var name = WAVE_METRIC_OVERLAYS[i];
-            try{
-              if(overlays && overlays[name] && typeof overlays[name].setMetric === 'function'){
-                overlays[name].setMetric('ft');
-              }
-            }catch(e1){}
+          if(MODE === 'waves'){
+            for(var i = 0; i < WAVE_METRIC_OVERLAYS.length; i++){
+              var name = WAVE_METRIC_OVERLAYS[i];
+              try{
+                if(overlays && overlays[name] && typeof overlays[name].setMetric === 'function'){
+                  overlays[name].setMetric('ft');
+                }
+              }catch(e1){}
+            }
           }
           try{ if(overlays && overlays.wind) overlays.wind.setMetric('kt'); }catch(e2){}
           try{ if(overlays && overlays.temp) overlays.temp.setMetric('\u00B0F'); }catch(e3){}
-        }catch(e){ console.warn('Windy feet lock', e); }
+        }catch(e){ console.warn('Windy metric lock', e); }
       }
 
-      function bindFeetGuard(api){
-        if(ftGuardBound) return;
-        ftGuardBound = true;
+      function bindMetricGuard(api){
+        if(metricGuardBound) return;
+        metricGuardBound = true;
         try{
           if(api.broadcast){
             api.broadcast.on('metricChanged', function(overlay, metric){
-              if(WAVE_METRIC_OVERLAYS.indexOf(overlay) >= 0 && metric !== 'ft'){
-                lockFeet(api);
+              if(MODE === 'waves' && WAVE_METRIC_OVERLAYS.indexOf(overlay) >= 0 && metric !== 'ft'){
+                lockMetrics(api);
+              }
+              if(overlay === 'wind' && metric !== 'kt'){
+                lockMetrics(api);
               }
             });
             api.broadcast.on('redrawFinished', function(){
               try{
-                if(api.store && api.store.get('metric_waves') !== 'ft') lockFeet(api);
-              }catch(e){ lockFeet(api); }
+                if(MODE === 'waves' && api.store && api.store.get('metric_waves') !== 'ft') lockMetrics(api);
+                else if(MODE === 'wind' && api.store && api.store.get('metric_wind') !== 'kt') lockMetrics(api);
+              }catch(e){ lockMetrics(api); }
             });
           }
           if(api.store && typeof api.store.on === 'function'){
-            api.store.on('metric_waves', function(metric){
-              if(metric !== 'ft') lockFeet(api);
+            if(MODE === 'waves'){
+              api.store.on('metric_waves', function(metric){
+                if(metric !== 'ft') lockMetrics(api);
+              });
+            }
+            api.store.on('metric_wind', function(metric){
+              if(metric !== 'kt') lockMetrics(api);
             });
           }
-        }catch(e){ console.warn('Windy feet guard', e); }
+        }catch(e){ console.warn('Windy metric guard', e); }
       }
 
       function afterOverlayReady(api, product, usedFallback){
         if(overlayRendered) return;
         overlayRendered = true;
         if(failTimer) clearTimeout(failTimer);
-        lockFeet(api);
-        /* Re-assert after Windy finishes legend/picker paint (saved metric_waves=m can win races). */
-        setTimeout(function(){ lockFeet(api); }, 0);
-        setTimeout(function(){ lockFeet(api); }, 250);
-        setTimeout(function(){ lockFeet(api); }, 1000);
+        lockMetrics(api);
+        setTimeout(function(){ lockMetrics(api); }, 0);
+        setTimeout(function(){ lockMetrics(api); }, 250);
+        setTimeout(function(){ lockMetrics(api); }, 1000);
         try{ api.picker.open({ lat: lat, lon: lon }); }catch(e){}
-        var waveMetric = null;
-        try{ waveMetric = api.store.get('metric_waves'); }catch(e2){}
+        var metricWaves = null;
+        var metricWind = null;
+        try{ metricWaves = api.store.get('metric_waves'); }catch(e2){}
+        try{ metricWind = api.store.get('metric_wind'); }catch(e3){}
         notifyParent('windy-ready', {
+          mode: MODE,
           product: product,
           fallback: !!usedFallback,
           overlay: api.store.get('overlay') || activeOverlay,
-          metricWaves: waveMetric
+          metricWaves: metricWaves,
+          metricWind: metricWind
         });
       }
 
-      function loadWaves(api, product, overlay, usedFallback){
+      function loadOverlay(api, product, overlay, usedFallback){
         var store = api.store;
         var broadcast = api.broadcast;
-        activeOverlay = overlay || 'waves';
+        activeOverlay = overlay || (MODE === 'wind' ? 'wind' : 'waves');
 
         broadcast.once('redrawFinished', function(){
           afterOverlayReady(api, store.get('product') || product, usedFallback);
@@ -162,25 +182,46 @@
 
         try{
           store.set('overlay', activeOverlay);
-          store.set('product', product);
+          if(product) store.set('product', product);
         }catch(e){
           console.warn('Windy overlay/product set', e);
           try{
-            store.set('overlay', 'waves', { forceChange: true });
-            store.set('product', 'gfsWaves', { forceChange: true });
-            activeOverlay = 'waves';
+            if(MODE === 'waves'){
+              store.set('overlay', 'waves', { forceChange: true });
+              store.set('product', 'gfsWaves', { forceChange: true });
+              activeOverlay = 'waves';
+            }else{
+              store.set('overlay', 'wind', { forceChange: true });
+              activeOverlay = 'wind';
+            }
           }catch(e2){}
         }
-        lockFeet(api);
+        lockMetrics(api);
       }
 
       function onReady(api){
         var store = api.store;
-        bindFeetGuard(api);
-        lockFeet(api);
+        bindMetricGuard(api);
+        lockMetrics(api);
+
+        if(MODE === 'wind'){
+          loadOverlay(api, null, 'wind', false);
+          failTimer = setTimeout(function(){
+            if(overlayRendered) return;
+            var curOverlay = store.get('overlay');
+            if(curOverlay !== 'wind'){
+              loadOverlay(api, null, 'wind', true);
+              return;
+            }
+            showStatus('Wind overlay failed to load — check API key tier and domain restrictions.');
+            notifyParent('windy-overlay-failed', { mode: MODE, overlay: curOverlay });
+          }, 12000);
+          return;
+        }
+
         var product = pickWavesProduct(store);
         var overlay = pickWaveOverlay(store);
-        loadWaves(api, product, overlay, false);
+        loadOverlay(api, product, overlay, false);
 
         failTimer = setTimeout(function(){
           if(overlayRendered) return;
@@ -188,26 +229,27 @@
           var curOverlay = store.get('overlay');
           /* Second chance: force significant-waves + GFS (widest free-tier support). */
           if(curOverlay !== 'waves' || current !== 'gfsWaves'){
-            loadWaves(api, 'gfsWaves', 'waves', true);
+            loadOverlay(api, 'gfsWaves', 'waves', true);
             return;
           }
           showStatus('Waves overlay failed to load — check API key tier and domain restrictions.');
-          notifyParent('windy-overlay-failed', { product: current, overlay: curOverlay });
+          notifyParent('windy-overlay-failed', { mode: MODE, product: current, overlay: curOverlay });
         }, 12000);
       }
 
       try{
-        windyInit({
+        var initOpts = {
           key: key,
           lat: lat,
           lon: lon,
           zoom: zoom,
-          overlay: 'waves',
+          overlay: MODE === 'wind' ? 'wind' : 'waves',
           isImperial: true
-        }, onReady);
+        };
+        windyInit(initOpts, onReady);
       }catch(e){
         showStatus('Windy init failed: ' + (e.message || e));
-        notifyParent('windy-overlay-failed', { error: String(e) });
+        notifyParent('windy-overlay-failed', { mode: MODE, error: String(e) });
       }
     })();
   </script>
