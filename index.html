@@ -8,7 +8,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>BoatBoard — SoCal</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" media="print" onload="this.media='all'">
+<!-- Leaflet CSS injected on first map tab via loadLeaflet() — avoid Overview mobile bandwidth -->
+<link rel="dns-prefetch" href="https://unpkg.com">
+<link rel="dns-prefetch" href="https://api.open-meteo.com">
+<link rel="dns-prefetch" href="https://marine-api.open-meteo.com">
+<link rel="dns-prefetch" href="https://api.tidesandcurrents.noaa.gov">
 <style>
 :root{
   --bg:#060a10; --bg2:#0c1219; --card:#111922; --card2:#182230;
@@ -1090,7 +1094,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 </div>
 
 <!-- coast-geo.js is audit-only (cscript tools) — NEVER loaded here. Maps use coast-overlay-lite.js (~100ft). -->
-<script src="pin-feature-groups-data.js"></script>
+<!-- pin-feature-groups-data.js + coast-overlay-lite.js load lazily (idle / tab) — keep Overview TTI lean -->
 <script>
 'use strict';
 
@@ -1210,6 +1214,12 @@ function loadScript(src){
   });
   return _scriptLoads[src];
 }
+/** Defer non-critical work until after first paint (mobile TTI). */
+function runWhenIdle(fn, timeoutMs){
+  const run = ()=>{ try{ fn(); }catch(e){ console.warn(e); } };
+  if(typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: timeoutMs == null ? 2200 : timeoutMs });
+  else setTimeout(run, 1);
+}
 let _coastOverlayLitePromise = null;
 function invalidateOverlayCaches(){
   _coastSegsCache = null;
@@ -1225,9 +1235,12 @@ function loadCoastOverlayLite(){
   }).catch(e=>{ _coastOverlayLitePromise = null; throw e; });
   return _coastOverlayLitePromise;
 }
-/** Eager-load overlay so land detection works on Overview before any map tab. */
+/** Load ~0.9MB coast overlay after first paint — inland heuristic covers GPS until then. */
 function ensureCoastOverlayForGps(){
   return loadCoastOverlayLite().then(()=>{ try{ onCoastOverlayReady(); }catch(e){ console.warn(e); } }).catch(()=>{});
+}
+function scheduleCoastOverlayForGps(){
+  runWhenIdle(()=>{ ensureCoastOverlayForGps(); }, 1800);
 }
 function onCoastOverlayReady(){
   if(pos.rawLat == null || pos.rawLon == null) return;
@@ -2051,6 +2064,10 @@ let gpsWatchId = null;
 let gpsHighAccuracy = false;
 let gpsTimeoutStreak = 0;
 let marine = null, wx = null, tides = null, cdipBuoys = {};
+/** In-flight NOAA tides fetch + last successful network time (ms). */
+let tidesFetchPromise = null, tidesFetchedAt = 0;
+/** Memoized height series from hi/lo predictions (avoid rebuild ×3 per render). */
+let tideSeriesMemo = { key: '', stepMs: 0, pts: null, events: null };
 let aisVessels = {};
 let aisWs = null, aisConnected = false, map = null, boatMarker = null, aisLayer = null;
 let aisMarkers = {}, aisPinnedMmsi = null, aisRefreshing = false;
@@ -2888,27 +2905,111 @@ function tideURL(interval){
   return 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&datum=MLLW&time_zone=lst_ldt&interval='+interval+'&units=english&format=json&application=BoatBoard&station='+TIDE_STATION+'&begin_date='+bd+'&range='+rangeHrs;
 }
 
+function tidesCacheAgeMs(){
+  if(tidesFetchedAt) return Date.now() - tidesFetchedAt;
+  const c = store.json('boatCache:tides', null);
+  return c?.at ? Date.now() - c.at : Infinity;
+}
+
+function applyTidesData(data, fromNetwork){
+  if(!data?.predictions?.length) return false;
+  tides = data;
+  tideSeriesMemo.key = '';
+  if(fromNetwork){
+    tidesFetchedAt = Date.now();
+    cacheData('tides', tides);
+  }
+  /* SVG tide charts are costly — only paint when Tides tab is visible (switchTab paints on open). */
+  try{ if(activeTab()==='tides') renderTides(); }catch(e){ console.error('renderTides', e); }
+  return true;
+}
+
+/** NOAA hi/lo only — starts immediately (does not wait for marine/wx). Dedupes in-flight + fresh cache. */
+async function refreshTides(force){
+  if(tidesFetchPromise) return tidesFetchPromise;
+  if(!force && tides?.predictions?.length && tidesCacheAgeMs() < REFRESH_TIDES){
+    return tides;
+  }
+  /* Coalesce rapid force calls (boot + refreshForecasts) within a few seconds */
+  if(force && tides?.predictions?.length && tidesFetchedAt && (Date.now() - tidesFetchedAt) < 12000){
+    return tides;
+  }
+  if(!force && !tides?.predictions?.length){
+    const c = store.json('boatCache:tides', null);
+    if(c?.data?.predictions?.length && Date.now() - c.at < REFRESH_TIDES){
+      applyTidesData(c.data, false);
+      tidesFetchedAt = c.at;
+      return tides;
+    }
+  }
+
+  tidesFetchPromise = (async ()=>{
+    try{
+      const data = await fetchJSON(tideURL('hilo'), 10000);
+      applyTidesData(data, true);
+      return tides;
+    }catch(e){
+      const c = loadCache('tides', 7*24*HR);
+      if(c?.data) applyTidesData(c.data, false);
+      throw e;
+    }finally{
+      tidesFetchPromise = null;
+    }
+  })();
+  return tidesFetchPromise;
+}
+
 async function refreshForecasts(force){
   const { lat, lon } = boatPos();
   let staleNote = '';
+  /* Kick off tides in parallel with marine — data ready ASAP; charts only if Tides tab active */
+  const tideP = refreshTides(!!force).then(()=>({ ok:true })).catch(()=>({ ok:false }));
+
+  /* Skip network when marine+wx are still fresh (tab switches / interval) — tides has its own TTL */
+  if(!force){
+    const mc = loadCache('marine', REFRESH_MARINE);
+    const wc = loadCache('wx', REFRESH_MARINE);
+    if(mc && !mc.stale && wc && !wc.stale){
+      marine = mc.data;
+      wx = wc.data;
+      await tideP;
+      try{ renderOverview(); }catch(e){ console.error(e); }
+      if(activeTab()==='weather') try{ renderWeather(); }catch(e){ console.error(e); }
+      if(activeTab()==='tides') try{ renderTides(); }catch(e){ console.error(e); }
+      if(activeTab()==='fishing') try{ renderFishing(); }catch(e){ console.error('renderFishing', e); }
+      if(activeTab()==='surf') try{ renderSurf(); }catch(e){ console.error('renderSurf', e); }
+      if(activeTab()==='cruise') try{ renderCruise(); }catch(e){ console.error('renderCruise', e); }
+      if(window.BoatDive && activeTab() === 'dive'){
+        ensureDiveEngine().then(BD=>{ if(BD) BD.syncRecommendations(marine, wx, tides); }).catch(()=>{});
+      }
+      if(activeTab()==='swell') renderSwellTab();
+      if(activeTab()==='underway') renderUnderwayTab();
+      if(activeTab()==='overview') scheduleOverviewTakeaways(false);
+      return;
+    }
+  }
+
   try{
-    let mr = await fetchJSON(marineURL(lat,lon)).then(v=>({ status:'fulfilled', value:v })).catch(e=>({ status:'rejected', reason:e }));
+    const [mr, wr] = await Promise.all([
+      fetchJSON(marineURL(lat,lon)).then(v=>({ status:'fulfilled', value:v })).catch(e=>({ status:'rejected', reason:e })),
+      fetchJSON(wxURL(lat,lon)).then(v=>({ status:'fulfilled', value:v })).catch(e=>({ status:'rejected', reason:e }))
+    ]);
     if(mr.status==='fulfilled'){ marine=mr.value; cacheData('marine',marine); offline=false; try{ renderOverview(); }catch(e){} }
     else{
       const c=loadCache('marine',7*24*HR); if(c){ marine=c.data; staleNote='Marine model cached '+new Date(c.at).toLocaleTimeString()+'. '; offline=!navigator.onLine; }
     }
-    await new Promise(r=>setTimeout(r, 120));
-    const [wr,tr] = await Promise.allSettled([fetchJSON(wxURL(lat,lon)), fetchJSON(tideURL('hilo'))]);
     if(wr.status==='fulfilled'){ wx=wr.value; cacheData('wx',wx); }
     else{ const c=loadCache('wx',7*24*HR); if(c){ wx=c.data; staleNote+='Weather cached. '; } }
-    if(tr.status==='fulfilled'){ tides=tr.value; cacheData('tides',tides); }
-    else{ const c=loadCache('tides',7*24*HR); if(c){ tides=c.data; staleNote+='Tides cached. '; } }
+    const tr = await tideP;
+    if(!tr.ok && !tides){
+      const c=loadCache('tides',7*24*HR); if(c){ applyTidesData(c.data, false); staleNote+='Tides cached. '; }
+    }else if(!tr.ok && tides){ /* already showing cache from refreshTides */ }
     if(staleNote) setBanner('<strong>Offline / fetch issue.</strong> '+esc(staleNote)+'Showing last good data.','');
     else if(!force) setBanner('');
   }catch(e){ setBanner('Forecast fetch failed: '+esc(e.message),'err'); }
-  renderOverview();
-  renderWeather();
-  renderTides();
+  try{ renderOverview(); }catch(e){ console.error(e); }
+  if(activeTab()==='weather') try{ renderWeather(); }catch(e){ console.error(e); }
+  if(activeTab()==='tides') try{ renderTides(); }catch(e){ console.error(e); }
   if(activeTab()==='fishing') try{ renderFishing(); }catch(e){ console.error('renderFishing', e); }
   if(activeTab()==='surf') try{ renderSurf(); }catch(e){ console.error('renderSurf', e); }
   if(activeTab()==='cruise') try{ renderCruise(); }catch(e){ console.error('renderCruise', e); }
@@ -5005,24 +5106,37 @@ function buildTideSeriesFromHilo(predictions, stepMs){
   return pts;
 }
 
+/** Shared hi/lo → curve + events; memoized until predictions change. */
+function getTideSeriesBundle(stepMs){
+  const step = stepMs || 10*60*1000;
+  const eventsRaw = tides && tides.predictions;
+  if(!eventsRaw?.length) return { eventsRaw: null, pts: [], events: [] };
+  const key = eventsRaw.length+'|'+eventsRaw[0].t+'|'+eventsRaw[eventsRaw.length-1].t+'|'+eventsRaw[0].v+'|'+eventsRaw[eventsRaw.length-1].v;
+  if(tideSeriesMemo.key === key && tideSeriesMemo.stepMs === step && tideSeriesMemo.pts){
+    return { eventsRaw, pts: tideSeriesMemo.pts, events: tideSeriesMemo.events };
+  }
+  const events = eventsRaw.map(p=>({
+    t:parseTideTime(p.t).getTime(), v:parseFloat(p.v), type:p.type
+  })).filter(p=>isFinite(p.v));
+  const pts = buildTideSeriesFromHilo(eventsRaw, step);
+  tideSeriesMemo = { key, stepMs: step, pts, events };
+  return { eventsRaw, pts, events };
+}
+
 function renderTideChart(){
   const host = $('tideChart'), nowEl = $('tideNowH'), meta = $('tideChartMeta');
   if(!host) return;
-  const eventsRaw = tides && tides.predictions;
+  const { eventsRaw, pts: fullPts, events } = getTideSeriesBundle();
   if(!eventsRaw || !eventsRaw.length){
     host.innerHTML = '<div class="skel">Tide chart loading…</div>';
     if(nowEl) nowEl.textContent = '—';
     if(meta) meta.innerHTML = '';
     return;
   }
-  const fullPts = buildTideSeriesFromHilo(eventsRaw, 10*60*1000);
   if(fullPts.length < 2){
     host.innerHTML = '<div class="skel">Not enough tide data</div>';
     return;
   }
-  const events = eventsRaw.map(p=>({
-    t:parseTideTime(p.t).getTime(), v:parseFloat(p.v), type:p.type
-  })).filter(p=>isFinite(p.v));
   const now = Date.now();
   const win = tideChartTimeWindow(now);
   const dataMin = fullPts[0].t, dataMax = fullPts[fullPts.length - 1].t;
@@ -5108,14 +5222,13 @@ function renderTideChart(){
 function renderTideRateChart(){
   const host = $('tideRateChart'), nowEl = $('tideNowRate'), meta = $('tideRateChartMeta');
   if(!host) return;
-  const eventsRaw = tides && tides.predictions;
+  const { eventsRaw, pts: fullPts } = getTideSeriesBundle();
   if(!eventsRaw || !eventsRaw.length){
     host.innerHTML = '<div class="skel">Tide rate loading…</div>';
     if(nowEl) nowEl.textContent = '—';
     if(meta) meta.innerHTML = '';
     return;
   }
-  const fullPts = buildTideSeriesFromHilo(eventsRaw, 10*60*1000);
   const fullRates = tideRateSeries(fullPts);
   const now = Date.now();
   const win = tideChartTimeWindow(now);
@@ -5227,16 +5340,10 @@ function renderTideRateChart(){
     '<span><i style="background:'+WX_C.night+'"></i> Night</span>';
 }
 
-function renderTides(){
-  renderTideChart();
-  renderTideRateChart();
-  const eventsRaw = tides && tides.predictions;
-  const pts = eventsRaw?.length ? buildTideSeriesFromHilo(eventsRaw, 10*60*1000) : [];
-  const events = eventsRaw ? eventsRaw.map(p=>({
-    t:parseTideTime(p.t).getTime(), v:parseFloat(p.v), type:p.type
-  })).filter(p=>isFinite(p.v)) : [];
+function renderTideListAndTransit(pts, events){
   renderTideTransit(pts, events);
   const box = $('tideList');
+  if(!box) return;
   if(!tides || !tides.predictions){ box.innerHTML='<div class="skel">No tide data</div>'; return; }
   const now = Date.now();
   box.innerHTML = tides.predictions.map(p=>{
@@ -5244,6 +5351,23 @@ function renderTides(){
     const past = +t < now;
     return '<div class="tide-ev'+(past?' style="opacity:.45"':'')+'"><span class="t">'+fmtDayTime(t)+'</span><span class="'+(p.type==='H'?'hi':'lo')+'">'+(p.type==='H'?'High':'Low')+' '+f1(parseFloat(p.v))+' ft</span></div>';
   }).join('');
+}
+
+function renderTides(){
+  const { pts, events, eventsRaw } = getTideSeriesBundle();
+  /* List + transit first (cheap), then SVG charts on next frame for snappier first paint */
+  renderTideListAndTransit(pts, events);
+  if(!eventsRaw?.length){
+    renderTideChart();
+    renderTideRateChart();
+    return;
+  }
+  const paintCharts = ()=>{
+    try{ renderTideChart(); }catch(e){ console.error(e); }
+    try{ renderTideRateChart(); }catch(e){ console.error(e); }
+  };
+  if(typeof requestAnimationFrame === 'function') requestAnimationFrame(paintCharts);
+  else paintCharts();
 }
 
 /* ============ solunar / fishing ============ */
@@ -8159,7 +8283,27 @@ function assignFishFeatureGroups(){
   }
   FISH_FEATURE_GROUP_COUNT = members.size;
 }
-try{ assignFishFeatureGroups(); }catch(e){ console.error('assignFishFeatureGroups', e); }
+let _fishGroupsReady = false;
+let _fishGroupsPromise = null;
+function ensureFishFeatureGroups(){
+  if(_fishGroupsReady) return Promise.resolve();
+  if(_fishGroupsPromise) return _fishGroupsPromise;
+  _fishGroupsPromise = loadScript('pin-feature-groups-data.js').catch(function(){ /* optional */ })
+    .then(()=>{
+      try{ assignFishFeatureGroups(); _fishGroupsReady = true; }
+      catch(e){ console.error('assignFishFeatureGroups', e); _fishGroupsReady = true; }
+    });
+  return _fishGroupsPromise;
+}
+function scheduleFishFeatureGroups(){
+  runWhenIdle(()=>{
+    ensureFishFeatureGroups().then(()=>{
+      if(activeTab()==='overview'){ try{ renderOverview(); }catch(e){} }
+      if(activeTab()==='fishing'){ try{ renderFishing(); }catch(e){} }
+    });
+  }, 2800);
+}
+scheduleFishFeatureGroups();
 
 function moonPhase(date){
   let y=date.getFullYear(), m=date.getMonth()+1, d=date.getDate();
@@ -8358,6 +8502,7 @@ function rankFishSpots(ctx, opts){
 
 /** Overview brief — score nearby feature groups only (verified-water-pins.json). */
 function bestNearbyFishSpot(ctx, maxNm){
+  if(!_fishGroupsReady) return null; /* grouping runs idle — avoid O(n) scan before first paint */
   maxNm = maxNm != null ? maxNm : 35;
   const ranked = rankFishSpots(ctx);
   const near = ranked.find(r => r.distNm <= maxNm);
@@ -11509,6 +11654,14 @@ function loadLeaflet(){
   if(window.L) return Promise.resolve();
   if(leafletPromise) return leafletPromise;
   leafletPromise = new Promise((resolve, reject)=>{
+    if(!document.getElementById('leafletCss')){
+      const link = document.createElement('link');
+      link.id = 'leafletCss';
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      link.crossOrigin = '';
+      document.head.appendChild(link);
+    }
     const s = document.createElement('script');
     s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
     s.crossOrigin = '';
@@ -12932,11 +13085,14 @@ function switchSubtab(section, name){
   });
   store.set('boatSubtab:'+section, name);
   if(section === 'fishing' && name === 'plan'){
-    try{ renderFishing(); }catch(e){ console.error(e); }
-    initFishMapWithRetry(0);
-    if(lastFishPlanRanked) refreshFishPlanSeafloor(lastFishPlanRanked);
-    setTimeout(() => { if(fishMap) fishMap.invalidateSize(true); }, 120);
-    setTimeout(() => { if(fishMap) fishMap.invalidateSize(true); }, 350);
+    ensureFishFeatureGroups().then(()=>{
+      if(activeTab()!=='fishing' || activeSubtab('fishing')!=='plan') return;
+      try{ renderFishing(); }catch(e){ console.error(e); }
+      initFishMapWithRetry(0);
+      if(lastFishPlanRanked) refreshFishPlanSeafloor(lastFishPlanRanked);
+      setTimeout(() => { if(fishMap) fishMap.invalidateSize(true); }, 120);
+      setTimeout(() => { if(fishMap) fishMap.invalidateSize(true); }, 350);
+    });
   }
   if(section === 'dive' && name === 'plan'){
     ensureDiveEngine().then(BD=>{
@@ -13040,11 +13196,15 @@ function switchTab(name){
     setWildMapMode(wildMapMode || 'leaflet');
   }
   if(name==='fishing'){
-    try{ renderFishing(); }catch(e){ console.error('renderFishing', e); }
-    initFishMapWithRetry(0);
+    ensureFishFeatureGroups().then(()=>{
+      if(activeTab()!=='fishing') return;
+      try{ renderFishing(); }catch(e){ console.error('renderFishing', e); }
+      initFishMapWithRetry(0);
+    });
   }
-  if(name==='weather' && wx?.hourly){
-    setTimeout(()=>renderWeatherCharts(wx.hourly, wxSeriesIndex(wx.hourly.time)), 50);
+  if(name==='weather'){
+    try{ renderWeather(); }catch(e){ console.error(e); }
+    if(wx?.hourly) setTimeout(()=>renderWeatherCharts(wx.hourly, wxSeriesIndex(wx.hourly.time)), 50);
   }
   if(name==='overview'){
     try{ renderOverview(); }catch(e){ console.error('renderOverview', e); }
@@ -13052,6 +13212,7 @@ function switchTab(name){
   }
   if(name==='tides'){
     try{ renderTides(); }catch(e){ console.error('renderTides', e); }
+    refreshTides(false).catch(()=>{});
   }
   store.set('boatLastTab', name);
 }
@@ -13200,18 +13361,27 @@ function boot(){
   const cachedTides = loadCache('tides', 7*24*HR);
   if(cachedMarine) marine = cachedMarine.data;
   if(cachedWx) wx = cachedWx.data;
-  if(cachedTides) tides = cachedTides.data;
+  if(cachedTides){
+    tides = cachedTides.data;
+    if(cachedTides.at && Date.now() - cachedTides.at < REFRESH_TIDES) tidesFetchedAt = cachedTides.at;
+  }
   CDIP_BUOYS.forEach(b => {
     const c = loadCache('buoy:'+b.id, 24*HR);
     if(c?.data) cdipBuoys[b.id] = c.data;
   });
   try{ if(cachedMarine||cachedWx) renderOverview(); }catch(e){ console.error(e); }
-  try{ renderWeather(); }catch(e){ console.error(e); }
-  if(activeTab()==='weather' && wx?.hourly){
-    setTimeout(()=>renderWeatherCharts(wx.hourly, wxSeriesIndex(wx.hourly.time)), 50);
+  if(activeTab()==='weather'){
+    try{ renderWeather(); }catch(e){ console.error(e); }
+    if(wx?.hourly) setTimeout(()=>renderWeatherCharts(wx.hourly, wxSeriesIndex(wx.hourly.time)), 50);
   }
-  try{ renderTides(); }catch(e){ console.error(e); }
-  if(activeTab()==='fishing') try{ renderFishing(); }catch(e){ console.error(e); }
+  if(activeTab()==='tides') try{ renderTides(); }catch(e){ console.error(e); }
+  /* Prefetch NOAA tides ASAP (parallel with GPS / marine) — charts paint when Tides tab is open */
+  refreshTides(true).catch(()=>{});
+  if(activeTab()==='fishing'){
+    ensureFishFeatureGroups().then(()=>{
+      if(activeTab()==='fishing') try{ renderFishing(); }catch(e){ console.error(e); }
+    });
+  }
   if(activeTab()==='surf'){
     try{ renderSurf(); }catch(e){ console.error(e); }
     initSurfMapWithRetry(0);
@@ -13220,8 +13390,8 @@ function boot(){
     try{ renderCruise(); }catch(e){ console.error(e); }
   }
 
-  /* Land detection needs coast-overlay-lite — eager-load even on Overview */
-  ensureCoastOverlayForGps();
+  /* Coast overlay ~0.9MB — idle after first paint; inland heuristic covers GPS until then */
+  scheduleCoastOverlayForGps();
   startGps();
   if(pos.rawLat != null){
     ensureGpsPreference(pos.rawLat, pos.rawLon);
@@ -13233,7 +13403,11 @@ function boot(){
   timers.marine = setInterval(()=>refreshForecasts(false), REFRESH_MARINE);
   timers.nws = setInterval(()=>{ if(activeTab()==='swell') refreshNws(); }, REFRESH_NWS);
   timers.cdip = setInterval(()=>{ if(activeTab()==='swell') refreshOcean(); }, REFRESH_CDIP);
-  timers.tides = setInterval(renderTides, REFRESH_TIDES);
+  timers.tides = setInterval(()=>{
+    refreshTides(false).finally(()=>{
+      if(activeTab()==='tides') try{ renderTides(); }catch(e){ console.error(e); }
+    });
+  }, REFRESH_TIDES);
   timers.swell = setInterval(()=>{
     if(activeTab()==='swell') renderSwellTab();
     if(activeTab()==='surf') try{ renderSurf(); }catch(e){ console.error(e); }
@@ -13253,9 +13427,16 @@ function boot(){
   window.addEventListener('online', ()=>{ offline=false; refreshForecasts(true); reconnectAis(); });
   window.addEventListener('offline', ()=>{ offline=true; setBanner('<strong>Offline.</strong> Showing cached forecasts & last AIS positions.',''); });
 
+  /* Restore last tab after Overview shell paints (avoids map/Windy work before first frame) */
   const lastTab = store.get('boatLastTab');
-  if(lastTab === 'cdip' || lastTab === 'marine') switchTab('swell');
-  else if(lastTab && lastTab !== 'overview') switchTab(lastTab);
+  if(lastTab === 'cdip' || lastTab === 'marine' || (lastTab && lastTab !== 'overview')){
+    requestAnimationFrame(()=>{
+      setTimeout(()=>{
+        if(lastTab === 'cdip' || lastTab === 'marine') switchTab('swell');
+        else switchTab(lastTab);
+      }, 0);
+    });
+  }
 
   if(!settings.aisKey && !settings.aisRelay){
     setBanner('Tap ⚙ Settings — add your <strong>AISStream API key</strong>, or run <span class="mono">node ais-relay.mjs</span> and paste the relay URL.','');
