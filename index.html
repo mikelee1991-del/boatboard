@@ -290,10 +290,18 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 
 .tide-chart-card h3{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px}
 .tide-now-h{font-family:var(--mono);font-size:14px;color:var(--accent);font-weight:600}
-.tide-chart{width:100%;overflow:hidden;margin-top:4px;min-height:180px}
+.tide-chart{width:100%;overflow:hidden;margin-top:4px;min-height:180px;position:relative}
 .tide-chart svg{display:block;width:100%;height:auto;min-height:160px;touch-action:pan-x}
 .tide-chart.tide-rate-chart{min-height:140px;margin-top:6px}
 .tide-chart.tide-rate-chart svg{min-height:120px}
+.tide-chart .tide-hl-hit{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.tide-chart-tip{font-family:var(--mono);font-size:13px;line-height:1.4;margin-top:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg2);color:var(--ink2);min-height:40px}
+.tide-chart-tip strong{color:var(--ink);font-weight:600}
+.tide-chart-tip.is-hi{border-color:rgba(61,255,154,.4);color:var(--good)}
+.tide-chart-tip.is-hi strong{color:var(--good)}
+.tide-chart-tip.is-lo{border-color:rgba(184,154,212,.45);color:var(--accent2)}
+.tide-chart-tip.is-lo strong{color:var(--accent2)}
+.tide-chart-tip .tide-tip-hint{color:var(--ink3);font-size:12px}
 .tide-chart-meta{font-size:11px;color:var(--ink3);font-family:var(--mono);margin-top:8px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .tide-chart-meta span{display:inline-flex;align-items:center;gap:5px}
 .tide-chart-meta i{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0}
@@ -695,7 +703,8 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
     <section class="tabpanel" id="tab-tides" data-tab="tides">
       <div class="card tide-chart-card">
         <h3>King Harbor tide (MLLW) <span id="tideNowH" class="tide-now-h">—</span></h3>
-        <div id="tideChart" class="tide-chart" role="img" aria-label="Tide height over time"></div>
+        <div id="tideChart" class="tide-chart" role="img" aria-label="Tide height over time — tap highs and lows for details"></div>
+        <div id="tideChartTip" class="tide-chart-tip" aria-live="polite"><span class="tide-tip-hint">Tap a high or low for time &amp; height</span></div>
         <div class="tide-chart-meta" id="tideChartMeta"></div>
         <h3 class="tide-rate-head">Tide rate (ft/hr) <span id="tideNowRate" class="tide-now-h">—</span></h3>
         <div id="tideRateChart" class="tide-chart tide-rate-chart" role="img" aria-label="Tide rate in feet per hour over time"></div>
@@ -5125,6 +5134,68 @@ function getTideSeriesBundle(stepMs){
   return { eventsRaw, pts, events };
 }
 
+function tideHlTipHtml(ev){
+  const hi = ev.type === 'H';
+  const kind = hi ? 'High' : 'Low';
+  const when = fmtDayTime(new Date(ev.t));
+  const ht = f1(ev.v)+' ft';
+  return '<strong>'+kind+' '+ht+'</strong> · '+esc(when);
+}
+
+function setTideChartTip(ev){
+  const tip = $('tideChartTip');
+  if(!tip) return;
+  tip.classList.remove('is-hi', 'is-lo');
+  if(!ev){
+    tip.innerHTML = '<span class="tide-tip-hint">Tap a high or low for time &amp; height</span>';
+    return;
+  }
+  tip.classList.add(ev.type === 'H' ? 'is-hi' : 'is-lo');
+  tip.innerHTML = tideHlTipHtml(ev);
+}
+
+/** Mobile-first tap/hover on NOAA H/L markers (rebound after each SVG paint). */
+function bindTideHlInteractivity(host, winEvents){
+  if(!host || !winEvents?.length) return;
+  const byIdx = winEvents;
+  const activate = (idx, sticky)=>{
+    const ev = byIdx[idx];
+    if(!ev) return;
+    setTideChartTip(ev);
+    host.querySelectorAll('.tide-hl-hit').forEach(n=>{
+      const on = Number(n.getAttribute('data-tide-i')) === idx;
+      n.setAttribute('stroke-opacity', on ? '0.55' : '0');
+      n.setAttribute('fill-opacity', on ? '0.18' : '0');
+    });
+    if(sticky) host._tideHlSticky = idx;
+  };
+  host.querySelectorAll('.tide-hl-hit').forEach(el=>{
+    const idx = Number(el.getAttribute('data-tide-i'));
+    el.addEventListener('pointerenter', ()=>{ if(host._tideHlSticky == null) activate(idx, false); });
+    el.addEventListener('pointerleave', ()=>{
+      if(host._tideHlSticky == null) setTideChartTip(null);
+      else activate(host._tideHlSticky, false);
+    });
+    el.addEventListener('click', e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      if(host._tideHlSticky === idx){
+        host._tideHlSticky = null;
+        setTideChartTip(null);
+        host.querySelectorAll('.tide-hl-hit').forEach(n=>{
+          n.setAttribute('stroke-opacity', '0');
+          n.setAttribute('fill-opacity', '0');
+        });
+      }else activate(idx, true);
+    });
+  });
+  /* Next upcoming H/L as default detail (still obvious on the curve via labels). */
+  const now = Date.now();
+  let nextI = byIdx.findIndex(ev => ev.t >= now);
+  if(nextI < 0) nextI = byIdx.length - 1;
+  if(nextI >= 0) activate(nextI, true);
+}
+
 function renderTideChart(){
   const host = $('tideChart'), nowEl = $('tideNowH'), meta = $('tideChartMeta');
   if(!host) return;
@@ -5133,10 +5204,12 @@ function renderTideChart(){
     host.innerHTML = '<div class="skel">Tide chart loading…</div>';
     if(nowEl) nowEl.textContent = '—';
     if(meta) meta.innerHTML = '';
+    setTideChartTip(null);
     return;
   }
   if(fullPts.length < 2){
     host.innerHTML = '<div class="skel">Not enough tide data</div>';
+    setTideChartTip(null);
     return;
   }
   const now = Date.now();
@@ -5147,12 +5220,14 @@ function renderTideChart(){
   const pts = tidePtsInWindow(fullPts, tMin, tMax);
   if(pts.length < 2 || tMax <= tMin){
     host.innerHTML = '<div class="skel">Tide data does not cover chart window</div>';
+    setTideChartTip(null);
     return;
   }
   const nowH = tideInterp(fullPts, now);
   if(nowEl) nowEl.textContent = nowH!=null ? 'Now '+f1(nowH)+' ft' : '—';
 
-  const W=860, H=240, padL=46, padR=14, padT=18, padB=40;
+  /* Extra top pad for two-line H labels (height + time) */
+  const W=860, H=268, padL=46, padR=14, padT=36, padB=40;
   const plotW=W-padL-padR, plotH=H-padT-padB;
   const winEvents = events.filter(ev => ev.t >= tMin && ev.t <= tMax);
   let vMin=Math.min(...pts.map(p=>p.v), ...(winEvents.length ? winEvents.map(p=>p.v) : []));
@@ -5193,12 +5268,27 @@ function renderTideChart(){
   svg += '<path d="'+line+'" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
   svg = tideChartDayNightOverlay(svg, daily, xS, padT, padT + plotH, tMin, tMax);
 
-  winEvents.forEach(ev=>{
+  winEvents.forEach((ev, i)=>{
     const hi = ev.type==='H', col = hi?'var(--good)':'var(--accent2)';
     const x=xS(ev.t), y=yS(ev.v);
-    const ly = hi ? y-10 : y+16;
-    svg += '<circle cx="'+x+'" cy="'+y+'" r="5" fill="var(--card)" stroke="'+col+'" stroke-width="2.5"/>';
-    svg += '<text x="'+x+'" y="'+ly+'" text-anchor="middle" font-size="10" fill="'+col+'" font-weight="600">'+(hi?'H':'L')+' '+f1(ev.v)+'</text>';
+    const past = ev.t < now;
+    const op = past ? '0.55' : '1';
+    let lx = x, anchor = 'middle';
+    if(x < padL + 40){ lx = padL + 2; anchor = 'start'; }
+    else if(x > W - padR - 40){ lx = W - padR - 2; anchor = 'end'; }
+    const label1 = (hi?'H':'L')+' '+f1(ev.v)+' ft';
+    const label2 = fmtDayTime(new Date(ev.t));
+    /* H above peak, L below trough — two lines: height then day+time (matches list). */
+    if(hi){
+      svg += '<text x="'+lx.toFixed(1)+'" y="'+(y-22)+'" text-anchor="'+anchor+'" font-size="11" fill="'+col+'" font-weight="700" opacity="'+op+'">'+esc(label1)+'</text>';
+      svg += '<text x="'+lx.toFixed(1)+'" y="'+(y-9)+'" text-anchor="'+anchor+'" font-size="10" fill="'+col+'" font-weight="500" opacity="'+op+'">'+esc(label2)+'</text>';
+    }else{
+      svg += '<text x="'+lx.toFixed(1)+'" y="'+(y+16)+'" text-anchor="'+anchor+'" font-size="11" fill="'+col+'" font-weight="700" opacity="'+op+'">'+esc(label1)+'</text>';
+      svg += '<text x="'+lx.toFixed(1)+'" y="'+(y+29)+'" text-anchor="'+anchor+'" font-size="10" fill="'+col+'" font-weight="500" opacity="'+op+'">'+esc(label2)+'</text>';
+    }
+    svg += '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="5" fill="var(--card)" stroke="'+col+'" stroke-width="2.5" opacity="'+op+'"/>';
+    /* Large invisible hit target for mobile tap (~44px on typical phone width). */
+    svg += '<circle class="tide-hl-hit" data-tide-i="'+i+'" cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="22" fill="'+col+'" fill-opacity="0" stroke="'+col+'" stroke-width="2" stroke-opacity="0"/>';
   });
 
   if(now >= tMin && now <= tMax && nowH!=null){
@@ -5208,9 +5298,11 @@ function renderTideChart(){
     svg += '<text x="'+nx+'" y="'+(padT-4)+'" text-anchor="middle" font-size="11" fill="'+CHART.now+'" font-weight="bold">NOW</text>';
   }
 
-  svg += '<text x="'+padL+'" y="'+(padT-2)+'" font-size="10" fill="var(--ink3)" font-weight="600">ft MLLW</text>';
+  svg += '<text x="'+padL+'" y="'+(padT-18)+'" font-size="10" fill="var(--ink3)" font-weight="600">ft MLLW</text>';
   svg += '</svg>';
+  host._tideHlSticky = null;
   host.innerHTML = svg;
+  bindTideHlInteractivity(host, winEvents);
   if(meta) meta.innerHTML =
     '<span><i style="background:'+CHART.now+'"></i> Now</span>'+
     '<span><i style="background:var(--good)"></i> High</span>'+
