@@ -1117,7 +1117,7 @@ const GPS_ERROR_BANNER_AFTER = 3;
 const KING_HARBOR_BBOX = { latMin: 33.832, latMax: 33.856, lonMin: -118.407, lonMax: -118.386 };
 const TIDE_STATION = '9410738';
 const TIDE_CHART_BACK_HR = 18;   /* chart x-axis: hours before now */
-const TIDE_CHART_FWD_HR = 96;    /* chart x-axis: hours after now */
+const TIDE_CHART_FWD_HR = 72;    /* chart x-axis: hours after now */
 const SWELL_E_CHART_BACK_HR = 6; /* short lookback so NOW marker has context */
 const SWELL_E_CHART_FWD_HR = 96; /* upcoming swell energy window */
 const M2FT = 3.28084;
@@ -2248,9 +2248,11 @@ const SURF_MAP_MAX_MARKERS = 20;
 let cruiseWindyLastKey = null;
 /** Windy Map Forecast API key — waves ft / wind kt via windy-waves-embed.html (?overlay=waves|wind). embed2 has no metricWave URL param (only metricWind/Temp/Rain). https://api.windy.com/keys */
 const WINDY_MAP_API_KEY = 'AkUvStRT3vKB9WjogxlKxVGxkt1SjUyR';
-const CRUISE_WINDY_EMBED_VER = 11;
+const CRUISE_WINDY_EMBED_VER = 12;
 const CRUISE_SECTOR_SAMPLE_NM = 5;
 const CRUISE_WINDY_DEFAULT_ZOOM = 10;
+/** Map Forecast waves/swell tiles often 404/"No data!" past zoom 7; wind stays at DEFAULT. */
+const CRUISE_WINDY_WAVES_ZOOM = 7;
 const CRUISE_SECTOR_LABELS = [
   { label:'N', brg:0 }, { label:'NE', brg:45 }, { label:'E', brg:90 }, { label:'SE', brg:135 },
   { label:'S', brg:180 }, { label:'SW', brg:225 }, { label:'W', brg:270 }, { label:'NW', brg:315 }
@@ -2897,7 +2899,7 @@ function wxURL(lat,lon){
     '&forecast_days=5&timezone=America/Los_Angeles&temperature_unit=fahrenheit&wind_speed_unit=kn&precipitation_unit=inch';
 }
 function tideURL(interval){
-  /* Cover chart window (now−18h … now+96h) plus day-boundary / hi-lo bracket margin */
+  /* Cover chart window (now−18h … now+72h) plus day-boundary / hi-lo bracket margin */
   const lookbackMs = Math.max(24, TIDE_CHART_BACK_HR + 6) * HR;
   const d = new Date(Date.now() - lookbackMs);
   const bd = d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
@@ -5175,7 +5177,7 @@ function renderTideChart(){
     svg += '<text x="'+(padL-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="var(--ink3)" font-weight="500">'+f1(v)+'</text>';
   }
 
-  /* ~114h span: 24h ticks keep labels readable (was 12h on full NOAA range) */
+  /* ~90h span: 24h ticks keep labels readable (was 12h on full NOAA range) */
   const tickMs = 24*HR;
   let tick = Math.ceil(tMin/tickMs)*tickMs;
   while(tick <= tMax){
@@ -10413,8 +10415,9 @@ function cruiseWindyUseDirectEmbed(){
 
 /** Map Forecast host — overlay=waves|wind; locks ft / kt in the embed. */
 function windyHostIframeUrl(lat, lon, zoom, overlay){
-  zoom = zoom == null ? CRUISE_WINDY_DEFAULT_ZOOM : zoom;
   overlay = overlay === 'wind' ? 'wind' : 'waves';
+  if(zoom == null) zoom = overlay === 'waves' ? CRUISE_WINDY_WAVES_ZOOM : CRUISE_WINDY_DEFAULT_ZOOM;
+  if(overlay === 'waves' && zoom > CRUISE_WINDY_WAVES_ZOOM) zoom = CRUISE_WINDY_WAVES_ZOOM;
   const q = 'lat='+lat.toFixed(3)+'&lon='+lon.toFixed(3)+
     '&zoom='+zoom+'&overlay='+overlay+'&key='+encodeURIComponent(WINDY_MAP_API_KEY)+
     '&_v='+CRUISE_WINDY_EMBED_VER;
@@ -10425,9 +10428,10 @@ function windyHostIframeUrl(lat, lon, zoom, overlay){
  *  embed2.js applies metricWind/metricTemp/metricRain URL params only — there is no metricWave.
  *  Wave height then follows GeoIP isImperial (ft for us/my/lr). Prefer windy-waves-embed.html for locked ft. */
 function windyEmbedDirectUrl(lat, lon, zoom, overlay){
-  zoom = zoom == null ? CRUISE_WINDY_DEFAULT_ZOOM : zoom;
   overlay = overlay === 'wind' ? 'wind' : 'waves';
-  const product = overlay === 'wind' ? 'ecmwf' : 'ecmwfWaves';
+  if(zoom == null) zoom = overlay === 'waves' ? CRUISE_WINDY_WAVES_ZOOM : CRUISE_WINDY_DEFAULT_ZOOM;
+  if(overlay === 'waves' && zoom > CRUISE_WINDY_WAVES_ZOOM) zoom = CRUISE_WINDY_WAVES_ZOOM;
+  const product = overlay === 'wind' ? 'ecmwf' : 'gfsWaves';
   const q = 'lat='+lat.toFixed(3)+'&lon='+lon.toFixed(3)+
     '&detailLat='+lat.toFixed(3)+'&detailLon='+lon.toFixed(3)+
     '&zoom='+zoom+'&level=surface&overlay='+overlay+'&product='+product+

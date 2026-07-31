@@ -37,6 +37,12 @@
       /* overlay=waves|wind — never invalid "swell" (gray map). */
       var modeRaw = (params.get('overlay') || params.get('mode') || 'waves').toLowerCase();
       var MODE = modeRaw === 'wind' ? 'wind' : 'waves';
+      /**
+       * Map Forecast SDK often serves waves/swell "No data!" tiles past zoom 7
+       * (community.windy.com/topic/44727). Wind tiles are fine at higher zoom.
+       */
+      var MAX_WAVES_ZOOM = 7;
+      if(MODE === 'waves' && zoom > MAX_WAVES_ZOOM) zoom = MAX_WAVES_ZOOM;
       var statusEl = document.getElementById('windy-status');
       var overlayRendered = false;
       var failTimer = null;
@@ -61,11 +67,11 @@
         }catch(e){}
       }
 
-      /** Testing/free keys only include gfsWaves — ecmwfWaves needs Professional tier. */
+      /** Free/testing keys: gfsWaves first. ecmwfWaves / ICON need higher tiers. */
       function pickWavesProduct(store){
         var allowed = store.getAllowed('product');
         if(!Array.isArray(allowed)) allowed = [];
-        var prefer = ['ecmwfWaves', 'gfsWaves', 'iconWaves', 'iconEuWaves', 'canRdwpsWaves'];
+        var prefer = ['gfsWaves', 'ecmwfWaves', 'iconWaves', 'iconEuWaves', 'canRdwpsWaves'];
         for(var i = 0; i < prefer.length; i++){
           if(allowed.indexOf(prefer[i]) >= 0) return prefer[i];
         }
@@ -148,14 +154,37 @@
         }catch(e){ console.warn('Windy metric guard', e); }
       }
 
+      /** Keep wave tiles in the SDK's reliable zoom range if the user pans/zooms. */
+      function clampWavesZoom(api){
+        if(MODE !== 'waves' || !api || !api.map) return;
+        try{
+          var map = api.map;
+          if(typeof map.setMaxZoom === 'function') map.setMaxZoom(MAX_WAVES_ZOOM);
+          else if(map.options) map.options.maxZoom = MAX_WAVES_ZOOM;
+          if(typeof map.getZoom === 'function' && map.getZoom() > MAX_WAVES_ZOOM){
+            map.setZoom(MAX_WAVES_ZOOM);
+          }
+          if(!map._boatboardWavesZoomBound && typeof map.on === 'function'){
+            map._boatboardWavesZoomBound = true;
+            map.on('zoomend', function(){
+              try{
+                if(map.getZoom() > MAX_WAVES_ZOOM) map.setZoom(MAX_WAVES_ZOOM);
+              }catch(e){}
+            });
+          }
+        }catch(e){ console.warn('Windy waves zoom clamp', e); }
+      }
+
       function afterOverlayReady(api, product, usedFallback){
         if(overlayRendered) return;
         overlayRendered = true;
         if(failTimer) clearTimeout(failTimer);
+        clampWavesZoom(api);
         lockMetrics(api);
         setTimeout(function(){ lockMetrics(api); }, 0);
         setTimeout(function(){ lockMetrics(api); }, 250);
         setTimeout(function(){ lockMetrics(api); }, 1000);
+        try{ api.store.set('particlesAnim', 'on'); }catch(e0){}
         try{ api.picker.open({ lat: lat, lon: lon }); }catch(e){}
         var metricWaves = null;
         var metricWind = null;
@@ -166,6 +195,7 @@
           product: product,
           fallback: !!usedFallback,
           overlay: api.store.get('overlay') || activeOverlay,
+          zoom: api.map && api.map.getZoom ? api.map.getZoom() : zoom,
           metricWaves: metricWaves,
           metricWind: metricWind
         });
@@ -181,14 +211,15 @@
         });
 
         try{
-          store.set('overlay', activeOverlay);
+          /* Product before overlay so the first wave tile request uses a wave model. */
           if(product) store.set('product', product);
+          store.set('overlay', activeOverlay);
         }catch(e){
           console.warn('Windy overlay/product set', e);
           try{
             if(MODE === 'waves'){
-              store.set('overlay', 'waves', { forceChange: true });
               store.set('product', 'gfsWaves', { forceChange: true });
+              store.set('overlay', 'waves', { forceChange: true });
               activeOverlay = 'waves';
             }else{
               store.set('overlay', 'wind', { forceChange: true });
@@ -196,12 +227,14 @@
             }
           }catch(e2){}
         }
+        clampWavesZoom(api);
         lockMetrics(api);
       }
 
       function onReady(api){
         var store = api.store;
         bindMetricGuard(api);
+        clampWavesZoom(api);
         lockMetrics(api);
 
         if(MODE === 'wind'){
@@ -244,8 +277,11 @@
           lon: lon,
           zoom: zoom,
           overlay: MODE === 'wind' ? 'wind' : 'waves',
+          level: 'surface',
           isImperial: true
         };
+        /* Startup product avoids a first paint with a non-wave model → empty tiles. */
+        if(MODE === 'waves') initOpts.product = 'gfsWaves';
         windyInit(initOpts, onReady);
       }catch(e){
         showStatus('Windy init failed: ' + (e.message || e));
