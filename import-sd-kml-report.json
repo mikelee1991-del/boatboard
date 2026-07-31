@@ -1,0 +1,346 @@
+{
+  "policy": "Inherent KML trust: coords verbatim + kmlImported; cdfgAppendix/verified never overwritten; no nudges",
+  "kmlTotal": 433,
+  "existingBefore": 545,
+  "finalCount": 558,
+  "added": 13,
+  "skippedNearDuplicates": 420,
+  "protectedVerifiedOverlaps": 14,
+  "addedNames": [
+    "Avalon Harbor",
+    "Barn Kelp",
+    "Goat Harbor",
+    "Mission Bay Jetty",
+    "Mission Bay Park Pier Pilings",
+    "Oceanside Artificial Reef 1 general area",
+    "Oceanside Harbor",
+    "Torrey Pines #2",
+    "Venice Pier Reef",
+    "Vicente Outside Rock 80ft",
+    "West Beach",
+    "Widow Rock",
+    "Yellowtail Kelp"
+  ],
+  "dupExamples": [
+    {
+      "existing": "#1 Spot",
+      "kmlName": "#1 Spot",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "1 ¼ Spot",
+      "kmlName": "1 ¼ Spot",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "101",
+      "kmlName": "101",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "1010 Trench",
+      "kmlName": "1010 Trench",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "105 Spot",
+      "kmlName": "105 Spot",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "1067 Knuckle",
+      "kmlName": "1067 Knuckle",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "1140 Finger",
+      "kmlName": "1140 Finger",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "125",
+      "kmlName": "125",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "138 (Middle Of Ridge)",
+      "kmlName": "138 (Middle Of Ridge)",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "14 Mile Bank",
+      "kmlName": "14 Mile Bank",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "150 Bubbles East",
+      "kmlName": "150 Bubbles East",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "150 Bubbles West",
+      "kmlName": "150 Bubbles West",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "150 Kelp Reef North",
+      "kmlName": "150 Kelp Reef North",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "150 Kelp Reef South",
+      "kmlName": "150 Kelp Reef South",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "150 Spot",
+      "kmlName": "150 Spot",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "150 Spot Hump",
+      "kmlName": "150 Spot Hump",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "152",
+      "kmlName": "152",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "157",
+      "kmlName": "157",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "17 Fa Spot",
+      "kmlName": "17 Fa Spot",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "170",
+      "kmlName": "170",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "172",
+      "kmlName": "172",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "175",
+      "kmlName": "175",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "178",
+      "kmlName": "178",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "18-20 Fathom Spot Rockfish",
+      "kmlName": "18-20 Fathom Spot Rockfish",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "180′ Section Sculpin Hole",
+      "kmlName": "180′ Section Sculpin Hole",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "181",
+      "kmlName": "181",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "182",
+      "kmlName": "182",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "1908",
+      "kmlName": "1908",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "1978",
+      "kmlName": "1978",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "209",
+      "kmlName": "209",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "213",
+      "kmlName": "213",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "220-220",
+      "kmlName": "220-220",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "226",
+      "kmlName": "226",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "230",
+      "kmlName": "230",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "230",
+      "kmlName": "230",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "238",
+      "kmlName": "238",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "245",
+      "kmlName": "245",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "250",
+      "kmlName": "250",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "267 (The Condom)",
+      "kmlName": "267 (The Condom)",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    },
+    {
+      "existing": "270",
+      "kmlName": "270",
+      "reason": "name+proximity",
+      "distNm": 0,
+      "existingVerified": false,
+      "action": "skipped near-duplicate"
+    }
+  ]
+}

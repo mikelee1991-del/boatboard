@@ -1,0 +1,2333 @@
+{
+  "diveKept": [
+    {
+      "id": "hermosa",
+      "name": "Hermosa Beach Artificial Reef A",
+      "lat": 33.8541667,
+      "lon": -118.4138889,
+      "face": 250,
+      "depth": 30,
+      "old": [
+        {
+          "lat": 33.8541667,
+          "lon": -118.425
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Artificial Reef Coordinates Appendix - Hermosa Beach A",
+          "coords": "33Ã‚Â°51'15\"N 118Ã‚Â°24'50\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant LA Fishing Guide - Hermosa Beach Artificial Reef",
+          "coords": "33Ã‚Â°51.22'N 118Ã‚Â°24.80'W"
+        }
+      ],
+      "agreement": "Sources agree ~76 m; adopted CDFG A DMS."
+    },
+    {
+      "id": "hermosareefb",
+      "name": "Hermosa Beach Artificial Reef B",
+      "lat": 33.8544444,
+      "lon": -118.4130556,
+      "face": 250,
+      "depth": 60,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Hermosa Beach B",
+          "coords": "33Ã‚Â°51'16\"N 118Ã‚Â°24'47\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Hermosa Beach Artificial Reef (same complex)",
+          "coords": "33Ã‚Â°51.22'N 118Ã‚Â°24.80'W"
+        }
+      ],
+      "agreement": "Module B within ~90 m of USC Hermosa AR waypoint; adopted CDFG B."
+    },
+    {
+      "id": "hermosareefc",
+      "name": "Hermosa Beach Artificial Reef C",
+      "lat": 33.8536111,
+      "lon": -118.4136111,
+      "face": 250,
+      "depth": 55,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Hermosa Beach C",
+          "coords": "33Ã‚Â°51'13\"N 118Ã‚Â°24'49\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Hermosa Beach Artificial Reef (same complex)",
+          "coords": "33Ã‚Â°51.22'N 118Ã‚Â°24.80'W"
+        }
+      ],
+      "agreement": "~26 m from USC Hermosa waypoint; adopted CDFG C."
+    },
+    {
+      "id": "hermosareefd",
+      "name": "Hermosa Beach Artificial Reef D",
+      "lat": 33.8530556,
+      "lon": -118.4127778,
+      "face": 250,
+      "depth": 55,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Hermosa Beach D",
+          "coords": "33Ã‚Â°51'11\"N 118Ã‚Â°24'46\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Hermosa Beach Artificial Reef (same complex)",
+          "coords": "33Ã‚Â°51.22'N 118Ã‚Â°24.80'W"
+        }
+      ],
+      "agreement": "~85 m from USC Hermosa waypoint; adopted CDFG D."
+    },
+    {
+      "id": "hermosactr",
+      "name": "Hermosa Beach Artificial Reef Center",
+      "lat": 33.8536111,
+      "lon": -118.4133333,
+      "face": 250,
+      "depth": 55,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Hermosa Beach Center",
+          "coords": "33Ã‚Â°51'13\"N 118Ã‚Â°24'48\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Hermosa Beach Artificial Reef",
+          "coords": "33Ã‚Â°51.22'N 118Ã‚Â°24.80'W"
+        }
+      ],
+      "agreement": "~6 m agreement; adopted CDFG Center."
+    },
+    {
+      "id": "redondoreefa",
+      "name": "Redondo Beach Artificial Reef A",
+      "lat": 33.8383333,
+      "lon": -118.4094444,
+      "face": 200,
+      "depth": 72,
+      "boat": true,
+      "old": [
+        {
+          "lat": 33.8383333,
+          "lon": -118.4138889
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Redondo Beach A (official PDF)",
+          "coords": "33Ã‚Â°50'18\"N 118Ã‚Â°24'34\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Redondo Beach Artificial Reef",
+          "coords": "33Ã‚Â°50.23'N 118Ã‚Â°24.53'W"
+        }
+      ],
+      "agreement": "~141 m; adopted official CDFG A (prior southcoastdivers 24'50\" was ~485 m from USC and outside 0.2 NM)."
+    },
+    {
+      "id": "barge287",
+      "name": "Barge 287 - Redondo Beach Artificial Reef B",
+      "lat": 33.8383333,
+      "lon": -118.4091667,
+      "face": 200,
+      "depth": 65,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Redondo Beach B barge",
+          "coords": "33Ã‚Â°50'18\"N 118Ã‚Â°24'33\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Redondo Beach Artificial Reef",
+          "coords": "33Ã‚Â°50.23'N 118Ã‚Â°24.53'W"
+        }
+      ],
+      "agreement": "~133 m; adopted CDFG barge B."
+    },
+    {
+      "id": "redondoreefc",
+      "name": "Redondo Beach Artificial Reef C",
+      "lat": 33.8380556,
+      "lon": -118.4086111,
+      "face": 200,
+      "depth": 60,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Redondo Beach C",
+          "coords": "33Ã‚Â°50'17\"N 118Ã‚Â°24'31\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Redondo Beach Artificial Reef (same complex)",
+          "coords": "33Ã‚Â°50.23'N 118Ã‚Â°24.53'W"
+        }
+      ],
+      "agreement": "Module C within 0.2 NM of USC Redondo AR waypoint; adopted CDFG."
+    },
+    {
+      "id": "redondoreefd",
+      "name": "Redondo Beach Artificial Reef D",
+      "lat": 33.8377778,
+      "lon": -118.4091667,
+      "face": 200,
+      "depth": 65,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Redondo Beach D",
+          "coords": "33Ã‚Â°50'16\"N 118Ã‚Â°24'33\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Redondo Beach Artificial Reef (same complex)",
+          "coords": "33Ã‚Â°50.23'N 118Ã‚Â°24.53'W"
+        }
+      ],
+      "agreement": "Module D within 0.2 NM of USC Redondo AR waypoint; adopted CDFG."
+    },
+    {
+      "id": "redondoreefe",
+      "name": "Redondo Beach Artificial Reef E",
+      "lat": 33.8375,
+      "lon": -118.4086111,
+      "face": 200,
+      "depth": 65,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Redondo Beach E",
+          "coords": "33Ã‚Â°50'15\"N 118Ã‚Â°24'31\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Redondo Beach Artificial Reef (same complex)",
+          "coords": "33Ã‚Â°50.23'N 118Ã‚Â°24.53'W"
+        }
+      ],
+      "agreement": "Module E within 0.2 NM of USC Redondo AR waypoint; adopted CDFG."
+    },
+    {
+      "id": "redondoreeff",
+      "name": "Redondo Beach Artificial Reef F",
+      "lat": 33.8372222,
+      "lon": -118.4094444,
+      "face": 200,
+      "depth": 65,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Redondo Beach F",
+          "coords": "33Ã‚Â°50'14\"N 118Ã‚Â°24'34\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Redondo Beach Artificial Reef (same complex)",
+          "coords": "33Ã‚Â°50.23'N 118Ã‚Â°24.53'W"
+        }
+      ],
+      "agreement": "Module F within 0.2 NM of USC Redondo AR waypoint; adopted CDFG."
+    },
+    {
+      "id": "redondoreefg",
+      "name": "Redondo Beach Artificial Reef G",
+      "lat": 33.8372222,
+      "lon": -118.4088889,
+      "face": 200,
+      "depth": 65,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Redondo Beach G",
+          "coords": "33Ã‚Â°50'14\"N 118Ã‚Â°24'32\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Redondo Beach Artificial Reef (same complex)",
+          "coords": "33Ã‚Â°50.23'N 118Ã‚Â°24.53'W"
+        }
+      ],
+      "agreement": "Module G within 0.2 NM of USC Redondo AR waypoint; adopted CDFG."
+    },
+    {
+      "id": "redondoreefh",
+      "name": "Redondo Beach Artificial Reef H",
+      "lat": 33.8372222,
+      "lon": -118.4083333,
+      "face": 200,
+      "depth": 65,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Redondo Beach H",
+          "coords": "33Ã‚Â°50'14\"N 118Ã‚Â°24'30\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Redondo Beach Artificial Reef (same complex)",
+          "coords": "33Ã‚Â°50.23'N 118Ã‚Â°24.53'W"
+        }
+      ],
+      "agreement": "Module H within 0.2 NM of USC Redondo AR waypoint; adopted CDFG."
+    },
+    {
+      "id": "redondoreefi",
+      "name": "Redondo Beach Artificial Reef I",
+      "lat": 33.8369444,
+      "lon": -118.4091667,
+      "face": 200,
+      "depth": 65,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Redondo Beach I",
+          "coords": "33Ã‚Â°50'13\"N 118Ã‚Â°24'33\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Redondo Beach Artificial Reef (same complex)",
+          "coords": "33Ã‚Â°50.23'N 118Ã‚Â°24.53'W"
+        }
+      ],
+      "agreement": "Module I within 0.2 NM of USC Redondo AR waypoint; adopted CDFG."
+    },
+    {
+      "id": "redondoreefj",
+      "name": "Redondo Beach Artificial Reef J",
+      "lat": 33.8366667,
+      "lon": -118.4094444,
+      "face": 200,
+      "depth": 65,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Redondo Beach J",
+          "coords": "33Ã‚Â°50'12\"N 118Ã‚Â°24'34\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Redondo Beach Artificial Reef (same complex)",
+          "coords": "33Ã‚Â°50.23'N 118Ã‚Â°24.53'W"
+        }
+      ],
+      "agreement": "Module J within 0.2 NM of USC Redondo AR waypoint; adopted CDFG."
+    },
+    {
+      "id": "redondoreefk",
+      "name": "Redondo Beach Artificial Reef K",
+      "lat": 33.8363889,
+      "lon": -118.4086111,
+      "face": 200,
+      "depth": 65,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Redondo Beach K",
+          "coords": "33Ã‚Â°50'11\"N 118Ã‚Â°24'31\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Redondo Beach Artificial Reef (same complex)",
+          "coords": "33Ã‚Â°50.23'N 118Ã‚Â°24.53'W"
+        }
+      ],
+      "agreement": "Module K within 0.2 NM of USC Redondo AR waypoint; adopted CDFG."
+    },
+    {
+      "id": "redondoctr",
+      "name": "Redondo Beach Artificial Reef Center",
+      "lat": 33.8372222,
+      "lon": -118.4088889,
+      "face": 200,
+      "depth": 65,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Redondo Beach Center",
+          "coords": "33Ã‚Â°50'14\"N 118Ã‚Â°24'32\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Redondo Beach Artificial Reef",
+          "coords": "33Ã‚Â°50.23'N 118Ã‚Â°24.53'W"
+        }
+      ],
+      "agreement": "~8 m agreement; adopted CDFG Center."
+    },
+    {
+      "id": "palawan",
+      "name": "SS Palawan - San Pedro / Redondo artificial reef",
+      "lat": 33.8236111,
+      "lon": -118.4147222,
+      "face": 190,
+      "depth": 120,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Palawan",
+          "coords": "33Ã‚Â°49'25\"N 118Ã‚Â°24'53\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Palawan Shipwreck",
+          "coords": "33Ã‚Â°49.42'N 118Ã‚Â°24.88'W"
+        }
+      ],
+      "agreement": "Sources agree ~5 m; adopted CDFG."
+    },
+    {
+      "id": "mdreyreef",
+      "name": "Marina del Rey Artificial Reef (Center)",
+      "lat": 33.9683333,
+      "lon": -118.4863889,
+      "face": 250,
+      "depth": 65,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Marina Del Rey 2 Center",
+          "coords": "33Ã‚Â°58'06\"N 118Ã‚Â°29'11\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Marina del Rey Art. Reefs",
+          "coords": "33Ã‚Â°58.10'N 118Ã‚Â°29.18'W"
+        }
+      ],
+      "agreement": "~5 m; adopted CDFG 2 Center."
+    },
+    {
+      "id": "mdrey2a",
+      "name": "Marina del Rey Artificial Reef 2A",
+      "lat": 33.9666667,
+      "lon": -118.4861111,
+      "face": 250,
+      "depth": 65,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Marina Del Rey 2A",
+          "coords": "33Ã‚Â°58'00\"N 118Ã‚Â°29'10\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Marina del Rey Art. Reefs (same complex)",
+          "coords": "33Ã‚Â°58.10'N 118Ã‚Â°29.18'W"
+        }
+      ],
+      "agreement": "~186 m; adopted CDFG 2A."
+    },
+    {
+      "id": "mdrey1ctr",
+      "name": "Marina del Rey Artificial Reef 1 Center",
+      "lat": 33.965,
+      "lon": -118.4861111,
+      "face": 250,
+      "depth": 65,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Marina Del Rey 1 Center",
+          "coords": "33Ã‚Â°57'54\"N 118Ã‚Â°29'10\"W"
+        },
+        {
+          "url": "https://www.bdoutdoors.com/forums/threads/gps-numbers.34870/",
+          "name": "Bloodydecks SoCal wrecks/reefs waypoint table - MDR Art. Reef #1",
+          "coords": "33Ã‚Â°57.90'N 118Ã‚Â°29.17'W"
+        }
+      ],
+      "agreement": "~5 m; adopted CDFG 1 Center."
+    },
+    {
+      "id": "smbayreef",
+      "name": "Santa Monica Bay Artificial Reef (Center)",
+      "lat": 34.0130556,
+      "lon": -118.5425,
+      "face": 270,
+      "depth": 65,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Santa Monica Bay Center",
+          "coords": "34Ã‚Â°00'47\"N 118Ã‚Â°32'33\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Santa Monica Bay Art.Reef",
+          "coords": "34Ã‚Â°00.78'N 118Ã‚Â°32.55'W"
+        }
+      ],
+      "agreement": "~6 m; adopted CDFG Center."
+    },
+    {
+      "id": "smbay13",
+      "name": "Santa Monica Bay Artificial Reef #13",
+      "lat": 34.0130778,
+      "lon": -118.54065,
+      "face": 270,
+      "depth": 60,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Santa Monica Bay #13",
+          "coords": "34Ã‚Â°00'47.08\"N 118Ã‚Â°32'26.34\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Santa Monica Bay Art.Reef (same complex)",
+          "coords": "34Ã‚Â°00.78'N 118Ã‚Â°32.55'W"
+        }
+      ],
+      "agreement": "~171 m; adopted CDFG #13."
+    },
+    {
+      "id": "smbay14",
+      "name": "Santa Monica Bay Artificial Reef #14",
+      "lat": 34.0140194,
+      "lon": -118.5438333,
+      "face": 270,
+      "depth": 60,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Santa Monica Bay #14",
+          "coords": "34Ã‚Â°00'50.47\"N 118Ã‚Â°32'37.8\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Santa Monica Bay Art.Reef (same complex)",
+          "coords": "34Ã‚Â°00.78'N 118Ã‚Â°32.55'W"
+        }
+      ],
+      "agreement": "~167 m; adopted CDFG #14."
+    },
+    {
+      "id": "smareefa",
+      "name": "Santa Monica Artificial Reef A",
+      "lat": 34.0095,
+      "lon": -118.5303333,
+      "face": 270,
+      "depth": 60,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Santa Monica A",
+          "coords": "34Ã‚Â°00'34.2\"N 118Ã‚Â°31'49.2\"W"
+        },
+        {
+          "url": "https://www.bdoutdoors.com/forums/threads/gps-numbers.34870/",
+          "name": "Bloodydecks SoCal waypoint table - Santa Monica Artificial Reef",
+          "coords": "34Ã‚Â°00.57'N 118Ã‚Â°31.78'W"
+        }
+      ],
+      "agreement": "~61 m; adopted CDFG Santa Monica A (distinct from SM Bay 1987 complex)."
+    },
+    {
+      "id": "topanga",
+      "name": "Topanga Artificial Reef - Malibu",
+      "lat": 34.0272222,
+      "lon": -118.5325,
+      "face": 200,
+      "depth": 55,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Topanga",
+          "coords": "34Ã‚Â°01'38\"N 118Ã‚Â°31'57\"W"
+        },
+        {
+          "url": "https://www.bdoutdoors.com/forums/threads/gps-numbers.34870/",
+          "name": "Bloodydecks SoCal waypoint table - Topanga Artificial Reef",
+          "coords": "34Ã‚Â°01.63'N 118Ã‚Â°31.95'W"
+        }
+      ],
+      "agreement": "~6 m; adopted CDFG Topanga."
+    },
+    {
+      "id": "malibureef",
+      "name": "Malibu Artificial Reef A",
+      "lat": 34.03,
+      "lon": -118.6497222,
+      "face": 205,
+      "depth": 60,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Malibu A",
+          "coords": "34Ã‚Â°01'48\"N 118Ã‚Â°38'59\"W"
+        },
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Malibu B / Center (same table cluster)",
+          "coords": "34Ã‚Â°01'49\"N 118Ã‚Â°39'05\"W / 118Ã‚Â°39'02\"W"
+        }
+      ],
+      "agreement": "A/B/Center within ~150 m; adopted Malibu A. USC/BD Malibu waypoint is ~0.3 NM south of CDFG cluster - not used."
+    },
+    {
+      "id": "newportreef",
+      "name": "Newport Beach Artificial Reef (Center)",
+      "lat": 33.6036111,
+      "lon": -117.9636111,
+      "face": 200,
+      "depth": 72,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Newport Beach Center",
+          "coords": "33Ã‚Â°36'13\"N 117Ã‚Â°57'49\"W"
+        },
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Newport Beach B",
+          "coords": "33Ã‚Â°36'13\"N 117Ã‚Â°57'50\"W"
+        }
+      ],
+      "agreement": "Center and B identical; adopted Center. No independent USC/BD GPS within 0.2 NM (BD Newport lat typo)."
+    },
+    {
+      "id": "hbreefa",
+      "name": "Huntington Beach Artificial Reef A Center",
+      "lat": 33.6144444,
+      "lon": -117.9830556,
+      "face": 200,
+      "depth": 60,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Huntington Beach A Center",
+          "coords": "33Ã‚Â°36'52\"N 117Ã‚Â°58'59\"W"
+        },
+        {
+          "url": "https://www.bdoutdoors.com/forums/threads/gps-numbers.34870/",
+          "name": "Bloodydecks - Huntington Beach Art. Reef #4",
+          "coords": "33Ã‚Â°36.85'N 117Ã‚Â°58.82'W"
+        }
+      ],
+      "agreement": "~254 m; adopted CDFG A Center."
+    },
+    {
+      "id": "hbreefb",
+      "name": "Huntington Beach Artificial Reef B Center",
+      "lat": 33.6213889,
+      "lon": -117.9975,
+      "face": 200,
+      "depth": 60,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Huntington Beach B Center",
+          "coords": "33Ã‚Â°37'17\"N 117Ã‚Â°59'51\"W"
+        },
+        {
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "name": "USC Sea Grant Huntington Beach Art. Reefs",
+          "coords": "33Ã‚Â°37.28'N 117Ã‚Â°59.85'W"
+        }
+      ],
+      "agreement": "~6 m; adopted CDFG B Center (matches USC HB reefs waypoint)."
+    },
+    {
+      "id": "hbreefc",
+      "name": "Huntington Beach Artificial Reef C Center",
+      "lat": 33.6191667,
+      "lon": -117.9880556,
+      "face": 200,
+      "depth": 60,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Huntington Beach C Center",
+          "coords": "33Ã‚Â°37'09\"N 117Ã‚Â°59'17\"W"
+        },
+        {
+          "url": "https://www.bdoutdoors.com/forums/threads/gps-numbers.34870/",
+          "name": "Bloodydecks - Huntington Beach Art. Reef #3",
+          "coords": "33Ã‚Â°37.15'N 117Ã‚Â°59.28'W"
+        }
+      ],
+      "agreement": "~5 m; adopted CDFG C Center."
+    },
+    {
+      "id": "hbreefd",
+      "name": "Huntington Beach Artificial Reef D Center",
+      "lat": 33.6244444,
+      "lon": -118.0011111,
+      "face": 200,
+      "depth": 60,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Huntington Beach D Center",
+          "coords": "33Ã‚Â°37'28\"N 118Ã‚Â°00'04\"W"
+        },
+        {
+          "url": "https://www.bdoutdoors.com/forums/threads/gps-numbers.34870/",
+          "name": "Bloodydecks - Huntington Beach Art. Reef #1",
+          "coords": "33Ã‚Â°37.45'N 118Ã‚Â°00.07'W"
+        }
+      ],
+      "agreement": "~31 m; adopted CDFG D Center."
+    },
+    {
+      "id": "wreckalley",
+      "name": "Mission Bay Kelp Reef / Wreck Alley - San Diego",
+      "lat": 32.77,
+      "lon": -117.2677778,
+      "face": 280,
+      "depth": 80,
+      "boat": true,
+      "regional": true,
+      "old": [
+        {
+          "lat": 32.7705556,
+          "lon": -117.2383333
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Mission Bay Park Kelp Reef",
+          "coords": "32Ã‚Â°46'12\"N 117Ã‚Â°16'04\"W"
+        },
+        {
+          "url": "https://www.bdoutdoors.com/forums/threads/gps-numbers.34870/",
+          "name": "Bloodydecks - Mission Beach Reef",
+          "coords": "32Ã‚Â°46.23'N 117Ã‚Â°16.30'W"
+        }
+      ],
+      "agreement": "~368 m (at threshold); adopted official CDFG Kelp Reef. Prior southcoastdivers 117Ã‚Â°14 lon was ~2 NM off."
+    },
+    {
+      "id": "horseshoe",
+      "name": "Horseshoe Kelp - San Pedro Bay",
+      "lat": 33.6678333,
+      "lon": -118.2025,
+      "face": 270,
+      "depth": 45,
+      "boat": true,
+      "sources": [
+        {
+          "name": "USC Sea Grant LA Fishing Guide Horseshoe Kelp",
+          "coords": "33°40.07'N 118°12.15'W",
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf"
+        },
+        {
+          "name": "FishDope / local fishing reports Horseshoe North",
+          "coords": "33°40.00'N 118°13.34'W",
+          "url": "https://www.fishdope.com/category/sample-reports/page/30/"
+        }
+      ],
+      "agreement": "Named Horseshoe grounds in San Pedro Bay; adopted USC. FishDope Horseshoe North is a second published waypoint on the same grounds (~1 NM W — grounds extent, not a nudge)."
+    },
+    {
+      "id": "valiant",
+      "name": "Valiant Wreck - Descanso Bay / Avalon",
+      "lat": 33.350856,
+      "lon": -118.325962,
+      "face": 55,
+      "depth": 90,
+      "boat": true,
+      "sources": [
+        {
+          "url": "https://www.padi.com/dive-site/united-states-of-america-usa/the-valiant/",
+          "name": "PADI The Valiant dive site",
+          "coords": "33.35086, -118.32596"
+        },
+        {
+          "url": "http://www.cawreckdivers.org/Wrecks/Valiant.htm",
+          "name": "cawreckdivers Valiant - Descanso Bay Avalon",
+          "coords": "Descanso Bay between moorings 45-46"
+        }
+      ],
+      "agreement": "PADI published decimal GPS; cawreckdivers independently places wreck in Descanso Bay Avalon."
+    },
+    {
+      "id": "casino",
+      "name": "Casino Point - Avalon",
+      "lat": 33.3491,
+      "lon": -118.32466,
+      "face": 45,
+      "depth": 40,
+      "sources": [
+        {
+          "url": "https://openwateratlas.com/en/spots/united-states/avalon-dive-park/",
+          "name": "OpenWaterAtlas Avalon Dive Park",
+          "coords": "33.34910, -118.32466"
+        },
+        {
+          "url": "https://wildlife.ca.gov/Conservation/Marine/MPAs/Casino-Point",
+          "name": "CDFW Casino Point SMCA boundary (contains site)",
+          "coords": "33Ã‚Â°20.90-33Ã‚Â°21.00N 118Ã‚Â°19.38-118Ã‚Â°19.56W"
+        }
+      ],
+      "agreement": "OpenWaterAtlas GPS sits inside CDFW SMCA polygon."
+    },
+    {
+      "id": "farnsworth",
+      "name": "Farnsworth Bank - Catalina",
+      "lat": 33.3436667,
+      "lon": -118.5165333,
+      "face": 270,
+      "depth": 65,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://cadivingnews.com/dive-spots/going-deep-at-catalinas-farnsworth-bank/",
+          "name": "California Diving News Farnsworth Bank main pinnacle",
+          "coords": "N33Ã‚Â°20.620, W118Ã‚Â°30.992"
+        },
+        {
+          "url": "https://wildlife.ca.gov/Conservation/Marine/MPAs/Farnsworth",
+          "name": "CDFW Farnsworth Offshore SMCA (contains bank)",
+          "coords": "33Ã‚Â°19-33Ã‚Â°21N 118Ã‚Â°29-118Ã‚Â°32.878W"
+        }
+      ],
+      "agreement": "CDN published dive GPS inside CDFW Farnsworth Offshore SMCA; adopted CDN."
+    },
+    {
+      "id": "oceanside1",
+      "name": "Oceanside Artificial Reef 1 Center",
+      "lat": 33.1825,
+      "lon": -117.4166667,
+      "face": 270,
+      "depth": 90,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Oceanside 1 Center",
+          "coords": "33Ã‚Â°10'57\"N 117Ã‚Â°25'00\"W"
+        },
+        {
+          "url": "https://www.bdoutdoors.com/forums/threads/gps-numbers.34870/",
+          "name": "Bloodydecks - Oceanside Artificial Reef #1",
+          "coords": "33Ã‚Â°10.95'N 117Ã‚Â°25.00'W"
+        }
+      ],
+      "agreement": "Exact DM match; adopted CDFG 1 Center."
+    },
+    {
+      "id": "oceanside2",
+      "name": "Oceanside Artificial Reef 2 Center",
+      "lat": 33.2111583,
+      "lon": -117.4288389,
+      "face": 270,
+      "depth": 55,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Oceanside 2 Center",
+          "coords": "33Ã‚Â°12'40.17\"N 117Ã‚Â°25'43.82\"W"
+        },
+        {
+          "url": "https://www.bdoutdoors.com/forums/threads/gps-numbers.34870/",
+          "name": "Bloodydecks - Oceanside Artificial Reef #2",
+          "coords": "33Ã‚Â°12.58'N 117Ã‚Â°25.80'W"
+        }
+      ],
+      "agreement": "~198 m; adopted CDFG 2 Center."
+    },
+    {
+      "id": "carlsbad",
+      "name": "Carlsbad Artificial Reef (module 8 / published center)",
+      "lat": 33.0833333,
+      "lon": -117.3191667,
+      "face": 270,
+      "depth": 50,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Carlsbad 8",
+          "coords": "33Ã‚Â°05'00\"N 117Ã‚Â°19'09\"W"
+        },
+        {
+          "url": "https://www.bdoutdoors.com/forums/threads/gps-numbers.34870/",
+          "name": "Bloodydecks - Carlsbad Artificial Reef",
+          "coords": "33Ã‚Â°05.00'N 117Ã‚Â°19.15'W"
+        }
+      ],
+      "agreement": "Exact match to CDFG module 8 / BD center; adopted CDFG 8."
+    },
+    {
+      "id": "pacificbeach",
+      "name": "Pacific Beach Artificial Reef Center",
+      "lat": 32.7930556,
+      "lon": -117.2763889,
+      "face": 270,
+      "depth": 55,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Pacific Beach Center",
+          "coords": "32Ã‚Â°47'35\"N 117Ã‚Â°16'35\"W"
+        },
+        {
+          "url": "https://www.bdoutdoors.com/forums/threads/gps-numbers.34870/",
+          "name": "Bloodydecks - Pacific Beach Reef",
+          "coords": "32Ã‚Â°47.58'N 117Ã‚Â°16.57'W"
+        }
+      ],
+      "agreement": "~22 m; adopted CDFG Pacific Beach Center."
+    },
+    {
+      "id": "torreypines2",
+      "name": "Torrey Pines Artificial Reef 2",
+      "lat": 32.8930556,
+      "lon": -117.2597222,
+      "face": 270,
+      "depth": 44,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "url": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+          "name": "CDFW/CDFG Appendix - Torrey Pines 2",
+          "coords": "32Ã‚Â°53'35\"N 117Ã‚Â°15'35\"W"
+        },
+        {
+          "url": "https://www.bdoutdoors.com/forums/threads/gps-numbers.34870/",
+          "name": "Bloodydecks - Torrey Pines Reef #2",
+          "coords": "32Ã‚Â°53.58'N 117Ã‚Â°15.58'W"
+        }
+      ],
+      "agreement": "~8 m; adopted CDFG Torrey Pines 2. (BD Torrey #1 lon typo unused.)"
+    },
+    {
+      "id": "birdrock",
+      "name": "Bird Rock — Catalina (Isthmus)",
+      "lat": 33.4524,
+      "lon": -118.4887333,
+      "face": 350,
+      "depth": 80,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "name": "California Diving News — Bird Rock GPS",
+          "url": "https://cadivingnews.com/dive-spots/gem-dive-site-catalinas-multi-faceted-bird-rock/",
+          "coords": "N33°27.144' W118°29.324'"
+        },
+        {
+          "name": "CDFW Blue Cavern Onshore SMCA (Bird Rock named in MPA materials)",
+          "url": "https://wildlife.ca.gov/Conservation/Marine/MPAs/Blue-Cavern",
+          "coords": "Bird Rock within Blue Cavern Onshore SMCA boundary"
+        }
+      ],
+      "agreement": "CDN published dive GPS; CDFW MPA docs confirm Bird Rock as the named Catalina dive feature in that SMCA."
+    },
+    {
+      "id": "ssavalonbow",
+      "name": "SS Avalon wreck bow — Palos Verdes",
+      "lat": 33.78855,
+      "lon": -118.4280333,
+      "face": 300,
+      "depth": 70,
+      "boat": true,
+      "regional": false,
+      "sources": [
+        {
+          "name": "diver.net / Max Bottomtime — Avalon bow DMS",
+          "url": "http://diver.net/bbs/posts003/91351.shtml",
+          "coords": "33°47.313'N 118°25.682'W"
+        },
+        {
+          "name": "USC Sea Grant LA Fishing Guide — Avalon Shipwreck",
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "coords": "33°47.28'N 118°25.62'W"
+        },
+        {
+          "name": "cawreckdivers.org — Avalon wreck identity, Palos Verdes / ~70–75 ft (corroborates site, no conflicting GPS)",
+          "url": "http://www.cawreckdivers.org/Wrecks/Avalon.htm",
+          "coords": "Off Palos Verdes, depth ~75 ft"
+        },
+        {
+          "name": "California Diving News — SS Avalon (N side Rocky Point / Palos Verdes Point, 75–80 ft)",
+          "url": "https://cadivingnews.com/dive-spots/s-s-avalon/",
+          "coords": "North side of Palos Verdes Point (Rocky Point)"
+        }
+      ],
+      "agreement": "diver.net vs USC Avalon Shipwreck ~0.06 NM; adopted diver.net bow DMS. cawreckdivers + CDN corroborate Rocky Point / PV identity."
+    },
+    {
+      "id": "wormreef",
+      "name": "Worm Reef — Rocky Point offshore",
+      "lat": 33.7711,
+      "lon": -118.4343,
+      "face": 220,
+      "depth": 45,
+      "boat": true,
+      "regional": false,
+      "sources": [
+        {
+          "name": "diver.net / Max Bottomtime — Worm Reef DMS (Rocky Point post)",
+          "url": "http://diver.net/bbs/posts003/91344.shtml",
+          "coords": "33°46.266N 118°26.058W"
+        },
+        {
+          "name": "USC Sea Grant LA Fishing Guide — Rocky Pt Kelp (same Rocky Point kelp/reef complex)",
+          "url": "https://dornsife.usc.edu/uscseagrant/wp-content/uploads/sites/52/2023/12/CoastalManagement_MPAs_LA_Fishing_Guide_English.pdf",
+          "coords": "33°46.23'N 118°26.12'W"
+        }
+      ],
+      "agreement": "Worm Reef module within ~0.06 NM of USC Rocky Pt Kelp complex waypoint; adopted diver.net DMS."
+    },
+    {
+      "id": "longpoint",
+      "name": "Long Point — Catalina",
+      "lat": 33.4057667,
+      "lon": -118.3666667,
+      "face": 90,
+      "depth": 50,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "name": "California Diving News — Long Point GPS",
+          "url": "https://cadivingnews.com/dive-spots/long-point-catalina-island/",
+          "coords": "N33°24.346′ W118°22.000′"
+        },
+        {
+          "name": "City of Avalon — Catalina Landmarks (named Long Point, N side ~4M W of Avalon, lighted)",
+          "url": "https://www.cityofavalon.com/DocumentCenter/View/176/Catalina-Landmarks-PDF",
+          "coords": "LONG POINT 4M W of Avalon on N side of island — lighted"
+        }
+      ],
+      "agreement": "CDN published dive GPS at Long Point; Avalon landmarks PDF confirms named Long Point feature on Catalina frontside (Bird Rock / SMCA-style identity corroboration)."
+    },
+    {
+      "id": "westeaglereef",
+      "name": "West Eagle Reef — Catalina (Isthmus)",
+      "lat": 33.4613,
+      "lon": -118.51145,
+      "face": 90,
+      "depth": 55,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "name": "California Diving News — West Eagle Reef GPS",
+          "url": "https://cadivingnews.com/dive-spots/west-eagle-reef/",
+          "coords": "N33°27.678′ W118°30.687′"
+        },
+        {
+          "name": "City of Avalon / charted Eagle Reef area west of Isthmus Cove (named Eagle Reef dive complex)",
+          "url": "https://www.cityofavalon.com/DocumentCenter/View/176/Catalina-Landmarks-PDF",
+          "coords": "Isthmus / Two Harbors frontside reefs; Eagle Reef is the named offshore reef W of Isthmus Cove"
+        }
+      ],
+      "agreement": "CDN West Eagle published GPS; Catalina landmarks / charted Isthmus reef complex corroborate Eagle Reef as the named dive feature (no conflicting published GPS within 0.2 NM)."
+    },
+    {
+      "id": "goatharbor",
+      "name": "Goat Harbor — Catalina",
+      "lat": 33.4165,
+      "lon": -118.3961,
+      "face": 90,
+      "depth": 40,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "name": "California Diving News — Goat Harbor location GPS",
+          "url": "https://cadivingnews.com/dive-spots/goat-harbor/",
+          "coords": "N 33.41.65 W 118.39.61 (published as decimal degrees at lee-side Goat Harbor)"
+        },
+        {
+          "name": "City of Avalon — Catalina Landmarks (named Goat Harbor)",
+          "url": "https://www.cityofavalon.com/DocumentCenter/View/176/Catalina-Landmarks-PDF",
+          "coords": "GOAT HARBOR named Catalina lee-side cove / anchorage"
+        }
+      ],
+      "agreement": "CDN published Goat Harbor coords (decimal form matching lee-side Catalina ~33.4165N); Avalon landmarks confirm named Goat Harbor. User chart pin 33.4158,-118.3958 agrees ~0.05 NM (not used as source)."
+    },
+    {
+      "id": "henrock",
+      "name": "Hen Rock — Catalina",
+      "lat": 33.40085,
+      "lon": -118.3664,
+      "face": 90,
+      "depth": 45,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "name": "California Diving News — Hen Rock GPS",
+          "url": "https://cadivingnews.com/dive-spots/something-for-everyone-satisfying-diving-at-hen-rock/",
+          "coords": "N 33°24.051′ W 118°21.984′"
+        },
+        {
+          "name": "VentureFarther — Catalina Hen Rock waypoint",
+          "url": "https://www.venturefarther.com/mapObject/MapObjectSharedInfo.action?mapObject.id=1903",
+          "coords": "33°23.865′N 118°22.070′W (listing typo showed E; Catalina requires W)"
+        }
+      ],
+      "agreement": "CDN vs VentureFarther ~0.20 NM; adopted CDN DMS. Distinct from Long Point (~0.3 NM N)."
+    },
+    {
+      "id": "churchrock",
+      "name": "Church Rock — Catalina",
+      "lat": 33.29675,
+      "lon": -118.3269833,
+      "face": 90,
+      "depth": 45,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "name": "California Diving News — Church Rock GPS",
+          "url": "https://cadivingnews.com/dive-spots/church-rock/",
+          "coords": "N 33°17.805′ W 118°19.619′"
+        },
+        {
+          "name": "City of Avalon — Catalina Landmarks (named Church Rock, E end of island)",
+          "url": "https://www.cityofavalon.com/DocumentCenter/View/176/Catalina-Landmarks-PDF",
+          "coords": "CHURCH ROCK E end of island"
+        }
+      ],
+      "agreement": "CDN published dive GPS; Avalon landmarks PDF confirms Church Rock as named E-end Catalina feature."
+    },
+    {
+      "id": "shiprock",
+      "name": "Ship Rock — Catalina (Isthmus)",
+      "lat": 33.4631983,
+      "lon": -118.4916767,
+      "face": 90,
+      "depth": 80,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "name": "USCG ATON list — Ship Rock Light LLNR 2635 (light on the rock)",
+          "url": "https://navcen.uscg.gov/sites/default/files/pdf/waterways/pacific/Encl_1_List_of_ATON_in_the_PSS.pdf",
+          "coords": "33-27-47.514N 118-29-30.036W"
+        },
+        {
+          "name": "Wikipedia / published wreck table — Diosa del Mar at Ship Rock",
+          "url": "https://en.wikipedia.org/wiki/Diosa_del_Mar",
+          "coords": "33°27′46″N 118°29′31″W (33.462770, -118.491925)"
+        },
+        {
+          "name": "California Diving News — Ship Rock dive identity + Avalon landmarks / NOAA Coast Pilot",
+          "url": "https://cadivingnews.com/dive-spots/ship-rock-a-mecca-for-divers/",
+          "coords": "Named Ship Rock pinnacle ~1.5 mi from Two Harbors; light on rock"
+        }
+      ],
+      "agreement": "USCG Ship Rock Light vs Diosa del Mar wreck GPS ~0.03 NM; adopted USCG ATON. CDN + Avalon landmarks + Coast Pilot corroborate named dive feature."
+    },
+    {
+      "id": "indianrock",
+      "name": "Indian Rock — Emerald Bay / Catalina",
+      "lat": 33.467997,
+      "lon": -118.526799,
+      "face": 90,
+      "depth": 45,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "name": "California Diving News — Indian Rock GPS",
+          "url": "https://cadivingnews.com/the-jewel-of-emerald-bay-indian-rock/",
+          "coords": "N33.467997°, W118.526799°"
+        },
+        {
+          "name": "City of Avalon — Catalina Landmarks (named Indian Rock off Emerald Cove)",
+          "url": "https://www.cityofavalon.com/DocumentCenter/View/176/Catalina-Landmarks-PDF",
+          "coords": "INDIAN ROCK 2.1 M W of Isthmus Cove off Emerald Cove, N side of island"
+        },
+        {
+          "name": "CDFW Arrow Point to Lion Head Point SMCA — Indian Rock named dive/seabird feature",
+          "url": "https://wildlife.ca.gov/Conservation/Marine/MPAs/Arrow-Point-to-Lion-Head-Point",
+          "coords": "Indian Rock within Emerald Bay / Arrow Pt–Lion Head SMCA"
+        }
+      ],
+      "agreement": "CDN published dive GPS; Avalon landmarks + CDFW MPA materials confirm named Indian Rock in Emerald Bay (Bird Rock / SMCA-style identity corroboration)."
+    },
+    {
+      "id": "empirelanding",
+      "name": "Empire Landing — Catalina",
+      "lat": 33.4319444,
+      "lon": -118.4430556,
+      "face": 90,
+      "depth": 50,
+      "boat": true,
+      "regional": true,
+      "sources": [
+        {
+          "name": "Tackle Trader / Yoshi K. — Empire Landing fishing waypoint",
+          "url": "http://www.tackletrader.com/article/RAyosh1.htm",
+          "coords": "33°25'55\"N 118°26'35\"W"
+        },
+        {
+          "name": "City of Avalon — Catalina Landmarks (named Empire Landing)",
+          "url": "https://www.cityofavalon.com/DocumentCenter/View/176/Catalina-Landmarks-PDF",
+          "coords": "EMPIRE LANDING 2.6M E of Isthmus Cove on N side of island"
+        }
+      ],
+      "agreement": "Published fishing GPS at named Empire Landing; Avalon landmarks confirm named frontside anchorage / quarry coast (Goat Harbor / Church Rock identity pattern)."
+    },
+    {
+      "id": "ut_johnsonrockcautionboilerro_264",
+      "name": "Johnson Rock - Caution Boiler rocks",
+      "lat": 33.4775,
+      "lon": -118.5893,
+      "face": 270,
+      "depth": 75,
+      "boat": true,
+      "regional": true,
+      "kmlImported": true,
+      "sources": [
+        {
+          "name": "California Diving News — Johnson's Rocks GPS",
+          "url": "https://cadivingnews.com/dive-spots/johnsons-rocks/",
+          "coords": "N33°28.613' W118°35.314'"
+        },
+        {
+          "name": "Tackle Trader / Yoshi K. — Johnson's Rock fishing waypoint",
+          "url": "http://www.tackletrader.com/article/RAyosh1.htm",
+          "coords": "33°28'40\"N 118°35'25\"W"
+        }
+      ],
+      "agreement": "CDN vs Tackle Trader ~0.10 NM; KML Johnson Rock pin kept verbatim (~0.05 NM of CDN). Dual-source verification without nudging KML coords."
+    },
+    {
+      "id": "ut_isthmushighspot_261",
+      "name": "Isthmus High Spot",
+      "lat": 33.455,
+      "lon": -118.4902,
+      "face": 270,
+      "depth": 75,
+      "boat": true,
+      "regional": true,
+      "kmlImported": true,
+      "sources": [
+        {
+          "name": "California Diving News — High Spot / Rock Pile (chart 6½ NW of Bird Rock)",
+          "url": "https://cadivingnews.com/dive-spots/catalinas-top-3-rarely-visited-dive-sites/",
+          "coords": "N 33.27.286′, W 118.29.409′"
+        },
+        {
+          "name": "Tackle Trader / Yoshi K. — Isthmus High Spot",
+          "url": "http://www.tackletrader.com/article/RAyosh1.htm",
+          "coords": "33°27'15\"N 118°29'25\"W"
+        }
+      ],
+      "agreement": "CDN High Spot vs Tackle Trader Isthmus High Spot ~0.04 NM; KML pin kept verbatim."
+    },
+    {
+      "id": "ut_italiangardensarea_262",
+      "name": "Italian Gardens area",
+      "lat": 33.4125,
+      "lon": -118.3833,
+      "face": 270,
+      "depth": 75,
+      "boat": true,
+      "regional": true,
+      "kmlImported": true,
+      "sources": [
+        {
+          "name": "San Diego Fishing Spots.kml — Italian Gardens area",
+          "url": "",
+          "coords": "33.4125, -118.3833"
+        },
+        {
+          "name": "Tackle Trader / Yoshi K. — Italian Gardens",
+          "url": "http://www.tackletrader.com/article/RAyosh1.htm",
+          "coords": "33°24'45\"N 118°23'00\"W"
+        }
+      ],
+      "agreement": "KML vs Tackle Trader exact match at Italian Gardens; coords unchanged."
+    },
+    {
+      "id": "ut_harborreef_228",
+      "name": "Harbor Reef",
+      "lat": 33.449071,
+      "lon": -118.488659,
+      "face": 270,
+      "depth": 75,
+      "boat": true,
+      "regional": true,
+      "kmlImported": true,
+      "sources": [
+        {
+          "name": "San Diego Fishing Spots.kml — Harbor Reef",
+          "url": "",
+          "coords": "33.449071, -118.488659"
+        },
+        {
+          "name": "Tackle Trader / Yoshi K. — Harbor Reef",
+          "url": "http://www.tackletrader.com/article/RAyosh1.htm",
+          "coords": "33°26'55\"N 118°29'25\"W"
+        }
+      ],
+      "agreement": "KML vs Tackle Trader ~0.09 NM; KML pin kept verbatim."
+    }
+  ],
+  "hiddenAfterSourceAudit": [],
+  "fishKept": [
+    {
+      "name": "Hermosa Beach Artificial Reef A",
+      "lat": 33.8541667,
+      "lon": -118.4138889,
+      "mirrorDiveId": "hermosa",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive hermosa"
+    },
+    {
+      "name": "Hermosa Beach Artificial Reef B",
+      "lat": 33.8544444,
+      "lon": -118.4130556,
+      "mirrorDiveId": "hermosareefb",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive hermosareefb"
+    },
+    {
+      "name": "Hermosa Beach Artificial Reef C",
+      "lat": 33.8536111,
+      "lon": -118.4136111,
+      "mirrorDiveId": "hermosareefc",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive hermosareefc"
+    },
+    {
+      "name": "Hermosa Beach Artificial Reef D",
+      "lat": 33.8530556,
+      "lon": -118.4127778,
+      "mirrorDiveId": "hermosareefd",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive hermosareefd"
+    },
+    {
+      "name": "Hermosa Beach Artificial Reef Center",
+      "lat": 33.8536111,
+      "lon": -118.4133333,
+      "mirrorDiveId": "hermosactr",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive hermosactr"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef A",
+      "lat": 33.8383333,
+      "lon": -118.4094444,
+      "mirrorDiveId": "redondoreefa",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive redondoreefa"
+    },
+    {
+      "name": "Barge 287 - Redondo Beach Artificial Reef B",
+      "lat": 33.8383333,
+      "lon": -118.4091667,
+      "mirrorDiveId": "barge287",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive barge287"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef C",
+      "lat": 33.8380556,
+      "lon": -118.4086111,
+      "mirrorDiveId": "redondoreefc",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive redondoreefc"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef D",
+      "lat": 33.8377778,
+      "lon": -118.4091667,
+      "mirrorDiveId": "redondoreefd",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive redondoreefd"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef E",
+      "lat": 33.8375,
+      "lon": -118.4086111,
+      "mirrorDiveId": "redondoreefe",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive redondoreefe"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef F",
+      "lat": 33.8372222,
+      "lon": -118.4094444,
+      "mirrorDiveId": "redondoreeff",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive redondoreeff"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef G",
+      "lat": 33.8372222,
+      "lon": -118.4088889,
+      "mirrorDiveId": "redondoreefg",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive redondoreefg"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef H",
+      "lat": 33.8372222,
+      "lon": -118.4083333,
+      "mirrorDiveId": "redondoreefh",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive redondoreefh"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef I",
+      "lat": 33.8369444,
+      "lon": -118.4091667,
+      "mirrorDiveId": "redondoreefi",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive redondoreefi"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef J",
+      "lat": 33.8366667,
+      "lon": -118.4094444,
+      "mirrorDiveId": "redondoreefj",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive redondoreefj"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef K",
+      "lat": 33.8363889,
+      "lon": -118.4086111,
+      "mirrorDiveId": "redondoreefk",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive redondoreefk"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef Center",
+      "lat": 33.8372222,
+      "lon": -118.4088889,
+      "mirrorDiveId": "redondoctr",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive redondoctr"
+    },
+    {
+      "name": "Marina del Rey Artificial Reef (Center)",
+      "lat": 33.9683333,
+      "lon": -118.4863889,
+      "mirrorDiveId": "mdreyreef",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive mdreyreef"
+    },
+    {
+      "name": "Marina del Rey Artificial Reef 2A",
+      "lat": 33.9666667,
+      "lon": -118.4861111,
+      "mirrorDiveId": "mdrey2a",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive mdrey2a"
+    },
+    {
+      "name": "Marina del Rey Artificial Reef 1 Center",
+      "lat": 33.965,
+      "lon": -118.4861111,
+      "mirrorDiveId": "mdrey1ctr",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive mdrey1ctr"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef (Center)",
+      "lat": 34.0130556,
+      "lon": -118.5425,
+      "mirrorDiveId": "smbayreef",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive smbayreef"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef #13",
+      "lat": 34.0130778,
+      "lon": -118.54065,
+      "mirrorDiveId": "smbay13",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive smbay13"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef #14",
+      "lat": 34.0140194,
+      "lon": -118.5438333,
+      "mirrorDiveId": "smbay14",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive smbay14"
+    },
+    {
+      "name": "Santa Monica Artificial Reef A",
+      "lat": 34.0095,
+      "lon": -118.5303333,
+      "mirrorDiveId": "smareefa",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive smareefa"
+    },
+    {
+      "name": "Topanga Artificial Reef - Malibu",
+      "lat": 34.0272222,
+      "lon": -118.5325,
+      "mirrorDiveId": "topanga",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive topanga"
+    },
+    {
+      "name": "Malibu Artificial Reef A",
+      "lat": 34.03,
+      "lon": -118.6497222,
+      "mirrorDiveId": "malibureef",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive malibureef"
+    },
+    {
+      "name": "Newport Beach Artificial Reef (Center)",
+      "lat": 33.6036111,
+      "lon": -117.9636111,
+      "mirrorDiveId": "newportreef",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive newportreef"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef A Center",
+      "lat": 33.6144444,
+      "lon": -117.9830556,
+      "mirrorDiveId": "hbreefa",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive hbreefa"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef B Center",
+      "lat": 33.6213889,
+      "lon": -117.9975,
+      "mirrorDiveId": "hbreefb",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive hbreefb"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef C Center",
+      "lat": 33.6191667,
+      "lon": -117.9880556,
+      "mirrorDiveId": "hbreefc",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive hbreefc"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef D Center",
+      "lat": 33.6244444,
+      "lon": -118.0011111,
+      "mirrorDiveId": "hbreefd",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive hbreefd"
+    },
+    {
+      "name": "Oceanside Artificial Reef 1 Center",
+      "lat": 33.1825,
+      "lon": -117.4166667,
+      "mirrorDiveId": "oceanside1",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive oceanside1"
+    },
+    {
+      "name": "Oceanside Artificial Reef 2 Center",
+      "lat": 33.2111583,
+      "lon": -117.4288389,
+      "mirrorDiveId": "oceanside2",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive oceanside2"
+    },
+    {
+      "name": "Carlsbad Artificial Reef (module 8 / published center)",
+      "lat": 33.0833333,
+      "lon": -117.3191667,
+      "mirrorDiveId": "carlsbad",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive carlsbad"
+    },
+    {
+      "name": "Pacific Beach Artificial Reef Center",
+      "lat": 32.7930556,
+      "lon": -117.2763889,
+      "mirrorDiveId": "pacificbeach",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive pacificbeach"
+    },
+    {
+      "name": "Torrey Pines Artificial Reef 2",
+      "lat": 32.8930556,
+      "lon": -117.2597222,
+      "mirrorDiveId": "torreypines2",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "40-90 ft",
+      "habitat": "CDFG artificial reef modules",
+      "tactics": "Drift modules up-current; live bait or vertical jig.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "Same as dive torreypines2"
+    },
+    {
+      "name": "SS Palawan wreck fish grounds",
+      "lat": 33.8236111,
+      "lon": -118.4147222,
+      "mirrorDiveId": "palawan",
+      "species": [
+        "sand bass",
+        "calico bass",
+        "sheephead",
+        "rockfish",
+        "sculpin"
+      ],
+      "depth": "90-130 ft",
+      "habitat": "Wreck structure & surrounding reef",
+      "tactics": "Drift wreck edges for bass; dropper loops for rockfish when season open.",
+      "bestTide": "incoming",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "Same as dive palawan (CDFG + USC Sea Grant)"
+    },
+    {
+      "name": "Horseshoe Kelp - San Pedro Bay",
+      "lat": 33.6678333,
+      "lon": -118.2025,
+      "mirrorDiveId": "horseshoe",
+      "species": [
+        "calico bass",
+        "bonito",
+        "barracuda",
+        "yellowtail"
+      ],
+      "depth": "35-90 ft",
+      "habitat": "Historic Horseshoe kelp grounds (San Pedro Bay)",
+      "tactics": "Troll feathers or cast irons when bait is up; live bait on structure.",
+      "bestTide": "incoming",
+      "bestTime": "morning",
+      "minSstF": 62,
+      "sources": "USC Sea Grant Horseshoe Kelp + FishDope Horseshoe North"
+    },
+    {
+      "name": "Valiant Wreck fish grounds - Avalon",
+      "lat": 33.350856,
+      "lon": -118.325962,
+      "mirrorDiveId": "valiant",
+      "species": [
+        "calico bass",
+        "sheephead",
+        "rockfish",
+        "garibaldi"
+      ],
+      "depth": "70-110 ft",
+      "habitat": "Wreck on sandy slope Descanso Bay",
+      "tactics": "Permitted Avalon waters only; drift wreck edges.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 60,
+      "sources": "PADI + cawreckdivers Valiant"
+    },
+    {
+      "name": "Casino Point / Avalon Dive Park",
+      "lat": 33.3491,
+      "lon": -118.32466,
+      "mirrorDiveId": "casino",
+      "species": [
+        "garibaldi",
+        "sheephead",
+        "calico bass",
+        "opaleve"
+      ],
+      "depth": "20-90 ft",
+      "habitat": "No-take SMCA kelp & reef",
+      "tactics": "Catch-and-release only if fishing allowed outside park; prefer dive/snorkel.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 60,
+      "sources": "OpenWaterAtlas + CDFW Casino Point SMCA"
+    },
+    {
+      "name": "Farnsworth Bank - Catalina",
+      "lat": 33.3436667,
+      "lon": -118.5165333,
+      "mirrorDiveId": "farnsworth",
+      "species": [
+        "rockfish",
+        "sheephead",
+        "yellowtail",
+        "bonito"
+      ],
+      "depth": "55-130 ft",
+      "habitat": "Offshore pinnacles / purple hydrocoral (SMCA rules)",
+      "tactics": "Advanced boat only; check SMCA take rules before fishing.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 62,
+      "regional": true,
+      "sources": "CA Diving News + CDFW Farnsworth Offshore SMCA"
+    },
+    {
+      "name": "Mission Bay Kelp Reef / Wreck Alley",
+      "lat": 32.77,
+      "lon": -117.2677778,
+      "mirrorDiveId": "wreckalley",
+      "species": [
+        "calico bass",
+        "sand bass",
+        "sheephead",
+        "rockfish"
+      ],
+      "depth": "70-100 ft",
+      "habitat": "Mission Bay artificial reef / wreck alley",
+      "tactics": "Drift structures; check SD groundfish rules.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "regional": true,
+      "sources": "CDFG Mission Bay Kelp Reef + BD Mission Beach Reef"
+    },
+    {
+      "name": "SS Avalon wreck fish grounds — Palos Verdes",
+      "lat": 33.78855,
+      "lon": -118.4280333,
+      "face": 300,
+      "mirrorDiveId": "ssavalonbow",
+      "species": [
+        "calico bass",
+        "sheephead",
+        "lobster",
+        "rockfish"
+      ],
+      "depth": "70-80 ft",
+      "habitat": "Wreck on rocky reef N of Rocky Point / Palos Verdes Point",
+      "tactics": "Drift wreck edges; lobster in season; check swell/current before anchoring.",
+      "bestTide": "incoming",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "diver.net Avalon bow DMS + USC Sea Grant Avalon Shipwreck (~0.06 NM)"
+    },
+    {
+      "name": "Rocky Pt Kelp — Palos Verdes",
+      "lat": 33.7705,
+      "lon": -118.4353333,
+      "face": 220,
+      "mirrorDiveId": "wormreef",
+      "species": [
+        "calico bass",
+        "sheephead",
+        "yellowtail",
+        "white seabass"
+      ],
+      "depth": "30-80 ft",
+      "habitat": "Rocky Point kelp / offshore reef complex",
+      "tactics": "Work kelp edges and reef tops; live bait or plastics on structure.",
+      "bestTide": "incoming",
+      "bestTime": "dawn",
+      "minSstF": 58,
+      "sources": "USC Sea Grant Rocky Pt Kelp + diver.net Worm Reef (same complex ~0.06 NM)"
+    },
+    {
+      "name": "Worm Reef fish grounds — Rocky Point",
+      "lat": 33.7711,
+      "lon": -118.4343,
+      "face": 220,
+      "mirrorDiveId": "wormreef",
+      "species": [
+        "calico bass",
+        "sheephead",
+        "yellowtail",
+        "white seabass"
+      ],
+      "depth": "40-80 ft",
+      "habitat": "Offshore reef module of Rocky Point kelp complex",
+      "tactics": "Drift reef walls and kelp top; spring YT/WSB reports on this structure.",
+      "bestTide": "incoming",
+      "bestTime": "morning",
+      "minSstF": 58,
+      "sources": "diver.net Worm Reef DMS + USC Rocky Pt Kelp (same complex)"
+    },
+    {
+      "name": "Ship Rock — Catalina (Isthmus)",
+      "lat": 33.4631983,
+      "lon": -118.4916767,
+      "face": 90,
+      "mirrorDiveId": "shiprock",
+      "species": ["yellowtail", "white seabass", "calico bass", "sheephead"],
+      "depth": "40-130 ft",
+      "habitat": "Offshore pinnacle / kelp at Ship Rock Light (Isthmus)",
+      "tactics": "Work rock edges and reef finger SE of the light; watch current and boat traffic.",
+      "bestTide": "incoming",
+      "bestTime": "morning",
+      "minSstF": 60,
+      "sources": "USCG Ship Rock Light + Diosa del Mar wreck GPS (~0.03 NM)"
+    },
+    {
+      "name": "Indian Rock — Emerald Bay / Catalina",
+      "lat": 33.467997,
+      "lon": -118.526799,
+      "face": 90,
+      "mirrorDiveId": "indianrock",
+      "species": ["calico bass", "sheephead", "opaleve", "halibut"],
+      "depth": "15-70 ft",
+      "habitat": "Indian Rock / Emerald Bay reef complex (Arrow Pt–Lion Head SMCA)",
+      "tactics": "Drift rock and western reefs; finfish only in invertebrate preserve.",
+      "bestTide": "either",
+      "bestTime": "morning",
+      "minSstF": 60,
+      "sources": "CDN Indian Rock GPS + Avalon landmarks / CDFW SMCA"
+    },
+    {
+      "name": "Empire Landing — Catalina",
+      "lat": 33.4319444,
+      "lon": -118.4430556,
+      "face": 90,
+      "mirrorDiveId": "empirelanding",
+      "species": ["yellowtail", "white seabass", "calico bass", "barracuda"],
+      "depth": "40-100 ft",
+      "habitat": "Frontside reef / kelp off Empire Landing quarry coast",
+      "tactics": "Drift deeper water for yt/WSB; work kelp edge for calico closer in.",
+      "bestTide": "incoming",
+      "bestTime": "morning",
+      "minSstF": 60,
+      "sources": "Tackle Trader Empire Landing + Avalon landmarks"
+    },
+    {
+      "name": "Johnson's Rocks — Catalina (West End)",
+      "lat": 33.4768833,
+      "lon": -118.5885667,
+      "face": 90,
+      "mirrorDiveId": "ut_johnsonrockcautionboilerro_264",
+      "species": ["white seabass", "yellowtail", "calico bass", "barracuda"],
+      "depth": "40-100 ft",
+      "habitat": "West-end frontside wash-rock reef / kelp",
+      "tactics": "Fish 10–17 fm along hard bottom; caution unmarked boilers.",
+      "bestTide": "incoming",
+      "bestTime": "afternoon",
+      "minSstF": 60,
+      "sources": "CDN Johnson's Rocks + Tackle Trader (~0.10 NM)"
+    }
+  ],
+  "notAddedThisPass": [
+    {
+      "name": "Star of Scotland",
+      "reason": "CDN vs USC/BD ~676 m (>0.2 NM)"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef",
+      "reason": "BD lon ~5 NM off CDFG - not used"
+    },
+    {
+      "name": "Pendleton Artificial Reef",
+      "reason": "BD published lat 34d typo; cannot correct/nudge"
+    },
+    {
+      "name": "International Reef",
+      "reason": "BD center >0.2 NM from CDFG quarry modules"
+    },
+    {
+      "name": "Bird Rock Catalina",
+      "reason": "CDN GPS only; no second published GPS within 0.2 NM"
+    },
+    {
+      "name": "Resort Point Wall / Kevin's Reef / Neptune Arch / Jenny Lynne / Stony Point",
+      "reason": "Hard holds — single published GPS; queued in pin-trust-extra-candidates.js"
+    },
+    {
+      "name": "PVR Restoration Reef modules",
+      "reason": "Frontiers as-built only; BD/Year-4 reports reprint same VRG table (not independent) — pin-trust queue"
+    },
+    {
+      "name": "USC Sacred Cove / Portuguese Bend / Portuguese Kelp / Ocean Trails / Pt Fermin Kelp",
+      "reason": "USC Sea Grant only; RPV brochure reprints same list — pin-trust queue"
+    }
+  ],
+  "meta": {
+    "diveHiddenOrArchived": 167,
+    "fishPriorCount": 667,
+    "passNote": "Expanded multi-source set: 42 dive / 42 fish pins. Redondo A restored to official CDFG 118d24m34s. Mission Bay wreckalley lon corrected to official 117d16m. Star of Scotland CDN vs USC disagree ~0.36 NM - not added. Bolsa Chica BD lon disagrees with CDFG - not added.",
+    "policy": "Display only pins with named-site GPS confirmed by >=2 independent internet sources agreeing within ~0.2 NM (~370 m). No manual seaward nudges. Prefer official CDFW/CDFG Appendix + USC Sea Grant LA Fishing Guide; for SD/OC reefs without USC coverage use CDFG Appendix + independently published waypoint tables (e.g. Bloodydecks 2006) when they agree within threshold. Modules within a complex may use the complex USC waypoint as source 2 if within 0.2 NM.",
+    "fishDisplayedCount": 42,
+    "diveDisplayedCount": 42,
+    "agreementThresholdM": 370,
+    "generated": "2026-07-27",
+    "agreementThresholdNm": 0.2,
+    "divePriorCount": 209,
+    "fishHiddenOrArchived": 625
+  },
+  "examplesOfCorrections": [
+    {
+      "new": "33.83833, -118.40944 (official CDFG 24m34s)",
+      "why": "Official CDFG Appendix + USC agree; southcoast A lon was outside 0.2 NM of USC.",
+      "old": "33.83833, -118.41389 (southcoastdivers 24m50s)",
+      "id": "redondoreefa"
+    },
+    {
+      "new": "32.77000, -117.26778 (CDFG Kelp 117d16m)",
+      "why": "Official CDFG Mission Bay Kelp + BD Mission Beach Reef; prior lon ~2 NM off.",
+      "old": "32.77056, -117.23833 (southcoast 117d14m)",
+      "id": "wreckalley"
+    }
+  ],
+  "diveHiddenReason": "Not multi-source GPS-confirmed (single source, conflicting geography >0.2 NM, shore-entry guesses, or prior manual nudges). Includes Star of Scotland (CDN vs USC ~676 m), Bolsa Chica (BD lon ~5 NM off CDFG), most Catalina coves, Channel Islands, UB-88, Olympic II (no public GPS), PV shore reefs without dual GPS."
+}

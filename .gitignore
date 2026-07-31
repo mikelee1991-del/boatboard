@@ -1,0 +1,34 @@
+# Dependencies / local tooling
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Env / secrets (AIS keys, local overrides — never commit)
+.env
+.env.*
+!.env.example
+*.pem
+secrets/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Local scratch / probe outputs (keep audit scripts + their JSON reports)
+_out-*
+_report-*
+_tmp*
+_shell_test.txt
+*-audit-out.txt
+temp-dashboard-script.js
+
+# Optional local caches
+.cache/
+dist/
+Temp/
+*.bak

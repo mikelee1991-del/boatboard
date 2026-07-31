@@ -1,0 +1,5 @@
+[out:json][timeout:120];
+(
+  way["natural"="coastline"](32.95,-120.20,34.15,-117.55);
+);
+out geom;

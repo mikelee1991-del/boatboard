@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pin Trust Review — SoCal Boat Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<style>
+:root {
+  --bg: #070b12; --card: #0e1520; --line: #243041; --ink: #e8ecf4;
+  --ink2: #9aabbc; --ink3: #6e8094; --cyan: #4ec4e0; --good: #3dff9a;
+  --bad: #ff6b4a; --amber: #ffc857; --mono: ui-monospace, Consolas, monospace;
+  --near: #7dd3fc; --group: #c4b5fd;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, sans-serif; }
+a { color: var(--cyan); }
+header {
+  padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--card);
+  display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
+}
+header h1 { margin: 0; font-size: 15px; font-weight: 650; letter-spacing: -0.02em; }
+.stats { font-size: 12px; color: var(--ink2); }
+.stats strong { color: var(--ink); }
+.layout {
+  display: grid; grid-template-columns: minmax(320px, 380px) 1fr;
+  height: calc(100% - var(--hdr, 56px));
+}
+aside {
+  border-right: 1px solid var(--line); background: var(--card);
+  display: flex; flex-direction: column; min-height: 0;
+}
+.toolbar {
+  padding: 8px 10px; border-bottom: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+}
+.toolbar select, .toolbar input {
+  background: var(--bg); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 6px; padding: 5px 8px; font-size: 12px;
+}
+.toolbar input { flex: 1; min-width: 100px; }
+.list { overflow: auto; flex: 1; }
+.item {
+  padding: 8px 10px; border-bottom: 1px solid var(--line); cursor: pointer;
+  display: grid; gap: 2px;
+}
+.item:hover { background: rgba(78,196,224,.06); }
+.item.active { background: rgba(78,196,224,.14); }
+.item.in-sel { box-shadow: inset 3px 0 0 var(--group); }
+.item .nm { font-size: 12px; font-weight: 600; }
+.item .meta { font-size: 10px; color: var(--ink3); font-family: var(--mono); }
+.badge {
+  display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; padding: 1px 5px; border-radius: 4px; margin-right: 4px;
+}
+.badge.high { background: rgba(255,107,74,.2); color: var(--bad); }
+.badge.medium { background: rgba(255,200,87,.15); color: var(--amber); }
+.badge.low { background: rgba(110,128,148,.2); color: var(--ink2); }
+.badge.yes { background: rgba(61,255,154,.15); color: var(--good); }
+.badge.no { background: rgba(255,107,74,.2); color: var(--bad); }
+.badge.unsure { background: rgba(255,200,87,.15); color: var(--amber); }
+.badge.pending { background: rgba(110,128,148,.15); color: var(--ink3); }
+.badge.fish { background: rgba(78,196,224,.12); color: var(--cyan); }
+.badge.dive { background: rgba(196,181,253,.15); color: var(--group); }
+.badge.live { background: rgba(125,211,252,.12); color: var(--near); }
+.badge.cand { background: rgba(255,200,87,.1); color: var(--amber); }
+.badge.off { background: rgba(255,107,74,.12); color: var(--bad); }
+.map-wrap { position: relative; min-height: 0; }
+#map { height: 100%; min-height: 360px; background: #000; }
+.panel {
+  position: absolute; top: 10px; right: 10px; z-index: 900; width: min(400px, calc(100% - 20px));
+  background: rgba(8,12,18,.94); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px; box-shadow: 0 8px 28px rgba(0,0,0,.45); max-height: calc(100% - 20px); overflow: auto;
+}
+.panel h2 { margin: 0 0 6px; font-size: 15px; }
+.panel h3 {
+  margin: 14px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--ink3); border-top: 1px solid var(--line); padding-top: 10px;
+}
+.panel .coords { font-family: var(--mono); font-size: 11px; color: var(--cyan); margin-bottom: 8px; }
+.panel .src, .panel .why, .panel .about { font-size: 12px; color: var(--ink2); margin: 6px 0; }
+.panel .about { color: var(--ink); }
+.panel .src a { word-break: break-all; }
+.panel label.note-lab { display: block; font-size: 11px; color: var(--ink3); margin-top: 8px; }
+.panel textarea, .panel input[type="text"], .panel select.inline {
+  width: 100%; margin-top: 4px; background: var(--bg); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font: 12px/1.4 system-ui;
+}
+.panel textarea { min-height: 52px; resize: vertical; }
+.btns { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.btns button {
+  flex: 1; min-width: 72px; min-height: 40px; border-radius: 8px; border: 1px solid var(--line);
+  font-weight: 700; font-size: 13px; cursor: pointer; touch-action: manipulation;
+}
+.btns .yes { background: rgba(61,255,154,.18); color: var(--good); border-color: rgba(61,255,154,.4); }
+.btns .no { background: rgba(255,107,74,.18); color: var(--bad); border-color: rgba(255,107,74,.4); }
+.btns .unsure { background: rgba(255,200,87,.14); color: var(--amber); border-color: rgba(255,200,87,.35); }
+.btns button.active-yes { outline: 2px solid var(--good); }
+.btns button.active-no { outline: 2px solid var(--bad); }
+.btns button.active-unsure { outline: 2px solid var(--amber); }
+.nav { display: flex; gap: 6px; margin-top: 8px; }
+.nav button, .export-row button, .export-row label, .sec-btns button {
+  background: var(--bg); color: var(--ink2); border: 1px solid var(--line); border-radius: 6px;
+  padding: 8px 10px; font-size: 12px; cursor: pointer; min-height: 40px; touch-action: manipulation;
+}
+.sec-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.sec-btns button.primary { background: rgba(196,181,253,.15); color: var(--group); border-color: rgba(196,181,253,.4); font-weight: 700; }
+.export-row {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding-top: 10px;
+  border-top: 1px solid var(--line); align-items: center;
+}
+.hint { font-size: 11px; color: var(--ink3); margin-top: 8px; }
+.near-row, .grp-row {
+  display: grid; gap: 2px; padding: 8px; margin: 4px 0; border: 1px solid var(--line);
+  border-radius: 8px; cursor: pointer; touch-action: manipulation; background: rgba(0,0,0,.2);
+}
+.near-row:hover, .grp-row:hover { border-color: var(--cyan); }
+.near-row.sel, .grp-row.sel { border-color: var(--group); background: rgba(196,181,253,.1); }
+.near-row .t, .grp-row .t { font-size: 12px; font-weight: 600; }
+.near-row .m, .grp-row .m { font-size: 10px; color: var(--ink3); font-family: var(--mono); }
+.near-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+.near-tools label { font-size: 11px; color: var(--ink3); }
+.near-tools select { background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; min-height: 36px; }
+.sel-chip { font-size: 11px; color: var(--group); margin: 4px 0; }
+.toast {
+  position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 2000;
+  background: #152030; border: 1px solid var(--cyan); color: var(--ink); padding: 8px 14px;
+  border-radius: 8px; font-size: 12px; display: none;
+}
+.map-legend {
+  position: absolute; left: 10px; bottom: 10px; z-index: 900;
+  background: rgba(8,12,18,.9); border: 1px solid var(--line); border-radius: 8px;
+  padding: 6px 10px; font-size: 10px; color: var(--ink2); line-height: 1.6;
+}
+.map-legend span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; grid-template-rows: 32vh 1fr; height: auto; min-height: calc(100vh - var(--hdr, 70px)); }
+  aside { max-height: 32vh; border-right: none; border-bottom: 1px solid var(--line); }
+  #map { min-height: 40vh; }
+  .panel { position: static; width: auto; margin: 8px; max-height: none; }
+  .map-wrap { display: flex; flex-direction: column; }
+  .map-legend { position: static; margin: 0 8px 8px; }
+}
+</style>
+</head>
+<body>
+<header id="hdr">
+  <h1>Pin Trust Review</h1>
+  <div class="stats" id="stats">Loading…</div>
+</header>
+<div class="layout">
+  <aside>
+    <div class="toolbar">
+      <select id="filterPri" title="Priority">
+        <option value="all">All priorities</option>
+        <option value="high" selected>High</option>
+        <option value="medium">Medium</option>
+        <option value="low">Low</option>
+        <option value="pending">Unreviewed</option>
+        <option value="done">Reviewed</option>
+      </select>
+      <select id="filterKind">
+        <option value="all">Fish + dive</option>
+        <option value="fish">Fish only</option>
+        <option value="dive">Dive only</option>
+      </select>
+      <input type="search" id="search" placeholder="Search…">
+    </div>
+    <div class="list" id="list"></div>
+  </aside>
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="map-legend" id="mapLegend" hidden>
+      <div><span style="background:#ff6b4a"></span>Focus</div>
+      <div><span style="background:#ffc857"></span>Nearby candidate</div>
+      <div><span style="background:#7dd3fc"></span>Nearby live pin</div>
+      <div><span style="background:#c4b5fd"></span>In group selection</div>
+    </div>
+    <div class="panel" id="panel">
+      <div class="hint">Select a candidate from the list.</div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="pin-trust-review-data.js"></script>
+<script src="pin-feature-groups-data.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+(function () {
+  'use strict';
+  var DATA = window.PIN_TRUST_REVIEW;
+  if (!DATA || !DATA.candidates) {
+    document.getElementById('stats').textContent = 'Missing pin-trust-review-data.js — run: cscript //Nologo build-pin-trust-review.js';
+    return;
+  }
+
+  var STORAGE_KEY = 'pinTrustReviewResults_v1';
+  var GROUPS_KEY = 'pinFeatureGroups_v1';
+  var results = {};
+  var featureGroups = [];
+  var groupSel = {}; /* pinKey -> pin snapshot */
+  var nearbyRadiusNm = DATA.nearbyDefaultNm || 1.0;
+  var editingGroupId = null;
+
+  function seedFromPrior() {
+    var prior = DATA.priorResults || [];
+    prior.forEach(function (r) {
+      if (r && r.id && r.verdict && r.verdict !== 'pending') results[r.id] = r;
+    });
+  }
+  seedFromPrior();
+
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      var stored = JSON.parse(raw);
+      var local = stored.results || {};
+      var priorAt = DATA.priorExportedAt ? Date.parse(DATA.priorExportedAt) : 0;
+      var localAt = stored.savedAt ? Date.parse(stored.savedAt) : 0;
+      if (!priorAt || (localAt && localAt >= priorAt)) {
+        Object.keys(local).forEach(function (id) {
+          if (local[id] && local[id].verdict) results[id] = local[id];
+        });
+      }
+    }
+  } catch (e) { /* keep seeded prior */ }
+
+  function seedGroups() {
+    featureGroups = [];
+    var bundled = DATA.featureGroups || [];
+    var fileGroups = (window.PIN_FEATURE_GROUPS && window.PIN_FEATURE_GROUPS.groups) || [];
+    var src = bundled.length ? bundled : fileGroups;
+    src.forEach(function (g) {
+      if (g && g.groupId) featureGroups.push(JSON.parse(JSON.stringify(g)));
+    });
+    try {
+      var grow = localStorage.getItem(GROUPS_KEY);
+      if (grow) {
+        var gs = JSON.parse(grow);
+        var bundledAt = DATA.featureGroupsExportedAt ? Date.parse(DATA.featureGroupsExportedAt) : 0;
+        var fileAt = window.PIN_FEATURE_GROUPS && window.PIN_FEATURE_GROUPS.exportedAt
+          ? Date.parse(window.PIN_FEATURE_GROUPS.exportedAt) : 0;
+        var baseAt = Math.max(bundledAt || 0, fileAt || 0);
+        var localAt = gs.savedAt ? Date.parse(gs.savedAt) : 0;
+        if (!baseAt || (localAt && localAt >= baseAt)) {
+          if (gs.groups && gs.groups.length) {
+            featureGroups = gs.groups.map(function (g) { return JSON.parse(JSON.stringify(g)); });
+          }
+        }
+      }
+    } catch (e2) { /* keep bundled */ }
+  }
+  seedGroups();
+
+  var hdr = document.getElementById('hdr');
+  function syncHdr() { document.documentElement.style.setProperty('--hdr', hdr.offsetHeight + 'px'); }
+  syncHdr(); window.addEventListener('resize', syncHdr);
+
+  var map = L.map('map', { zoomControl: true }).setView([DATA.home.lat, DATA.home.lon], 10);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19,
+    attribution: 'Esri / Maxar imagery'
+  }).addTo(map);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19, opacity: 0.85
+  }).addTo(map);
+
+  L.circleMarker([DATA.home.lat, DATA.home.lon], {
+    radius: 5, color: '#6eb5ff', fillColor: '#6eb5ff', fillOpacity: 1, weight: 2
+  }).bindPopup(DATA.home.name).addTo(map);
+
+  var pinLayer = L.layerGroup().addTo(map);
+  var activeId = null;
+  var filtered = [];
+  var lastNearby = [];
+
+  function toast(msg) {
+    var el = document.getElementById('toast');
+    el.textContent = msg; el.style.display = 'block';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { el.style.display = 'none'; }, 2200);
+  }
+
+  function save() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      savedAt: new Date().toISOString(),
+      dataGenerated: DATA.generated,
+      priorExportedAt: DATA.priorExportedAt || null,
+      results: results
+    }));
+  }
+  save();
+
+  function saveGroups() {
+    localStorage.setItem(GROUPS_KEY, JSON.stringify({
+      savedAt: new Date().toISOString(),
+      groups: featureGroups
+    }));
+  }
+  saveGroups();
+
+  function haversineNm(lat1, lon1, lat2, lon2) {
+    var R = 3440.065, dLat = (lat2 - lat1) * Math.PI / 180, dLon = (lon2 - lon1) * Math.PI / 180;
+    var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function pinKey(p) {
+    return (p.kind || '') + '|' + Number(p.lat).toFixed(6) + '|' + Number(p.lon).toFixed(6);
+  }
+
+  function verdictOf(id) {
+    return results[id] && results[id].verdict ? results[id].verdict : 'pending';
+  }
+
+  function counts() {
+    var y = 0, n = 0, u = 0, p = 0;
+    DATA.candidates.forEach(function (c) {
+      var v = verdictOf(c.id);
+      if (v === 'yes') y++; else if (v === 'no') n++; else if (v === 'unsure') u++; else p++;
+    });
+    return { yes: y, no: n, unsure: u, pending: p, total: DATA.candidates.length };
+  }
+
+  function updateStats() {
+    var c = counts();
+    var q = DATA.counts || {};
+    var priorNote = DATA.priorExportedAt
+      ? ' · prior export ' + String(DATA.priorExportedAt).replace('T', ' ').replace(/\.\d+Z$/, 'Z')
+      : '';
+    document.getElementById('stats').innerHTML =
+      '<strong>' + q.high + '</strong> high · <strong>' + q.medium + '</strong> med · <strong>' + q.low + '</strong> low · ' +
+      'reviewed <strong>' + (c.yes + c.no + c.unsure) + '</strong>/' + c.total +
+      ' (yes ' + c.yes + ' · no ' + c.no + ' · unsure ' + c.unsure + ' · left ' + c.pending + ')' +
+      ' · <strong>' + featureGroups.length + '</strong> feature groups' +
+      priorNote;
+  }
+
+  function matchesFilter(c) {
+    var pri = document.getElementById('filterPri').value;
+    var kind = document.getElementById('filterKind').value;
+    var q = (document.getElementById('search').value || '').toLowerCase().trim();
+    var v = verdictOf(c.id);
+    if (kind !== 'all' && c.kind !== kind) return false;
+    if (pri === 'pending' && v !== 'pending') return false;
+    else if (pri === 'done' && v === 'pending') return false;
+    else if (pri !== 'all' && pri !== 'pending' && pri !== 'done' && c.priority !== pri) return false;
+    if (q && String(c.name).toLowerCase().indexOf(q) < 0 &&
+        String(c.reason || '').toLowerCase().indexOf(q) < 0 &&
+        String(c.about || c.description || '').toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  }
+
+  function renderList() {
+    filtered = DATA.candidates.filter(matchesFilter);
+    var list = document.getElementById('list');
+    list.innerHTML = '';
+    filtered.forEach(function (c) {
+      var v = verdictOf(c.id);
+      var k = pinKey(c);
+      var div = document.createElement('div');
+      div.className = 'item' + (c.id === activeId ? ' active' : '') + (groupSel[k] ? ' in-sel' : '');
+      div.innerHTML =
+        '<div><span class="badge ' + c.priority + '">' + c.priority + '</span>' +
+        '<span class="badge ' + v + '">' + v + '</span>' +
+        '<span class="badge ' + c.kind + '">' + c.kind + '</span>' +
+        (c.currentlyDisplayed === false ? '<span class="badge off">off map</span>' : '') +
+        (groupSel[k] ? '<span class="badge" style="color:var(--group)">sel</span>' : '') +
+        '</div>' +
+        '<div class="nm"></div><div class="meta"></div>';
+      div.querySelector('.nm').textContent = c.name;
+      div.querySelector('.meta').textContent =
+        Number(c.lat).toFixed(5) + ', ' + Number(c.lon).toFixed(5) +
+        (c.shoreDistM != null ? ' · shore~' + Math.round(c.shoreDistM) + 'm' : '');
+      div.onclick = function () { selectCand(c.id); };
+      list.appendChild(div);
+    });
+    updateStats();
+  }
+
+  function setVerdict(id, verdict) {
+    var c = DATA.candidates.find(function (x) { return x.id === id; });
+    if (!c) return;
+    var noteEl = document.getElementById('noteBox');
+    var note = noteEl ? noteEl.value : '';
+    results[id] = {
+      id: c.id,
+      kind: c.kind,
+      name: c.name,
+      lat: c.lat,
+      lon: c.lon,
+      priority: c.priority,
+      trustClass: c.trustClass,
+      currentlyDisplayed: !!c.currentlyDisplayed,
+      source: c.source,
+      sourceUrl: c.sourceUrl || '',
+      reason: c.reason,
+      verdict: verdict,
+      note: note,
+      reviewedAt: new Date().toISOString()
+    };
+    save();
+    renderList();
+    showPanel(c);
+  }
+
+  /** Universe for nearby: review candidates + live map pins (deduped by kind+coords). */
+  function allPinsUniverse() {
+    var out = [];
+    var seen = {};
+    function add(p, isCandidate) {
+      if (!p || p.lat == null || p.lon == null) return;
+      var k = pinKey(p);
+      if (seen[k]) {
+        if (isCandidate && p.id) seen[k].candidateId = p.id;
+        if (isCandidate) seen[k].isCandidate = true;
+        if (p.currentlyDisplayed) seen[k].currentlyDisplayed = true;
+        if (p.trustClass && (!seen[k].trustClass || seen[k].trustClass === 'other')) seen[k].trustClass = p.trustClass;
+        if (p.diveId) seen[k].diveId = p.diveId;
+        return;
+      }
+      var row = {
+        key: k,
+        id: p.id || null,
+        candidateId: isCandidate ? p.id : null,
+        kind: p.kind,
+        name: p.name,
+        lat: p.lat,
+        lon: p.lon,
+        trustClass: p.trustClass || 'other',
+        currentlyDisplayed: !!p.currentlyDisplayed,
+        isCandidate: !!isCandidate,
+        diveId: p.diveId || '',
+        priority: p.priority || ''
+      };
+      seen[k] = row;
+      out.push(row);
+    }
+    (DATA.candidates || []).forEach(function (c) { add(c, true); });
+    (DATA.livePins || []).forEach(function (p) { add(p, false); });
+    return out;
+  }
+
+  function findNearby(focus) {
+    if (!focus) return [];
+    var univ = allPinsUniverse();
+    var rows = [];
+    univ.forEach(function (p) {
+      if (p.key === pinKey(focus)) return;
+      var d = haversineNm(focus.lat, focus.lon, p.lat, p.lon);
+      if (d <= nearbyRadiusNm) {
+        rows.push({ pin: p, distNm: d });
+      }
+    });
+    rows.sort(function (a, b) { return a.distNm - b.distNm; });
+    return rows;
+  }
+
+  function toggleSelPin(p) {
+    var k = pinKey(p);
+    if (groupSel[k]) delete groupSel[k];
+    else {
+      groupSel[k] = {
+        id: p.candidateId || p.id || ('coord_' + k),
+        kind: p.kind,
+        name: p.name,
+        lat: p.lat,
+        lon: p.lon,
+        diveId: p.diveId || '',
+        trustClass: p.trustClass || ''
+      };
+    }
+    if (activeId) {
+      var c = DATA.candidates.find(function (x) { return x.id === activeId; });
+      if (c) { showPanel(c); drawFocus(c); }
+    }
+    renderList();
+  }
+
+  function addFocusToSel(c) {
+    toggleSelPin({
+      kind: c.kind, name: c.name, lat: c.lat, lon: c.lon,
+      id: c.id, candidateId: c.id, diveId: c.diveId || '', trustClass: c.trustClass
+    });
+  }
+
+  function addNearbyToSel() {
+    lastNearby.forEach(function (row) {
+      var k = pinKey(row.pin);
+      if (!groupSel[k]) {
+        groupSel[k] = {
+          id: row.pin.candidateId || row.pin.id || ('coord_' + k),
+          kind: row.pin.kind,
+          name: row.pin.name,
+          lat: row.pin.lat,
+          lon: row.pin.lon,
+          diveId: row.pin.diveId || '',
+          trustClass: row.pin.trustClass || ''
+        };
+      }
+    });
+    if (activeId) {
+      var c = DATA.candidates.find(function (x) { return x.id === activeId; });
+      if (c) {
+        var fk = pinKey(c);
+        if (!groupSel[fk]) {
+          groupSel[fk] = {
+            id: c.id, kind: c.kind, name: c.name, lat: c.lat, lon: c.lon,
+            diveId: c.diveId || '', trustClass: c.trustClass || ''
+          };
+        }
+        showPanel(c); drawFocus(c);
+      }
+    }
+    renderList();
+    toast('Added focus + ' + lastNearby.length + ' nearby to group selection');
+  }
+
+  function clearSel() {
+    groupSel = {};
+    editingGroupId = null;
+    if (activeId) {
+      var c = DATA.candidates.find(function (x) { return x.id === activeId; });
+      if (c) { showPanel(c); drawFocus(c); }
+    }
+    renderList();
+  }
+
+  function slugify(s) {
+    return String(s || 'group').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 48) || 'group';
+  }
+
+  function saveCurrentGroup() {
+    var nameEl = document.getElementById('groupNameBox');
+    var displayName = (nameEl && nameEl.value || '').trim();
+    var members = Object.keys(groupSel).map(function (k) { return groupSel[k]; });
+    if (members.length < 2) {
+      toast('Select at least 2 pins for a feature group');
+      return;
+    }
+    if (!displayName) {
+      toast('Enter a feature group name');
+      return;
+    }
+    var groupId = editingGroupId || ('pfg_' + slugify(displayName) + '_' + Date.now().toString(36).slice(-4));
+    var existing = featureGroups.findIndex(function (g) { return g.groupId === groupId; });
+    var row = {
+      groupId: groupId,
+      displayName: displayName,
+      members: members.map(function (m) {
+        return {
+          id: m.id,
+          kind: m.kind,
+          name: m.name,
+          lat: m.lat,
+          lon: m.lon,
+          diveId: m.diveId || ''
+        };
+      }),
+      updatedAt: new Date().toISOString()
+    };
+    if (existing >= 0) featureGroups[existing] = row;
+    else featureGroups.push(row);
+    editingGroupId = groupId;
+    saveGroups();
+    toast('Saved group "' + displayName + '" (' + members.length + ' modules)');
+    if (activeId) {
+      var c = DATA.candidates.find(function (x) { return x.id === activeId; });
+      if (c) showPanel(c);
+    }
+    updateStats();
+  }
+
+  function loadGroupIntoSel(groupId) {
+    var g = featureGroups.find(function (x) { return x.groupId === groupId; });
+    if (!g) return;
+    groupSel = {};
+    editingGroupId = g.groupId;
+    (g.members || []).forEach(function (m) {
+      groupSel[pinKey(m)] = {
+        id: m.id || ('coord_' + pinKey(m)),
+        kind: m.kind,
+        name: m.name,
+        lat: m.lat,
+        lon: m.lon,
+        diveId: m.diveId || '',
+        trustClass: m.trustClass || ''
+      };
+    });
+    var nameEl = document.getElementById('groupNameBox');
+    if (nameEl) nameEl.value = g.displayName || '';
+    if (activeId) {
+      var c = DATA.candidates.find(function (x) { return x.id === activeId; });
+      if (c) { showPanel(c); drawFocus(c); }
+    }
+    renderList();
+    toast('Loaded "' + g.displayName + '" for edit');
+  }
+
+  function deleteGroup(groupId) {
+    if (!confirm('Delete this feature group? Trust verdicts are not affected.')) return;
+    featureGroups = featureGroups.filter(function (g) { return g.groupId !== groupId; });
+    if (editingGroupId === groupId) editingGroupId = null;
+    saveGroups();
+    if (activeId) {
+      var c = DATA.candidates.find(function (x) { return x.id === activeId; });
+      if (c) showPanel(c);
+    }
+    updateStats();
+    toast('Group deleted');
+  }
+
+  function groupContaining(c) {
+    var k = pinKey(c);
+    for (var i = 0; i < featureGroups.length; i++) {
+      var g = featureGroups[i];
+      var mems = g.members || [];
+      for (var j = 0; j < mems.length; j++) {
+        if (pinKey(mems[j]) === k) return g;
+        if (haversineNm(c.lat, c.lon, mems[j].lat, mems[j].lon) <= 0.05) return g;
+      }
+    }
+    return null;
+  }
+
+  function showPanel(c) {
+    var v = verdictOf(c.id);
+    var prev = results[c.id] || {};
+    var srcHtml = esc(c.source);
+    if (c.sourceUrl) srcHtml += '<br><a href="' + escAttr(c.sourceUrl) + '" target="_blank" rel="noopener">Open source ↗</a>';
+    var nearby = findNearby(c);
+    lastNearby = nearby;
+    var selCount = Object.keys(groupSel).length;
+    var inGroup = groupContaining(c);
+
+    var nearHtml = '';
+    if (!nearby.length) {
+      nearHtml = '<p class="hint">No other pins within ' + nearbyRadiusNm + ' nm.</p>';
+    } else {
+      nearby.forEach(function (row, idx) {
+        var p = row.pin;
+        var sel = !!groupSel[p.key];
+        nearHtml +=
+          '<div class="near-row' + (sel ? ' sel' : '') + '" data-near="' + idx + '">' +
+          '<div class="t"></div><div class="m"></div></div>';
+      });
+    }
+
+    var groupsHtml = '';
+    if (!featureGroups.length) {
+      groupsHtml = '<p class="hint">No saved feature groups yet.</p>';
+    } else {
+      featureGroups.forEach(function (g, gi) {
+        groupsHtml +=
+          '<div class="grp-row' + (editingGroupId === g.groupId ? ' sel' : '') + '" data-grp="' + gi + '">' +
+          '<div class="t"></div><div class="m"></div></div>';
+      });
+    }
+
+    document.getElementById('panel').innerHTML =
+      '<h2></h2>' +
+      '<div class="coords"></div>' +
+      '<div class="why"></div>' +
+      '<div class="about"></div>' +
+      '<div class="src"><strong>Source</strong><br>' + srcHtml +
+      (c.sourceDetail ? '<br><span style="color:var(--ink3)">' + esc(c.sourceDetail) + '</span>' : '') + '</div>' +
+      (inGroup ? '<p class="sel-chip">In feature group: ' + esc(inGroup.displayName) + ' (' + (inGroup.members || []).length + ' modules)</p>' : '') +
+      '<label class="note-lab">Optional note</label>' +
+      '<textarea id="noteBox" placeholder="e.g. pin is on the pier deck / looks good on kelp edge"></textarea>' +
+      '<div class="btns">' +
+      '<button type="button" class="yes' + (v === 'yes' ? ' active-yes' : '') + '" data-v="yes">Yes — trust</button>' +
+      '<button type="button" class="no' + (v === 'no' ? ' active-no' : '') + '" data-v="no">No — reject</button>' +
+      '<button type="button" class="unsure' + (v === 'unsure' ? ' active-unsure' : '') + '" data-v="unsure">Unsure</button>' +
+      '</div>' +
+      '<div class="nav">' +
+      '<button type="button" id="btnPrev">← Prev</button>' +
+      '<button type="button" id="btnNext">Next →</button>' +
+      '<button type="button" id="btnNextPending">Next unreviewed</button>' +
+      '</div>' +
+
+      '<h3>Nearby (' + nearby.length + ')</h3>' +
+      '<div class="near-tools">' +
+      '<label>Radius <select id="nearRadius">' +
+      '<option value="0.5"' + (nearbyRadiusNm === 0.5 ? ' selected' : '') + '>0.5 nm</option>' +
+      '<option value="1"' + (nearbyRadiusNm === 1 || nearbyRadiusNm === 1.0 ? ' selected' : '') + '>1.0 nm</option>' +
+      '<option value="1.5"' + (nearbyRadiusNm === 1.5 ? ' selected' : '') + '>1.5 nm</option>' +
+      '<option value="2"' + (nearbyRadiusNm === 2 ? ' selected' : '') + '>2.0 nm</option>' +
+      '</select></label>' +
+      '</div>' +
+      '<div id="nearList">' + nearHtml + '</div>' +
+      '<div class="sec-btns">' +
+      '<button type="button" id="btnAddNearby">Add nearby to group</button>' +
+      '<button type="button" id="btnToggleFocus">Toggle focus in selection</button>' +
+      '</div>' +
+
+      '<h3>Feature group / submodules</h3>' +
+      '<p class="sel-chip">' + selCount + ' pin(s) selected · coords preserved (never nudged)</p>' +
+      '<label class="note-lab">Group display name</label>' +
+      '<input type="text" id="groupNameBox" placeholder="e.g. Santa Monica Artificial Reef" value="' +
+        escAttr(editingGroupId ? ((featureGroups.find(function (g) { return g.groupId === editingGroupId; }) || {}).displayName || '') : (inGroup ? inGroup.displayName : '')) + '">' +
+      '<div class="sec-btns">' +
+      '<button type="button" class="primary" id="btnSaveGroup">Save / update group</button>' +
+      '<button type="button" id="btnClearSel">Clear selection</button>' +
+      (editingGroupId ? '<button type="button" id="btnDeleteGroup">Delete this group</button>' : '') +
+      '</div>' +
+      '<div id="groupsList">' + groupsHtml + '</div>' +
+
+      '<div class="export-row">' +
+      '<button type="button" id="btnExport">Download trust JSON</button>' +
+      '<button type="button" id="btnExportGroups">Download groups JSON</button>' +
+      '<button type="button" id="btnExportGroupsJs">Download groups JS</button>' +
+      '<button type="button" id="btnCopy">Copy trust for chat</button>' +
+      '<label>Import<input type="file" id="importFile" accept="application/json,.json,.js" hidden></label>' +
+      '<button type="button" id="btnClear">Clear local answers</button>' +
+      '</div>' +
+      '<p class="hint">' + esc(DATA.instructions || '') + ' Keyboard: Y / N / U · ← → · G toggles focus in group selection</p>';
+
+    document.querySelector('#panel h2').textContent = c.name;
+    document.querySelector('#panel .coords').textContent =
+      Number(c.lat).toFixed(7) + ', ' + Number(c.lon).toFixed(7) +
+      (c.currentlyDisplayed === false ? ' · NOT currently on map' : ' · on map');
+    document.querySelector('#panel .why').innerHTML = '<strong>Why review</strong><br>' + esc(c.reason || '');
+    document.querySelector('#panel .about').innerHTML =
+      '<strong>About</strong><br>' + esc(c.about || c.description || 'No site brief available.');
+    var noteBox = document.getElementById('noteBox');
+    noteBox.value = prev.note || '';
+    noteBox.oninput = function () {
+      if (results[c.id]) { results[c.id].note = noteBox.value; save(); }
+    };
+
+    Array.prototype.forEach.call(document.querySelectorAll('.btns button'), function (btn) {
+      btn.onclick = function () { setVerdict(c.id, btn.getAttribute('data-v')); };
+    });
+    document.getElementById('btnPrev').onclick = function () { step(-1); };
+    document.getElementById('btnNext').onclick = function () { step(1); };
+    document.getElementById('btnNextPending').onclick = function () { nextPending(); };
+    document.getElementById('btnExport').onclick = exportJson;
+    document.getElementById('btnExportGroups').onclick = exportGroupsJson;
+    document.getElementById('btnExportGroupsJs').onclick = exportGroupsJs;
+    document.getElementById('btnCopy').onclick = copyForChat;
+    document.getElementById('btnClear').onclick = clearResults;
+    document.getElementById('importFile').onchange = importFile;
+    document.querySelector('.export-row label').onclick = function () {
+      document.getElementById('importFile').click();
+    };
+    document.getElementById('nearRadius').onchange = function () {
+      nearbyRadiusNm = parseFloat(this.value) || 1;
+      showPanel(c);
+      drawFocus(c);
+    };
+    document.getElementById('btnAddNearby').onclick = addNearbyToSel;
+    document.getElementById('btnToggleFocus').onclick = function () { addFocusToSel(c); };
+    document.getElementById('btnSaveGroup').onclick = saveCurrentGroup;
+    document.getElementById('btnClearSel').onclick = clearSel;
+    var delBtn = document.getElementById('btnDeleteGroup');
+    if (delBtn) delBtn.onclick = function () { deleteGroup(editingGroupId); };
+
+    Array.prototype.forEach.call(document.querySelectorAll('#nearList .near-row'), function (rowEl, idx) {
+      var row = nearby[idx];
+      if (!row) return;
+      var p = row.pin;
+      rowEl.querySelector('.t').textContent = p.name;
+      rowEl.querySelector('.m').textContent =
+        row.distNm.toFixed(2) + ' nm · ' + p.kind + ' · ' + (p.trustClass || '?') +
+        ' · ' + (p.currentlyDisplayed ? 'on map' : 'off map') +
+        (p.isCandidate ? ' · review candidate' : ' · live only') +
+        ' · ' + Number(p.lat).toFixed(5) + ', ' + Number(p.lon).toFixed(5);
+      rowEl.onclick = function () {
+        if (p.candidateId) {
+          /* Shift-click or long path: select candidate; default toggle group sel + pan */
+          if (window.event && window.event.shiftKey) {
+            selectCand(p.candidateId);
+            return;
+          }
+        }
+        toggleSelPin(p);
+        /* Also briefly highlight on map — already redrawn */
+      };
+      rowEl.ondblclick = function () {
+        if (p.candidateId) selectCand(p.candidateId);
+      };
+    });
+
+    Array.prototype.forEach.call(document.querySelectorAll('#groupsList .grp-row'), function (rowEl, gi) {
+      var g = featureGroups[gi];
+      if (!g) return;
+      rowEl.querySelector('.t').textContent = g.displayName;
+      rowEl.querySelector('.m').textContent = (g.members || []).length + ' modules · ' + g.groupId + ' · tap=edit · hold/right-click=delete';
+      rowEl.onclick = function () { loadGroupIntoSel(g.groupId); };
+      var touchTimer = null;
+      rowEl.addEventListener('touchstart', function () {
+        touchTimer = setTimeout(function () { deleteGroup(g.groupId); }, 700);
+      }, { passive: true });
+      rowEl.addEventListener('touchend', function () { if (touchTimer) clearTimeout(touchTimer); });
+      rowEl.addEventListener('touchmove', function () { if (touchTimer) clearTimeout(touchTimer); });
+      rowEl.oncontextmenu = function (ev) {
+        ev.preventDefault();
+        deleteGroup(g.groupId);
+      };
+    });
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function escAttr(s) { return esc(s).replace(/"/g, '&quot;'); }
+
+  function drawFocus(c) {
+    pinLayer.clearLayers();
+    document.getElementById('mapLegend').hidden = false;
+    var nearby = findNearby(c);
+    lastNearby = nearby;
+    var bounds = [[c.lat, c.lon]];
+
+    nearby.forEach(function (row) {
+      var p = row.pin;
+      var inSel = !!groupSel[p.key];
+      var color = inSel ? '#c4b5fd' : (p.isCandidate ? '#ffc857' : '#7dd3fc');
+      var m = L.circleMarker([p.lat, p.lon], {
+        radius: inSel ? 8 : 6,
+        color: '#fff',
+        fillColor: color,
+        fillOpacity: 0.9,
+        weight: 1.5
+      }).bindPopup(
+        '<b>' + esc(p.name) + '</b><br>' +
+        row.distNm.toFixed(2) + ' nm · ' + p.kind + '<br>' +
+        Number(p.lat).toFixed(6) + ', ' + Number(p.lon).toFixed(6)
+      ).addTo(pinLayer);
+      m.on('click', function () { toggleSelPin(p); });
+      bounds.push([p.lat, p.lon]);
+    });
+
+    Object.keys(groupSel).forEach(function (k) {
+      var m = groupSel[k];
+      if (pinKey(c) === k) return;
+      if (nearby.some(function (r) { return r.pin.key === k; })) return;
+      L.circleMarker([m.lat, m.lon], {
+        radius: 7, color: '#fff', fillColor: '#c4b5fd', fillOpacity: 0.85, weight: 1.5
+      }).bindPopup(esc(m.name) + ' (selected)').addTo(pinLayer);
+      bounds.push([m.lat, m.lon]);
+    });
+
+    L.circleMarker([c.lat, c.lon], {
+      radius: 10, color: '#fff', fillColor: '#ff6b4a', fillOpacity: 0.95, weight: 2
+    }).bindPopup(c.name).addTo(pinLayer);
+
+    if (bounds.length > 1) {
+      try { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 }); }
+      catch (e) { map.setView([c.lat, c.lon], Math.max(map.getZoom(), 15)); }
+    } else {
+      map.setView([c.lat, c.lon], Math.max(map.getZoom(), 15));
+    }
+  }
+
+  function selectCand(id) {
+    var c = DATA.candidates.find(function (x) { return x.id === id; });
+    if (!c) return;
+    activeId = id;
+    showPanel(c);
+    drawFocus(c);
+    renderList();
+  }
+
+  function step(dir) {
+    if (!filtered.length) return;
+    var idx = filtered.findIndex(function (c) { return c.id === activeId; });
+    if (idx < 0) idx = 0;
+    else idx = (idx + dir + filtered.length) % filtered.length;
+    selectCand(filtered[idx].id);
+  }
+
+  function nextPending() {
+    var start = filtered.findIndex(function (c) { return c.id === activeId; });
+    for (var i = 1; i <= filtered.length; i++) {
+      var c = filtered[(start + i) % filtered.length];
+      if (verdictOf(c.id) === 'pending') { selectCand(c.id); return; }
+    }
+    toast('No unreviewed items in this filter');
+  }
+
+  function buildExport() {
+    var list = DATA.candidates.map(function (c) {
+      return results[c.id] || {
+        id: c.id, kind: c.kind, name: c.name, lat: c.lat, lon: c.lon,
+        priority: c.priority, trustClass: c.trustClass, currentlyDisplayed: c.currentlyDisplayed,
+        source: c.source, verdict: 'pending', note: ''
+      };
+    }).filter(function (r) { return r.verdict && r.verdict !== 'pending'; });
+    return {
+      type: 'pin-trust-review-results',
+      exportedAt: new Date().toISOString(),
+      dataGenerated: DATA.generated,
+      summary: counts(),
+      results: list
+    };
+  }
+
+  function buildGroupsExport() {
+    return {
+      type: 'pin-feature-groups',
+      exportedAt: new Date().toISOString(),
+      note: 'Explicit feature groups from pin-trust-review.html. Members keep published coords (never nudged). Live dive/fish grouping unions matched pins even when names do not normalize together.',
+      groups: featureGroups
+    };
+  }
+
+  function downloadBlob(filename, text, mime) {
+    var blob = new Blob([text], { type: mime || 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function exportJson() {
+    downloadBlob('pin-trust-review-results.json', JSON.stringify(buildExport(), null, 2));
+    toast('Downloaded pin-trust-review-results.json');
+  }
+
+  function exportGroupsJson() {
+    var doc = buildGroupsExport();
+    downloadBlob('pin-feature-groups.json', JSON.stringify(doc, null, 2));
+    toast('Downloaded pin-feature-groups.json — save next to dashboard & rebuild');
+  }
+
+  function exportGroupsJs() {
+    var doc = buildGroupsExport();
+    var text =
+      '/* Explicit pin feature groups — loaded by dashboard + dive-engine (file:// OK). */\n' +
+      'window.PIN_FEATURE_GROUPS = ' + JSON.stringify(doc, null, 2) + ';\n';
+    downloadBlob('pin-feature-groups-data.js', text, 'text/javascript');
+    toast('Downloaded pin-feature-groups-data.js — replace beside dashboard');
+  }
+
+  function copyForChat() {
+    var payload = buildExport();
+    var text = 'Pin trust review results for Cursor:\n\n```json\n' + JSON.stringify(payload, null, 2) + '\n```\n';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () {
+        toast('Copied — paste into the Cursor chat');
+      }).catch(function () { fallbackCopy(text); });
+    } else fallbackCopy(text);
+  }
+
+  function fallbackCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast('Copied — paste into the Cursor chat'); }
+    catch (e) { toast('Copy failed — use Download instead'); }
+    document.body.removeChild(ta);
+  }
+
+  function clearResults() {
+    if (!confirm('Clear all local yes/no/unsure answers? (Bundled prior export will reload. Feature groups are kept.)')) return;
+    results = {};
+    seedFromPrior();
+    save();
+    renderList();
+    if (activeId) selectCand(activeId);
+    toast('Reset trust answers to prior export');
+  }
+
+  function importFile(ev) {
+    var f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var text = reader.result;
+        if (/PIN_FEATURE_GROUPS\s*=/.test(text)) {
+          text = text.replace(/^[\s\S]*?PIN_FEATURE_GROUPS\s*=\s*/, '').replace(/;\s*$/, '');
+        }
+        var data = JSON.parse(text);
+        if (data.type === 'pin-feature-groups' || data.groups) {
+          featureGroups = (data.groups || []).map(function (g) { return JSON.parse(JSON.stringify(g)); });
+          saveGroups();
+          toast('Imported ' + featureGroups.length + ' feature groups');
+          if (activeId) selectCand(activeId);
+          else updateStats();
+        } else {
+          var arr = data.results || [];
+          arr.forEach(function (r) {
+            if (r && r.id && r.verdict) results[r.id] = r;
+          });
+          save(); renderList();
+          toast('Imported ' + arr.length + ' trust answers');
+        }
+      } catch (e) { toast('Invalid JSON'); }
+    };
+    reader.readAsText(f);
+    ev.target.value = '';
+  }
+
+  document.getElementById('filterPri').onchange = renderList;
+  document.getElementById('filterKind').onchange = renderList;
+  document.getElementById('search').oninput = renderList;
+
+  document.addEventListener('keydown', function (e) {
+    if (e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
+    if (!activeId) return;
+    var k = e.key.toLowerCase();
+    if (k === 'y') setVerdict(activeId, 'yes');
+    else if (k === 'n') setVerdict(activeId, 'no');
+    else if (k === 'u') setVerdict(activeId, 'unsure');
+    else if (k === 'g') {
+      var c = DATA.candidates.find(function (x) { return x.id === activeId; });
+      if (c) addFocusToSel(c);
+    }
+    else if (e.key === 'ArrowLeft') step(-1);
+    else if (e.key === 'ArrowRight') step(1);
+  });
+
+  renderList();
+  if (filtered.length) selectCand(filtered[0].id);
+  else if (DATA.candidates.length) {
+    document.getElementById('filterPri').value = 'all';
+    renderList();
+    if (filtered.length) selectCand(filtered[0].id);
+  }
+})();
+</script>
+</body>
+</html>

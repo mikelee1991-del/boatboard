@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16283b">
+<title>DiveCast — SoCal Dive Conditions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f6f4ee; --card:#fffdf8; --ink:#16283b; --ink2:#5b6a79; --ink3:#8b97a3;
+  --line:#ddd7c9; --line2:#e9e4d8;
+  --accent:#0e7c86; --now:#d94f04;
+  --good:#1d7a53; --fair:#b07708; --poor:#b3372f;
+  --good-bg:#e4f2ea; --fair-bg:#f7edd6; --poor-bg:#f8e6e3;
+  --star:#c98a06;
+  --sans:"Archivo",-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono","SF Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#0d1823; --card:#152534; --ink:#e9eef3; --ink2:#9fb0bf; --ink3:#6e8090;
+    --line:#2a3d50; --line2:#20303f;
+    --accent:#4fb3bd; --now:#ff7a38;
+    --good:#4fc08d; --fair:#e0a63a; --poor:#e07a70;
+    --good-bg:#15382a; --fair-bg:#3a2f14; --poor-bg:#3d1f1c;
+    --star:#e0a63a;
+  }
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--paper); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.55}
+.wrap{max-width:1060px; margin:0 auto; padding:0 16px 64px}
+a{color:var(--accent)}
+.mono{font-family:var(--mono)}
+.micro{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink3); font-weight:500}
+
+header.top{position:sticky; top:0; z-index:30; background:var(--paper); border-bottom:1px solid var(--line)}
+.topin{max-width:1060px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; gap:12px}
+.brand{font-weight:700; font-size:18px; letter-spacing:.02em}
+.brand small{display:block; font-weight:400; font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink3)}
+.topin .grow{flex:1}
+button{font-family:var(--sans); font-size:14px; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; cursor:pointer; min-height:44px}
+button:active{transform:scale(.98)}
+button.primary{background:var(--ink); color:var(--paper); border-color:var(--ink); font-weight:600}
+button.ghost{background:transparent}
+button.danger{color:var(--poor); border-color:var(--poor)}
+
+.siterow{display:flex; gap:8px; align-items:center; margin:16px 0 8px; flex-wrap:wrap}
+select{flex:1 1 220px; min-height:44px; font-family:var(--sans); font-size:15px; font-weight:500; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px 12px}
+#updatedAt{font-family:var(--mono); font-size:12px; color:var(--ink3)}
+
+.banner{margin:10px 0; padding:12px 14px; border:1px solid var(--fair); background:var(--fair-bg); color:var(--ink); border-radius:10px; font-size:14px}
+.banner.err{border-color:var(--poor); background:var(--poor-bg)}
+
+.hero{display:grid; grid-template-columns:1fr; gap:18px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; margin:14px 0}
+@media(min-width:760px){ .hero{grid-template-columns:auto 1fr; align-items:center; gap:32px; padding:26px 30px} }
+.stars{position:relative; display:inline-block; line-height:0}
+.stars .row{white-space:nowrap}
+.stars .row.fill{position:absolute; inset:0; overflow:hidden; width:0%}
+.stars svg{width:44px; height:44px; margin-right:4px}
+@media(min-width:760px){ .stars svg{width:52px; height:52px} }
+.stars .base svg path{fill:none; stroke:var(--ink3); stroke-width:1.6}
+.stars .fill svg path{fill:var(--star); stroke:var(--star); stroke-width:1.6}
+.verdictline{display:flex; align-items:baseline; gap:12px; margin-top:10px; flex-wrap:wrap}
+#verdict{font-size:26px; font-weight:700}
+#scoreNum{font-family:var(--mono); font-size:14px; color:var(--ink2)}
+.chip{display:inline-block; font-family:var(--mono); font-size:12px; padding:3px 10px; border-radius:999px; border:1px solid var(--line)}
+.chip.up{color:var(--poor); border-color:var(--poor)}
+.chip.down{color:var(--good); border-color:var(--good)}
+.glance{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px}
+.g{border-left:2px solid var(--line); padding:2px 0 2px 10px}
+.g b{display:block; font-family:var(--mono); font-weight:500; font-size:17px}
+.g span{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3)}
+.srcchips{margin-top:14px; display:flex; gap:8px; flex-wrap:wrap}
+.srcchips .chip.ok{color:var(--good); border-color:var(--good)}
+.srcchips .chip.bad{color:var(--poor); border-color:var(--poor)}
+
+h2.sec{font-size:13px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink2); font-weight:600; margin:26px 0 10px}
+.factors{display:grid; grid-template-columns:1fr; gap:10px}
+@media(min-width:760px){ .factors{grid-template-columns:1fr 1fr; align-items:start} }
+details.factor{background:var(--card); border:1px solid var(--line); border-radius:14px; overflow:hidden}
+details.factor summary{list-style:none; cursor:pointer; padding:14px 16px; position:relative; -webkit-tap-highlight-color:transparent}
+details.factor summary::-webkit-details-marker{display:none}
+.fhead{display:flex; justify-content:space-between; align-items:baseline; gap:10px}
+.fname{font-weight:600; font-size:15px}
+.fstat{font-family:var(--mono); font-size:13px; color:var(--ink2); text-align:right}
+.fscore{display:flex; align-items:center; gap:10px; margin:8px 0 6px}
+.bar{flex:1; height:5px; background:var(--line2); border-radius:3px; overflow:hidden}
+.bar i{display:block; height:100%; border-radius:3px}
+.fnum{font-family:var(--mono); font-size:13px; width:56px; text-align:right; color:var(--ink2)}
+.fsum{font-size:13.5px; color:var(--ink2); padding-right:20px}
+.chev{position:absolute; right:14px; bottom:12px; color:var(--ink3); font-size:12px; transition:transform .15s}
+details[open] .chev{transform:rotate(180deg)}
+.fbody{border-top:1px solid var(--line2); padding:14px 16px 18px; font-size:14px}
+.fbody h4{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink3); font-weight:600; margin:14px 0 6px}
+.fbody h4:first-child{margin-top:0}
+.fbody p{margin:0 0 8px; color:var(--ink)}
+.fbody p.d{font-family:var(--mono); font-size:13px; color:var(--ink2); margin:0 0 4px}
+.fbody .why{color:var(--ink2)}
+.fw{font-family:var(--mono); font-size:12px; color:var(--ink3); margin-top:12px}
+.spark{margin:8px 0 4px}
+.spark svg{width:100%; height:auto; display:block}
+
+.twocol{display:grid; grid-template-columns:1fr; gap:10px}
+@media(min-width:760px){ .twocol{grid-template-columns:1fr 1fr} }
+.panel{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px}
+.tide-ev{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line2); font-size:14px}
+.tide-ev:last-child{border-bottom:none}
+.tide-ev .t{font-family:var(--mono); color:var(--ink2)}
+.tide-ev .hi{color:var(--good); font-family:var(--mono); font-weight:500}
+.tide-ev .lo{color:var(--accent); font-family:var(--mono); font-weight:500}
+.tide-ev.past{opacity:.45}
+
+details.meth{background:var(--card); border:1px solid var(--line); border-radius:14px; margin-top:10px}
+details.meth summary{list-style:none; cursor:pointer; padding:14px 16px; font-weight:600; font-size:15px}
+details.meth summary::-webkit-details-marker{display:none}
+.methbody{border-top:1px solid var(--line2); padding:14px 16px 18px; font-size:14px; color:var(--ink2)}
+.methbody h4{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink3); margin:14px 0 6px}
+.methbody p{margin:0 0 8px}
+.wrow{display:flex; align-items:center; gap:10px; margin:4px 0; font-size:13px}
+.wrow .wn{width:170px; color:var(--ink)}
+.wrow .wb{flex:1; height:5px; background:var(--line2); border-radius:3px; overflow:hidden}
+.wrow .wb i{display:block; height:100%; background:var(--accent)}
+.wrow .wp{font-family:var(--mono); width:36px; text-align:right}
+
+.sources{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:8px}
+.src{display:block; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; text-decoration:none; color:var(--ink); min-height:44px}
+.src:hover{border-color:var(--accent)}
+.src b{display:block; font-size:14px; font-weight:600}
+.src span{font-size:12px; color:var(--ink2)}
+
+footer{margin-top:28px; font-size:12px; color:var(--ink3); line-height:1.7}
+
+.overlay{position:fixed; inset:0; background:rgba(10,18,26,.55); display:none; align-items:flex-end; justify-content:center; z-index:50; padding:0}
+.overlay.show{display:flex}
+@media(min-width:600px){ .overlay{align-items:center; padding:20px} }
+.modal{background:var(--card); width:100%; max-width:480px; border-radius:16px 16px 0 0; padding:20px; max-height:92vh; overflow:auto}
+@media(min-width:600px){ .modal{border-radius:16px} }
+.modal h3{font-size:18px; margin-bottom:4px}
+.modal .hint{font-size:12.5px; color:var(--ink3); margin-bottom:14px}
+.field{margin-bottom:12px}
+.field label{display:block; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink2); font-weight:600; margin-bottom:5px}
+.field input, .field select{width:100%; min-height:44px; font-size:15px; font-family:var(--sans); color:var(--ink); background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:8px 12px}
+.field input.mono{font-family:var(--mono)}
+.frow{display:flex; gap:10px}
+.frow .field{flex:1}
+#fMsg{font-size:13px; margin:6px 0 10px; color:var(--fair); min-height:1em}
+#fMsg button{min-height:30px; padding:3px 10px; font-size:12.5px; margin-left:6px}
+.modalbtns{display:flex; gap:10px; margin-top:14px}
+.modalbtns button{flex:1}
+.skel{color:var(--ink3); font-family:var(--mono); font-size:13px; padding:12px 0}
+
+.whenrow{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0 0 8px}
+.whenrow label{font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3); font-weight:600}
+input[type="datetime-local"]{min-height:44px; font-family:var(--mono); font-size:14px; color:var(--ink); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px 10px}
+.chip.info{color:var(--accent); border-color:var(--accent)}
+.outlook{display:grid; grid-template-columns:minmax(62px,88px) repeat(3,1fr); gap:6px}
+.outlook .ohead{font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink3); text-align:center; align-self:end; padding-bottom:2px}
+.outlook .oday{font-family:var(--mono); font-size:12px; color:var(--ink2); align-self:center; line-height:1.25}
+button.oslot{min-height:46px; font-family:var(--mono); font-size:14.5px; padding:4px; border-radius:10px}
+.oslot.past{opacity:.4}
+.oslot small{display:block; font-size:9.5px; color:var(--ink3); letter-spacing:.03em}
+.ocap{font-size:12px; color:var(--ink3); margin-top:8px}
+.tidewrap svg{width:100%; height:auto; display:block}
+.tidesum{font-size:13px; color:var(--ink2); margin-top:6px}
+.field textarea{width:100%; font-size:15px; font-family:var(--sans); color:var(--ink); background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:10px 12px; resize:vertical}
+.prevbox{font-family:var(--mono); font-size:11.5px; white-space:pre-wrap; background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:10px; color:var(--ink2); max-height:170px; overflow:auto; margin-bottom:12px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="topin">
+    <div class="brand">DiveCast<small>SoCal dive conditions</small></div>
+    <div class="grow"></div>
+    <span id="updatedAt"></span>
+    <button id="btnRefresh" class="ghost" aria-label="Refresh data">&#8635; Refresh</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="siterow">
+    <select id="siteSel" aria-label="Select dive site"></select>
+    <button id="btnAdd">+ New site</button>
+    <button id="btnDel" class="danger" hidden aria-label="Delete this custom site">Delete</button>
+  </div>
+
+  <div class="whenrow">
+    <label for="whenInput">Conditions at</label>
+    <input type="datetime-local" id="whenInput" aria-label="Date and time to evaluate">
+    <button id="btnNow" class="ghost">Now</button>
+    <div class="grow" style="flex:1"></div>
+    <button id="btnLog">&#9998; Log dive</button>
+  </div>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <section class="hero" aria-live="polite">
+    <div>
+      <div class="stars" id="starsWrap" role="img" aria-label="Dive quality rating">
+        <div class="row base" id="starsBase"></div>
+        <div class="row fill" id="starsFill"></div>
+      </div>
+      <div class="verdictline">
+        <span id="verdict">Loading&hellip;</span>
+        <span id="scoreNum"></span>
+        <span id="whenChip" class="chip info" hidden></span>
+        <span id="trendChip" class="chip" hidden></span>
+        <span id="capNote" class="chip up" hidden></span>
+      </div>
+    </div>
+    <div>
+      <div class="glance" id="glance"></div>
+      <div class="srcchips" id="srcChips"></div>
+    </div>
+  </section>
+
+  <div class="panel" style="margin-top:10px">
+    <h2 class="sec" style="margin-top:0">5-day outlook &mdash; morning &middot; noon &middot; evening</h2>
+    <div class="outlook" id="outlook"><div class="skel">Computing outlook&hellip;</div></div>
+    <p class="ocap">Tap any slot to load the full breakdown for that time. Slots use 7 AM, 12 PM and 5 PM local. &#9888; marks a safety cap (surf entry or rain advisory).</p>
+  </div>
+
+  <h2 class="sec">What&rsquo;s driving this rating &mdash; tap any factor to learn more</h2>
+  <div class="factors" id="factors"><div class="skel">Fetching marine model, weather, and tide data&hellip;</div></div>
+
+  <div class="twocol" style="margin-top:10px">
+    <div class="panel">
+      <h2 class="sec" style="margin-top:0">Tide curve</h2>
+      <div class="tidewrap" id="tideCurve"><div class="skel">Loading tide predictions&hellip;</div></div>
+      <p class="tidesum" id="tideSum"></p>
+      <p style="margin-top:8px; font-size:12.5px"><a id="tideLink" href="#" target="_blank" rel="noopener">Full NOAA tide predictions &rarr;</a></p>
+    </div>
+    <div class="panel">
+      <h2 class="sec" style="margin-top:0">Verify before you go</h2>
+      <div class="sources" id="sources" style="grid-template-columns:1fr"></div>
+    </div>
+  </div>
+
+  <details class="meth">
+    <summary>How this rating works &mdash; methodology, weights &amp; limitations</summary>
+    <div class="methbody" id="methBody"></div>
+  </details>
+
+  <footer>
+    <p><strong>Use judgment, not just numbers.</strong> This tool estimates dive quality from weather and wave <em>models</em>, not direct observation. It cannot see plankton blooms, red tides, local turbidity, or the actual surf hitting the beach. Always confirm with a live cam, a recent dive report, or your own eyes from shore &mdash; and dive within your training.</p>
+    <p style="margin-top:6px">Wave &amp; weather model data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0). Tide predictions by NOAA CO-OPS (curve is cosine-interpolated between official highs/lows). Custom sites are saved on this device.</p>
+  </footer>
+
+</div>
+
+<div class="overlay" id="addOverlay" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+  <div class="modal">
+    <h3 id="dlgTitle">New dive site</h3>
+    <p class="hint">Enter GPS coordinates in decimal degrees (e.g. from a long-press in Google Maps). The nearest NOAA tide station is picked automatically.</p>
+    <div class="field"><label for="fName">Site name</label><input id="fName" placeholder="e.g. Marineland — 120 Reef" maxlength="60"></div>
+    <div class="frow">
+      <div class="field"><label for="fLat">Latitude</label><input id="fLat" class="mono" inputmode="decimal" placeholder="33.8390"></div>
+      <div class="field"><label for="fLon">Longitude</label><input id="fLon" class="mono" inputmode="decimal" placeholder="-118.3920"></div>
+    </div>
+    <div id="fMsg"></div>
+    <button id="btnGeo" class="ghost" style="width:100%; margin-bottom:12px">&#9737; Use my current location</button>
+    <div class="frow">
+      <div class="field">
+        <label for="fFace">Site faces (exposure)</label>
+        <select id="fFace">
+          <option value="">Unknown / open water</option>
+          <option value="0">North (0&deg;)</option>
+          <option value="45">Northeast (45&deg;)</option>
+          <option value="90">East (90&deg;)</option>
+          <option value="135">Southeast (135&deg;)</option>
+          <option value="180">South (180&deg;)</option>
+          <option value="225">Southwest (225&deg;)</option>
+          <option value="270">West (270&deg;)</option>
+          <option value="315">Northwest (315&deg;)</option>
+        </select>
+      </div>
+      <div class="field"><label for="fDepth">Typical depth (ft)</label><input id="fDepth" class="mono" inputmode="numeric" value="30"></div>
+    </div>
+    <div class="field"><label for="fCam">Webcam or report URL (optional)</label><input id="fCam" placeholder="https://&hellip;"></div>
+    <div class="modalbtns">
+      <button id="btnCancel" class="ghost">Cancel</button>
+      <button id="btnSave" class="primary">Save site</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="logOverlay" role="dialog" aria-modal="true" aria-labelledby="logTitle">
+  <div class="modal">
+    <h3 id="logTitle">Log to Subsurface</h3>
+    <p class="hint">The prediction below is auto-filled from the time currently shown on the dashboard. Add your observations, then either copy everything for pasting into a dive&rsquo;s Notes field, or download a <span class="mono">.ssrf</span> file and use <em>File &rarr; Import &rarr; Import log files</em> in Subsurface.</p>
+    <pre class="prevbox" id="logPreview"></pre>
+    <div class="frow">
+      <div class="field"><label for="fDur">Duration (min)</label><input id="fDur" class="mono" inputmode="numeric" value="40"></div>
+      <div class="field"><label for="fMaxD">Max depth (ft)</label><input id="fMaxD" class="mono" inputmode="numeric" placeholder="opt."></div>
+      <div class="field"><label for="fVisObs">Vis you saw (ft)</label><input id="fVisObs" class="mono" inputmode="numeric" placeholder="opt."></div>
+    </div>
+    <div class="field"><label for="fNotes">Your notes &amp; observations</label><textarea id="fNotes" rows="4" placeholder="What you actually saw: vis, surge, life, entry conditions&hellip;"></textarea></div>
+    <div class="modalbtns">
+      <button id="btnLogClose" class="ghost">Close</button>
+      <button id="btnCopyLog">Copy for notes</button>
+      <button id="btnSsrf" class="primary">Download .ssrf</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============ helpers ============ */
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const M2FT = 3.28084;
+const HR = 3600e3;
+const avg = arr => { const v = arr.filter(x => x != null && isFinite(x)); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
+const mx  = arr => { const v = arr.filter(x => x != null && isFinite(x)); return v.length ? Math.max(...v) : null; };
+const f1 = v => v == null || !isFinite(v) ? '—' : (Math.round(v*10)/10).toFixed(1);
+const f0 = v => v == null || !isFinite(v) ? '—' : String(Math.round(v));
+const COMPASS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+const compass = d => d == null ? '—' : COMPASS[Math.round(((d % 360) + 360) % 360 / 22.5) % 16];
+const angDist = (a,b) => { let d = Math.abs(a-b) % 360; return d > 180 ? 360 - d : d; };
+const fmtTime = d => { let h = d.getHours() % 12 || 12, m = String(d.getMinutes()).padStart(2,'0'); return h + ':' + m + (d.getHours() < 12 ? ' am' : ' pm'); };
+const fmtDay = d => d.toLocaleDateString('en-US',{weekday:'short'});
+const fmtFull = d => d.toLocaleDateString('en-US',{weekday:'short', month:'short', day:'numeric'}) + ' · ' + fmtTime(d);
+const shortMark = d => fmtDay(d) + ' ' + ((d.getHours()%12)||12) + (d.getHours()<12?'a':'p');
+const toLocalInput = d => { const p = n => String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+'T'+p(d.getHours())+':'+p(d.getMinutes()); };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const xesc = s => String(s).replace(/[&<>']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&apos;'}[c]));
+
+/* ============ storage adapter: claude.ai artifact storage -> localStorage -> memory ============ */
+const _mem = {};
+const store = {
+  async get(k){
+    if (window.storage) { try { const r = await window.storage.get(k); return r ? r.value : null; } catch(e){ return null; } }
+    try { return localStorage.getItem(k); } catch(e){ return (k in _mem) ? _mem[k] : null; }
+  },
+  async set(k,v){
+    if (window.storage) { try { await window.storage.set(k, v); return; } catch(e){} }
+    try { localStorage.setItem(k, v); } catch(e){ _mem[k] = v; }
+  }
+};
+
+/* ============ site registry ============ */
+const BUILTIN = [
+  { id:'veterans', name:'Veterans Park — Redondo Beach', lat:33.839,  lon:-118.392, face:250, depth:40, cam:'https://www.youtube.com/watch?v=TuVOKRP7IBA', camLabel:'Veterans Park dive cam' },
+  { id:'casino',   name:'Casino Point — Avalon, Catalina', lat:33.3496, lon:-118.3226, face:45,  depth:40 },
+  { id:'abalone',  name:'Abalone Cove — Palos Verdes',   lat:33.7375, lon:-118.3745, face:200, depth:30 },
+  { id:'lajolla',  name:'La Jolla Cove — San Diego',     lat:32.8508, lon:-117.2725, face:310, depth:25 },
+  { id:'leo',      name:'Leo Carrillo — Malibu',         lat:34.0435, lon:-118.9345, face:205, depth:25 }
+];
+const STATIONS = [
+  { id:'9410738', name:'King Harbor, Redondo Beach', lat:33.842, lon:-118.398 },
+  { id:'9410079', name:'Avalon, Catalina Island',    lat:33.345, lon:-118.325 },
+  { id:'9410660', name:'Los Angeles, Outer Harbor',  lat:33.720, lon:-118.272 },
+  { id:'9410840', name:'Santa Monica',               lat:34.008, lon:-118.500 },
+  { id:'9410230', name:'La Jolla (Scripps Pier)',    lat:32.867, lon:-117.257 },
+  { id:'9410170', name:'San Diego Bay',              lat:32.714, lon:-117.174 },
+  { id:'9410580', name:'Newport Bay Entrance',       lat:33.603, lon:-117.883 },
+  { id:'9411340', name:'Santa Barbara',              lat:34.405, lon:-119.685 }
+];
+function nearestStation(lat, lon){
+  let best = STATIONS[0], bd = 1e9;
+  for (const s of STATIONS){
+    const dLat = (s.lat - lat) * 69, dLon = (s.lon - lon) * 57.5;
+    const d = dLat*dLat + dLon*dLon;
+    if (d < bd){ bd = d; best = s; }
+  }
+  return best;
+}
+
+let customSites = [], sites = [], current = null;
+let S = null;              /* parsed data series for the current site */
+let evalWhen = null;       /* null = live "now" mode */
+let lastM = null, lastR = null, curStation = null;
+
+async function loadSites(){
+  try { customSites = JSON.parse(await store.get('divesites') || '[]'); } catch(e){ customSites = []; }
+  if (!Array.isArray(customSites)) customSites = [];
+  sites = [...BUILTIN, ...customSites];
+}
+function renderSiteSelect(){
+  const sel = $('siteSel');
+  let html = '<optgroup label="Built-in sites">';
+  for (const s of BUILTIN) html += `<option value="${s.id}">${esc(s.name)}</option>`;
+  html += '</optgroup>';
+  if (customSites.length){
+    html += '<optgroup label="My sites">';
+    for (const s of customSites) html += `<option value="${s.id}">${esc(s.name)}</option>`;
+    html += '</optgroup>';
+  }
+  sel.innerHTML = html;
+  if (current) sel.value = current.id;
+}
+
+/* ============ data fetching ============ */
+async function fetchJSON(url, timeout){
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), timeout || 14000);
+  try {
+    const r = await fetch(url, { signal: ctl.signal });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  } finally { clearTimeout(t); }
+}
+function marineURL(s){
+  return 'https://marine-api.open-meteo.com/v1/marine?latitude=' + s.lat + '&longitude=' + s.lon +
+    '&hourly=wave_height,wave_direction,wave_period,swell_wave_height,swell_wave_direction,swell_wave_period,wind_wave_height,wind_wave_period,sea_surface_temperature' +
+    '&past_days=3&forecast_days=7&timezone=auto&cell_selection=sea';
+}
+function weatherURL(s){
+  return 'https://api.open-meteo.com/v1/forecast?latitude=' + s.lat + '&longitude=' + s.lon +
+    '&hourly=wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation' +
+    '&past_days=3&forecast_days=7&timezone=auto&wind_speed_unit=kn&precipitation_unit=inch';
+}
+function tideURL(stationId){
+  const d = new Date(Date.now() - 24 * HR);
+  const bd = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+  return 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&datum=MLLW&time_zone=lst_ldt' +
+    '&interval=hilo&units=english&format=json&application=DiveCast&station=' + stationId + '&begin_date=' + bd + '&range=216';
+}
+
+/* ============ series parsing & time-indexed snapshots ============ */
+function parseSeries(marine, wx, tides){
+  const out = { ok:{ marine:false, wx:false, tides:false }, mar:null, wx:null, tideEv:[] };
+  if (marine && marine.hourly && marine.hourly.time && marine.hourly.time.length){
+    const H = marine.hourly;
+    const ft = a => (a || []).map(v => v == null ? null : v * M2FT);
+    out.mar = {
+      ms: H.time.map(t => new Date(t).getTime()),
+      waveFt: ft(H.wave_height), per: H.wave_period || [],
+      swellFt: ft(H.swell_wave_height), swellPer: H.swell_wave_period || [], swellDir: H.swell_wave_direction || [],
+      wwFt: ft(H.wind_wave_height), wwPer: H.wind_wave_period || [],
+      sstF: (H.sea_surface_temperature || []).map(v => v == null ? null : v * 9/5 + 32)
+    };
+    out.ok.marine = true;
+  }
+  if (wx && wx.hourly && wx.hourly.time && wx.hourly.time.length){
+    const H = wx.hourly;
+    out.wx = {
+      ms: H.time.map(t => new Date(t).getTime()),
+      wind: H.wind_speed_10m || [], gust: H.wind_gusts_10m || [], wdir: H.wind_direction_10m || [],
+      precip: H.precipitation || []
+    };
+    out.ok.wx = true;
+  }
+  if (tides && tides.predictions && tides.predictions.length){
+    out.tideEv = tides.predictions.map(p => ({ t: new Date(p.t.replace(' ', 'T')), v: parseFloat(p.v), type: p.type }));
+    out.ok.tides = out.tideEv.length >= 2;
+  }
+  return out;
+}
+function idxAt(ms, when){
+  const w = +when;
+  if (!ms.length || w < ms[0] - 1800e3 || w > ms[ms.length-1] + HR) return -1;
+  let i = ms.length - 1;
+  while (i > 0 && ms[i] > w) i--;
+  return i;
+}
+function tideAt(when){
+  const ev = S.tideEv; if (!ev || ev.length < 2) return null;
+  const w = +when;
+  for (let k = 0; k < ev.length - 1; k++){
+    if (+ev[k].t <= w && w <= +ev[k+1].t){
+      const a = ev[k], b = ev[k+1], f = (w - +a.t) / (+b.t - +a.t);
+      const h = a.v + (b.v - a.v) * (1 - Math.cos(Math.PI * f)) / 2;
+      return { h, rising: b.type === 'H', next: b };
+    }
+  }
+  return null;
+}
+function tideRangeFor(when){
+  const d = new Date(when);
+  const evs = S.tideEv.filter(e => e.t.getFullYear() === d.getFullYear() && e.t.getMonth() === d.getMonth() && e.t.getDate() === d.getDate());
+  const use = evs.length >= 2 ? evs : S.tideEv.slice(0, 4);
+  if (!use.length) return null;
+  return mx(use.map(e => e.v)) - Math.min(...use.map(e => e.v));
+}
+const slice = (arr, a, b) => arr.slice(Math.max(0, a), Math.max(0, b));
+
+function snapshotAt(site, when){
+  const m = { ok:{ marine:false, wx:false, tides:false }, when: new Date(+when) };
+  const now = new Date();
+  m.isNow = Math.abs(+when - +now) < 45 * 60e3;
+  m.markLabel = m.isNow ? 'now' : shortMark(m.when);
+
+  if (S.mar){
+    const A = S.mar, i = idxAt(A.ms, when);
+    if (i >= 0){
+      m.waveNow = A.waveFt[i]; m.perNow = A.per[i];
+      m.swellNow = A.swellFt[i]; m.swellPer = A.swellPer[i]; m.swellDir = A.swellDir[i];
+      m.windWaveNow = A.wwFt[i]; m.windWavePer = A.wwPer[i];
+      m.sstF = A.sstF[i];
+      m.avg48 = avg(slice(A.waveFt, i-48, i+1));
+      m.peak48 = mx(slice(A.waveFt, i-48, i+1));
+      const p24 = avg(slice(A.waveFt, i-24, i+1)), n24 = avg(slice(A.waveFt, i+1, i+25));
+      m.trendPct = (p24 && n24) ? (n24 - p24) / p24 : 0;
+      const s0 = Math.max(0, i-72);
+      m.waveSeries = slice(A.waveFt, i-72, i+49);
+      m.waveNowPos = i - s0;
+      m.ok.marine = m.waveNow != null;
+    }
+  }
+  if (S.wx){
+    const A = S.wx, i = idxAt(A.ms, when);
+    if (i >= 0){
+      m.windNow = A.wind[i]; m.gustNow = A.gust[i]; m.windDir = A.wdir[i];
+      m.windAvg24 = avg(slice(A.wind, i-24, i+1));
+      const p = A.precip;
+      m.rain24 = slice(p, i-24, i+1).filter(v=>v!=null).reduce((a,b)=>a+b,0);
+      m.rain72 = slice(p, i-72, i+1).filter(v=>v!=null).reduce((a,b)=>a+b,0);
+      m.rainWindowHrs = i - Math.max(0, i-72);
+      m.lastRainHrs = null;
+      for (let k = i; k >= Math.max(0, i-72); k--){ if ((p[k] || 0) > 0.01){ m.lastRainHrs = i - k; break; } }
+      const s0 = Math.max(0, i-72);
+      m.windSeries = slice(A.wind, i-72, i+25);
+      m.windNowPos = i - s0;
+      m.ok.wx = m.windNow != null;
+    }
+  }
+  const th = tideAt(when);
+  if (th){
+    m.rising = th.rising; m.nextTide = th.next; m.tideH = th.h;
+    m.tideRange = tideRangeFor(when);
+    m.ok.tides = m.tideRange != null;
+  }
+  return m;
+}
+function dataBounds(){
+  const los = [], his = [];
+  if (S.mar){ los.push(S.mar.ms[0]); his.push(S.mar.ms[S.mar.ms.length-1]); }
+  if (S.wx){ los.push(S.wx.ms[0]); his.push(S.wx.ms[S.wx.ms.length-1]); }
+  if (!los.length) return null;
+  return { lo: Math.max(...los), hi: Math.min(...his) };
+}
+
+/* ============ scoring engine ============ */
+function exposureFactor(swellDir, face){
+  if (face == null || face === '' || swellDir == null) return { f: 1, label: 'exposure unknown — full swell assumed' };
+  const d = angDist(swellDir, Number(face));
+  if (d <= 60)  return { f: 1,    label: 'hitting the site nearly head-on — full exposure' };
+  if (d <= 90)  return { f: 0.7,  label: 'arriving at an oblique angle — energy reduced ~30%' };
+  if (d <= 120) return { f: 0.45, label: 'wrapping around the site — energy reduced ~55%' };
+  return { f: 0.3, label: 'site is sheltered from this direction — mostly refracted energy' };
+}
+function colorFor(s){ return s >= 75 ? 'var(--good)' : s >= 50 ? 'var(--fair)' : 'var(--poor)'; }
+
+function scoreDive(site, m){
+  const F = [], caps = [];
+  const depth = site.depth || 30;
+  const exp = exposureFactor(m.swellDir, site.face);
+  let Heff = null;
+
+  /* --- 1. Surge & swell energy (30%) --- */
+  if (m.ok.marine){
+    const effSwell = (m.swellNow || 0) * exp.f;
+    Heff = Math.sqrt(effSwell*effSwell + (m.windWaveNow || 0)*(m.windWaveNow || 0));
+    const T = m.swellPer || m.perNow || 10;
+    const L = 5.12 * T * T;
+    const feltDepth = L / 2;
+    const surgeAmp = Heff * Math.exp(-2 * Math.PI * depth / L);
+    let s = 100 - 21 * Math.pow(Math.max(0, Heff - 0.7), 1.2);
+    if (T >= 14 && Heff >= 2) s -= 8;
+    s = clamp(Math.round(s), 4, 98);
+    F.push({
+      key:'surge', name:'Surge & swell energy', weight:30, score:s,
+      stat: f1(Heff) + ' ft eff @ ' + f0(T) + ' s',
+      summary: surgeAmp < 0.5
+        ? 'Little water movement expected at ' + depth + ' ft — swell energy is weak or blocked at this site.'
+        : 'Expect roughly ' + f1(surgeAmp) + ' ft of back-and-forth water movement at ' + depth + ' ft.',
+      data: [
+        'Groundswell: ' + f1(m.swellNow) + ' ft @ ' + f0(m.swellPer) + ' s from ' + f0(m.swellDir) + '\u00b0 (' + compass(m.swellDir) + ')',
+        'Wind waves on top: ' + f1(m.windWaveNow) + ' ft @ ' + f0(m.windWavePer) + ' s',
+        'Site faces ' + (site.face != null && site.face !== '' ? f0(site.face) + '\u00b0 (' + compass(site.face) + ') — swell is ' + exp.label : 'open water (no exposure adjustment)'),
+        'Effective combined seas: ' + f1(Heff) + ' ft \u00b7 wavelength \u2248 ' + f0(L) + ' ft \u00b7 felt down to \u2248 ' + f0(feltDepth) + ' ft',
+        'Estimated surge at ' + depth + ' ft: \u00b1' + f1(surgeAmp) + ' ft of horizontal motion'
+      ],
+      spark: { series: m.waveSeries, nowPos: m.waveNowPos, unit: 'ft', label: 'Combined seas — 72 h before & 48 h after', markLabel: m.markLabel },
+      why: 'Waves are orbital motion, and that motion penetrates to about half the wavelength (wavelength \u2248 5.12 \u00d7 period\u00b2, in feet). A 6-second wind chop dies out ~90 ft of wavelength down — you barely feel it at depth. A 15-second groundswell has a ~1,150 ft wavelength and will push you around even at 60+ ft, silting the bottom as it goes. This is why period matters as much as height, and why a site\u2019s facing direction can turn a big swell into a non-event.',
+      scoring: 'Roughly: under ~1 ft of effective seas scores in the 90s, 2 ft \u2248 70, 3 ft \u2248 45, 4 ft \u2248 15. Long-period swell (\u226514 s) over 2 ft costs another 8 for deep surge. Swell arriving outside the site\u2019s exposure window is discounted 30\u201370% before any of this.'
+    });
+  }
+
+  /* --- 2. Visibility outlook (30%) --- */
+  if (m.ok.marine || m.ok.wx){
+    let s = 88, parts = [];
+    if (m.avg48 != null){
+      const avgEff = m.avg48 * (0.4 + 0.6 * exp.f);
+      const stir = Math.max(0, avgEff - 1.2) * 17;
+      s -= stir;
+      if (stir > 1) parts.push('\u2212' + f0(stir) + ' for sediment stirred by recent seas (48-h avg ' + f1(m.avg48) + ' ft' + (exp.f < 1 ? ', reduced for shelter' : '') + ')');
+    }
+    if (m.rain72 != null){
+      const rp = Math.min(58, m.rain72 * 45 + (m.rain24 > 0.15 ? 12 : 0));
+      s -= rp; if (rp > 1) parts.push('\u2212' + f0(rp) + ' for ' + f1(m.rain72) + '\u2033 of rain runoff in the past 72 h');
+    }
+    if (m.windAvg24 != null){
+      const mixp = Math.max(0, m.windAvg24 - 10) * 1.6;
+      s -= mixp; if (mixp > 1) parts.push('\u2212' + f0(mixp) + ' for wind-driven mixing (24-h avg ' + f0(m.windAvg24) + ' kn)');
+    }
+    if (m.trendPct <= -0.15){ s += 7; parts.push('+7 — swell is dropping, water should be clearing'); }
+    else if (m.trendPct >= 0.15){ s -= 7; parts.push('\u22127 — swell is building, expect it to get murkier'); }
+    s = clamp(Math.round(s), 4, 96);
+    const visFt = Math.round(3 + s * 0.26);
+    F.push({
+      key:'vis', name:'Visibility outlook', weight:30, score:s, extra:{ visFt },
+      stat:'~' + visFt + ' ft est.',
+      summary:'Model-based estimate of roughly ' + visFt + ' ft of visibility. ' + (m.trendPct <= -0.15 ? 'Trend is improving.' : m.trendPct >= 0.15 ? 'Trend is worsening.' : 'Conditions look steady.'),
+      data: [
+        '48-h average seas: ' + f1(m.avg48) + ' ft (peak ' + f1(m.peak48) + ' ft) — the wave history before this moment stirs sediment that lingers',
+        'Rain, prior 72 h: ' + f1(m.rain72) + '\u2033 (' + f1(m.rain24) + '\u2033 in the prior 24 h)',
+        'Prior 24-h average wind: ' + f0(m.windAvg24) + ' kn',
+        'Adjustments applied: ' + (parts.length ? parts.join(' \u00b7 ') : 'none — clean baseline')
+      ],
+      why: 'Visibility is mostly about what happened over the previous two or three days, not the moment itself. Days of waves keep fine sediment suspended long after the swell drops; rain flushes silt and everything on the streets into the water through storm drains; and sustained wind mixes the surface layer. The classic SoCal pattern for great vis: several days of small swell, no rain, light wind — often right after a swell fades. Note the model can\u2019t see plankton blooms or red tide, which can wreck vis on an otherwise perfect day.',
+      scoring: 'Starts at 88. Subtracts ~17 points per foot the shelter-adjusted 48-hour sea state exceeds 1.2 ft, ~45 points per inch of 72-hour rainfall, and 1.6 points per knot the 24-hour wind average exceeds 10 kn. A clearly dropping swell adds 7; a building one subtracts 7. The score maps to an estimated range of roughly 5\u201328 ft.'
+    });
+  }
+
+  /* --- 3. Wind & surface state (20%) --- */
+  if (m.ok.wx){
+    const gustEx = Math.max(0, (m.gustNow || 0) - (m.windNow || 0));
+    let s = 100 - 3.6 * Math.max(0, (m.windNow || 0) - 4) - 1.2 * Math.max(0, gustEx - 4) - 5 * Math.max(0, (m.windWaveNow || 0) - 0.7);
+    s = clamp(Math.round(s), 4, 98);
+    F.push({
+      key:'wind', name:'Wind & surface state', weight:20, score:s,
+      stat: f0(m.windNow) + ' kn ' + compass(m.windDir),
+      summary: (m.windNow < 6 ? 'Near-glassy surface — easy entries, easy surface swims.' :
+                m.windNow < 12 ? 'Light wind — some texture on the surface but very workable.' :
+                m.windNow < 18 ? 'Choppy — surface swims and navigation get tiring.' :
+                'Rough surface conditions — entries, exits, and boat ops all suffer.'),
+      data: [
+        'Wind: ' + f0(m.windNow) + ' kn from ' + f0(m.windDir) + '\u00b0 (' + compass(m.windDir) + '), gusting ' + f0(m.gustNow) + ' kn',
+        'Locally generated wind waves: ' + f1(m.windWaveNow) + ' ft @ ' + f0(m.windWavePer) + ' s',
+        'Prior 24-h average: ' + f0(m.windAvg24) + ' kn'
+      ],
+      spark: { series: m.windSeries, nowPos: m.windNowPos, unit: 'kn', label: 'Wind speed — 72 h before & 24 h after', markLabel: m.markLabel },
+      why: 'Wind builds short-period chop within hours. It rarely affects you at depth, but it controls the hardest parts of a shore dive: getting in, getting out, and the surface swim. It also drives your safety-stop comfort and how easy it is to spot a surfaced buddy. SoCal has a strong daily rhythm — calm mornings, westerly sea breeze rising after noon — which is why locals dive early and why the noon and 5 PM outlook slots usually score below the 7 AM slot. Offshore (easterly/Santa Ana) wind flattens the surface but can bring its own hazards.',
+      scoring: 'The first 4 kn are free (that\u2019s glassy). Beyond that it loses 3.6 points per knot of sustained wind, 1.2 per knot of gust excess beyond 4 kn over sustained, and 5 per foot of locally generated wind wave above 0.7 ft.'
+    });
+  }
+
+  /* --- 4. Runoff & water quality (10%) --- */
+  if (m.ok.wx){
+    const r = m.rain72;
+    let s = r <= 0.02 ? 96 : r <= 0.1 ? 72 : r <= 0.25 ? 50 : r <= 0.5 ? 32 : r <= 1 ? 20 : 8;
+    F.push({
+      key:'runoff', name:'Runoff & water quality', weight:10, score:s,
+      stat: f1(r) + '\u2033 / 72 h',
+      summary: r <= 0.02 ? 'No meaningful rain in the prior 3 days — runoff is not a concern.' :
+               'Recent rain — expect turbid water near shore and elevated bacteria; the standard advisory is to stay out for 72 h after significant rain.',
+      data: [
+        'Rainfall, prior 72 h: ' + f1(m.rain72) + '\u2033 \u00b7 prior 24 h: ' + f1(m.rain24) + '\u2033',
+        m.lastRainHrs == null ? 'Last measurable rain: none within the prior 72 h' : 'Last measurable rain: about ' + m.lastRainHrs + ' h before this time'
+      ],
+      why: 'In urban SoCal, rain doesn\u2019t just add fresh water — it flushes storm drains straight into the ocean, carrying silt, oil, and bacteria. LA County public health advises avoiding ocean-water contact for 72 hours after significant rain, and visibility near river mouths and drains can collapse for days. Offshore sites like Catalina recover much faster than mainland beaches below big watersheds.',
+      scoring: 'Stepped on 72-hour rainfall totals: under 0.02\u2033 scores ~96; 0.1\u2033 ~72; 0.25\u2033 ~50; 0.5\u2033 ~32; an inch or more drops to 20 or below. Heavy recent rain also caps the overall rating (see methodology).'
+    });
+  }
+
+  /* --- 5. Tide movement (10%) --- */
+  if (m.ok.tides){
+    let s = m.tideRange <= 3.5 ? 88 : m.tideRange <= 5.5 ? 74 : 56;
+    if (m.rising) s += 8;
+    s = clamp(Math.round(s), 4, 98);
+    F.push({
+      key:'tide', name:'Tide movement', weight:10, score:s,
+      stat: f1(m.tideRange) + ' ft range',
+      summary: (m.rising == null ? 'Tide data available below.' :
+        (m.rising ? 'Tide is coming in — incoming water is usually cleaner oceanic water.' : 'Tide is dropping — ebb flow can pull silt and back-bay water along the coast.')),
+      data: [
+        'Height at this time: ' + f1(m.tideH) + ' ft MLLW, ' + (m.rising ? 'rising' : 'falling'),
+        'Day\u2019s tidal range: ' + f1(m.tideRange) + ' ft (' + (m.tideRange > 5.5 ? 'spring-tide territory — stronger tidal currents' : m.tideRange > 3.5 ? 'moderate' : 'mild — weak tidal currents') + ')',
+        m.nextTide ? 'Next event: ' + (m.nextTide.type === 'H' ? 'high' : 'low') + ' of ' + f1(m.nextTide.v) + ' ft at ' + fmtDay(m.nextTide.t) + ' ' + fmtTime(m.nextTide.t) : 'No upcoming event parsed'
+      ],
+      why: 'Tides matter two ways. First, water movement: the bigger the day\u2019s range (spring tides, around full/new moons), the stronger the currents as water moves — worth timing your dive near a high or low (\u201cslack\u201d) when flow pauses. Second, water quality: an incoming (flooding) tide pushes clean offshore water toward the beach, while an outgoing tide can drag turbid harbor and back-bay water across a site. Divers often aim for the last hour of the flood.',
+      scoring: 'Ranges up to 3.5 ft score ~88, up to 5.5 ft ~74, larger spring-tide ranges ~56. A rising tide at the evaluated time adds 8.'
+    });
+  }
+
+  /* composite + safety caps */
+  const wSum = F.reduce((a,f)=>a+f.weight,0) || 1;
+  let composite = Math.round(F.reduce((a,f)=>a+f.score*f.weight,0) / wSum);
+  if (Heff != null && Heff >= 4 && composite > 40){ composite = 40; caps.push('capped: surf entry through ' + f1(Heff) + ' ft seas is hazardous'); }
+  if (m.rain72 >= 1 && composite > 45){ composite = 45; caps.push('capped: >1\u2033 of rain in 72 h — water-quality advisory'); }
+  else if (m.rain72 >= 0.5 && composite > 65){ composite = 65; caps.push('capped: recent rain — 72-hour water-quality advisory in effect'); }
+  const stars = clamp(Math.round(composite / 10) / 2, 1, 5);
+  const verdict = stars >= 4.5 ? 'Exceptional' : stars >= 3.5 ? 'Good' : stars >= 2.5 ? 'Fair' : stars >= 1.5 ? 'Poor' : 'Blown out';
+  return { factors:F, composite, stars, verdict, caps };
+}
+
+/* ============ rendering ============ */
+const STAR_PATH = 'M12 2.5l2.83 5.9 6.47.83-4.75 4.48 1.22 6.4L12 17l-5.77 3.1 1.22-6.4L2.7 9.23l6.47-.83z';
+function starSVG(){ return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + STAR_PATH + '"/></svg>'; }
+function renderStars(rating){
+  $('starsBase').innerHTML = starSVG().repeat(5);
+  $('starsFill').innerHTML = starSVG().repeat(5);
+  $('starsFill').style.width = (rating / 5 * 100) + '%';
+  $('starsWrap').setAttribute('aria-label', rating + ' out of 5 stars');
+}
+function sparkSVG(sp){
+  const vals = (sp.series || []).map(v => v == null ? null : v);
+  const clean = vals.filter(v => v != null);
+  if (clean.length < 4) return '';
+  const w = 320, h = 64, padT = 14, padB = 14;
+  const vmax = Math.max(...clean), vmin = Math.min(...clean);
+  const span = (vmax - vmin) || 1;
+  const X = i => (i / (vals.length - 1)) * w;
+  const Y = v => padT + (1 - (v - vmin) / span) * (h - padT - padB);
+  let past = '', fut = '';
+  vals.forEach((v, i) => {
+    if (v == null) return;
+    if (i <= sp.nowPos) past += (past ? ' L' : 'M') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1);
+    else fut += (fut ? ' L' : 'M' + X(sp.nowPos).toFixed(1) + ' ' + Y(vals[sp.nowPos] == null ? clean[0] : vals[sp.nowPos]).toFixed(1) + ' L') + X(i).toFixed(1) + ' ' + Y(v).toFixed(1);
+  });
+  const nx = X(sp.nowPos).toFixed(1);
+  const nowV = vals[sp.nowPos];
+  const mark = sp.markLabel || 'now';
+  return '<div class="spark"><svg viewBox="0 0 ' + w + ' ' + (h + 16) + '" role="img" aria-label="' + esc(sp.label) + '">' +
+    '<text x="0" y="10" font-size="9" fill="var(--ink3)" font-family="var(--mono)">' + esc(sp.label) + '</text>' +
+    '<path d="' + past + '" fill="none" stroke="var(--ink2)" stroke-width="1.6"/>' +
+    '<path d="' + fut + '" fill="none" stroke="var(--ink3)" stroke-width="1.4" stroke-dasharray="3 3"/>' +
+    '<line x1="' + nx + '" y1="' + padT + '" x2="' + nx + '" y2="' + (h - 2) + '" stroke="var(--now)" stroke-width="1.2"/>' +
+    (nowV != null ? '<circle cx="' + nx + '" cy="' + Y(nowV).toFixed(1) + '" r="2.6" fill="var(--now)"/>' +
+      '<text x="' + clamp(+nx + 5, 0, w - 78) + '" y="' + (h + 12) + '" font-size="9.5" fill="var(--now)" font-family="var(--mono)">' + esc(mark) + ' ' + f1(nowV) + ' ' + sp.unit + '</text>' : '') +
+    '<text x="0" y="' + (h + 12) + '" font-size="9" fill="var(--ink3)" font-family="var(--mono)">\u221272 h</text>' +
+    '<text x="' + (w - 30) + '" y="' + (h + 12) + '" font-size="9" fill="var(--ink3)" font-family="var(--mono)">+48 h</text>' +
+    '<text x="' + (w - 40) + '" y="10" font-size="9" fill="var(--ink3)" font-family="var(--mono)">' + f1(vmin) + '\u2013' + f1(vmax) + '</text>' +
+    '</svg></div>';
+}
+function renderFactors(F){
+  $('factors').innerHTML = F.map(f => {
+    const c = colorFor(f.score);
+    return '<details class="factor">' +
+      '<summary>' +
+        '<div class="fhead"><span class="fname">' + esc(f.name) + '</span><span class="fstat">' + esc(f.stat) + '</span></div>' +
+        '<div class="fscore"><span class="bar"><i style="width:' + f.score + '%;background:' + c + '"></i></span><span class="fnum">' + f.score + '/100</span></div>' +
+        '<p class="fsum">' + esc(f.summary) + '</p><span class="chev">&#9662;</span>' +
+      '</summary>' +
+      '<div class="fbody">' +
+        '<h4>What the data shows</h4>' + f.data.map(d => '<p class="d">' + esc(d) + '</p>').join('') +
+        (f.spark ? sparkSVG(f.spark) : '') +
+        '<h4>Why it matters</h4><p class="why">' + esc(f.why) + '</p>' +
+        '<h4>How it\u2019s scored</h4><p class="why">' + esc(f.scoring) + '</p>' +
+        '<p class="fw">Weight: ' + f.weight + '% of the overall rating</p>' +
+      '</div></details>';
+  }).join('');
+}
+function renderHero(site, m, R){
+  renderStars(R.stars);
+  $('verdict').textContent = R.verdict;
+  $('scoreNum').textContent = R.stars.toFixed(1) + ' \u2605 \u00b7 ' + R.composite + '/100';
+  const wc = $('whenChip');
+  if (!m.isNow){ wc.hidden = false; wc.textContent = (+m.when > Date.now() ? 'forecast \u00b7 ' : 'hindcast \u00b7 ') + fmtFull(m.when); }
+  else wc.hidden = true;
+  const tc = $('trendChip');
+  if (Math.abs(m.trendPct || 0) >= 0.12){
+    tc.hidden = false;
+    const up = m.trendPct > 0;
+    tc.className = 'chip ' + (up ? 'up' : 'down');
+    tc.textContent = 'swell ' + (up ? 'building \u2191 ' : 'dropping \u2193 ') + Math.abs(Math.round(m.trendPct * 100)) + '%';
+  } else tc.hidden = true;
+  const cn = $('capNote');
+  if (R.caps && R.caps.length){ cn.hidden = false; cn.textContent = R.caps.join(' \u00b7 '); }
+  else cn.hidden = true;
+  const g = [];
+  if (m.waveNow != null) g.push(['Seas', f1(m.waveNow) + ' ft @ ' + f0(m.perNow) + ' s']);
+  if (m.windNow != null) g.push(['Wind', f0(m.windNow) + ' kn ' + compass(m.windDir)]);
+  if (m.sstF != null)    g.push(['Water', f0(m.sstF) + ' \u00b0F']);
+  if (m.nextTide)        g.push(['Next ' + (m.nextTide.type === 'H' ? 'high' : 'low'), fmtTime(m.nextTide.t)]);
+  $('glance').innerHTML = g.map(x => '<div class="g"><span>' + esc(x[0]) + '</span><b>' + esc(x[1]) + '</b></div>').join('');
+  $('srcChips').innerHTML =
+    '<span class="chip ' + (m.ok.marine ? 'ok' : 'bad') + '">wave model ' + (m.ok.marine ? '\u2713' : '\u2715') + '</span>' +
+    '<span class="chip ' + (m.ok.wx ? 'ok' : 'bad') + '">weather ' + (m.ok.wx ? '\u2713' : '\u2715') + '</span>' +
+    '<span class="chip ' + (m.ok.tides ? 'ok' : 'bad') + '">tides ' + (m.ok.tides ? '\u2713' : '\u2715') + '</span>';
+}
+
+/* ---- tide curve ---- */
+function renderTideCurve(when){
+  const box = $('tideCurve'), sum = $('tideSum');
+  $('tideLink').href = 'https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=' + curStation.id;
+  if (!S.tideEv.length){ box.innerHTML = '<p class="skel">Tide data unavailable for ' + esc(curStation.name) + '.</p>'; sum.textContent = ''; return; }
+  const w0 = +when - 6*HR, w1 = +when + 24*HR;
+  const N = 96, pts = [];
+  for (let k = 0; k <= N; k++){
+    const t = w0 + (w1 - w0) * k / N;
+    const r = tideAt(t);
+    if (r) pts.push({ t, h: r.h });
+  }
+  if (pts.length < 10){ box.innerHTML = '<p class="skel">Tide predictions don\u2019t cover this time window.</p>'; sum.textContent = 'Station: ' + esc(curStation.name); return; }
+  const evs = S.tideEv.filter(e => +e.t >= w0 && +e.t <= w1);
+  const hs = pts.map(p => p.h).concat(evs.map(e => e.v));
+  let hmin = Math.min(...hs, 0), hmax = Math.max(...hs);
+  const pad = (hmax - hmin) * 0.12 || 1; hmin -= pad * 0.4; hmax += pad;
+  const W = 340, H = 128, padT = 8, padB = 18;
+  const X = t => (t - w0) / (w1 - w0) * W;
+  const Y = h => padT + (1 - (h - hmin) / (hmax - hmin)) * (H - padT - padB);
+  let path = '';
+  pts.forEach((p, i) => { path += (i ? ' L' : 'M') + X(p.t).toFixed(1) + ' ' + Y(p.h).toFixed(1); });
+  const r0 = tideAt(+when);
+  const zx = Y(0);
+  let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Tide height curve">';
+  if (0 >= hmin && 0 <= hmax){
+    svg += '<line x1="0" y1="' + zx.toFixed(1) + '" x2="' + W + '" y2="' + zx.toFixed(1) + '" stroke="var(--line)" stroke-width="1"/>' +
+           '<text x="2" y="' + (zx - 3).toFixed(1) + '" font-size="8.5" fill="var(--ink3)" font-family="var(--mono)">0 MLLW</text>';
+  }
+  svg += '<path d="' + path + '" fill="none" stroke="var(--accent)" stroke-width="1.8"/>';
+  for (const e of evs){
+    const ex = X(+e.t), ey = Y(e.v);
+    const above = e.type === 'H';
+    svg += '<circle cx="' + ex.toFixed(1) + '" cy="' + ey.toFixed(1) + '" r="2.4" fill="var(--accent)"/>' +
+      '<text x="' + clamp(ex, 26, W - 26).toFixed(1) + '" y="' + (above ? ey - 6 : ey + 13).toFixed(1) + '" text-anchor="middle" font-size="9" fill="var(--ink2)" font-family="var(--mono)">' +
+      (above ? 'H ' : 'L ') + f1(e.v) + ' \u00b7 ' + fmtTime(e.t) + '</text>';
+  }
+  if (r0){
+    const mxp = X(+when);
+    svg += '<line x1="' + mxp.toFixed(1) + '" y1="' + padT + '" x2="' + mxp.toFixed(1) + '" y2="' + (H - padB) + '" stroke="var(--now)" stroke-width="1.2"/>' +
+      '<circle cx="' + mxp.toFixed(1) + '" cy="' + Y(r0.h).toFixed(1) + '" r="3" fill="var(--now)"/>' +
+      '<text x="' + clamp(mxp + 4, 0, W - 60).toFixed(1) + '" y="' + (H - 5) + '" font-size="9" fill="var(--now)" font-family="var(--mono)">' + esc(lastM && lastM.markLabel || 'now') + ' ' + f1(r0.h) + ' ft</text>';
+  }
+  svg += '</svg>';
+  box.innerHTML = svg;
+  const nx = r0 && r0.next;
+  sum.innerHTML = (r0 ? '<strong>' + f1(r0.h) + ' ft and ' + (r0.rising ? 'rising' : 'falling') + '</strong>' +
+    (nx ? ' \u2014 next ' + (nx.type === 'H' ? 'high' : 'low') + ' ' + f1(nx.v) + ' ft at ' + fmtDay(nx.t) + ' ' + fmtTime(nx.t) : '') + '. ' : '') +
+    'Station: ' + esc(curStation.name) + ' (#' + curStation.id + ').';
+}
+
+/* ---- 5-day outlook ---- */
+const SLOTS = [ { h:7, lbl:'7 AM' }, { h:12, lbl:'Noon' }, { h:17, lbl:'5 PM' } ];
+function renderOutlook(site){
+  const now = new Date();
+  const b = dataBounds();
+  let html = '<span></span>' + SLOTS.map(s => '<span class="ohead">' + s.lbl + '</span>').join('');
+  for (let d = 0; d < 5; d++){
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d);
+    html += '<span class="oday">' + fmtDay(day) + '<br>' + (day.getMonth()+1) + '/' + day.getDate() + '</span>';
+    for (const sl of SLOTS){
+      const when = new Date(day.getFullYear(), day.getMonth(), day.getDate(), sl.h);
+      if (!b || +when < b.lo || +when > b.hi){ html += '<button class="oslot" disabled>\u2014</button>'; continue; }
+      const m = snapshotAt(site, when);
+      if (!m.ok.marine && !m.ok.wx){ html += '<button class="oslot" disabled>\u2014</button>'; continue; }
+      const R = scoreDive(site, m);
+      const past = +when < +now - 30*60e3;
+      html += '<button class="oslot' + (past ? ' past' : '') + '" data-ts="' + (+when) + '" style="color:' + colorFor(R.composite) + '">' +
+        '<b>' + R.stars.toFixed(1) + '\u2605' + (R.caps.length ? '\u26a0' : '') + '</b><small>' + esc(R.verdict) + '</small></button>';
+    }
+  }
+  $('outlook').innerHTML = html;
+}
+
+function renderSources(site, station){
+  const list = [
+    ['https://cdip.ucsd.edu/m/forecast/model_grid/?wave_model=socal', 'CDIP SoCal wave forecast', 'Cross-check the swell model against Scripps\u2019 nearshore grid'],
+    ['https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id=' + station.id, 'NOAA tide predictions', 'Official tide tables — ' + station.name],
+    ['https://ocean.weather.gov/Pac_tab.php', 'OPC Pacific marine', 'Offshore charts — see swells coming days out'],
+    ['https://graphical.weather.gov/sectors/loxMarineLoop.php#tabs', 'NOAA graphical marine (LA/Oxnard)', 'Coastal wind & wave forecast maps'],
+    ['https://www.weather.gov/wrh/TextProduct?product=srflox', 'NWS LOX surf forecast', 'Forecaster-written surf zone discussion'],
+  ];
+  if (site.cam) list.push([site.cam, site.camLabel || 'Site webcam / report', 'Look at the actual water before you drive']);
+  $('sources').innerHTML = list.map(s =>
+    '<a class="src" href="' + esc(s[0]) + '" target="_blank" rel="noopener"><b>' + esc(s[1]) + ' \u2197</b><span>' + esc(s[2]) + '</span></a>').join('');
+}
+function renderMethodology(F){
+  const rows = F.map(f =>
+    '<div class="wrow"><span class="wn">' + esc(f.name) + '</span><span class="wb"><i style="width:' + (f.weight / 30 * 100) + '%"></i></span><span class="wp">' + f.weight + '%</span></div>').join('');
+  $('methBody').innerHTML =
+    '<p>Each factor is scored 0\u2013100 from model data, then combined using the weights below. The weighted average maps to stars (100 \u2192 \u26055.0, 70 \u2192 \u26053.5, 40 \u2192 \u26052.0). Open any factor card above to see the exact data and arithmetic behind the number — the goal is that over time you stop needing the tool. Two safety caps can override the weighted average: effective seas of 4 ft or more cap the rating (surf entry hazard), and heavy recent rain caps it per the 72-hour water-quality rule — when a cap fires, a note appears next to the verdict.</p>' +
+    rows +
+    '<h4>Evaluating other dates & times</h4>' +
+    '<p>Every rating — the big one, the outlook slots, and any custom date/time — runs the same engine at that timestamp: trailing 48\u201372 h windows for sediment, rain, and wind history are computed <em>relative to the evaluated moment</em>, using model hindcast for the past and forecast for the future. Accuracy tiers: the past 3 days and next ~48 h are solid; days 3\u20135 are useful for planning but drift; beyond day 5 the wave model has little skill and the tool warns you. Anything outside the loaded window (3 days back to 7 days ahead) can\u2019t be rated.</p>' +
+    '<h4>Data sources</h4>' +
+    '<p>Wave heights, periods, directions and sea temperature come from the Open-Meteo marine model (~5 km grid, includes 72 h of hindcast and 7 days of forecast). Wind, gusts and rainfall come from the Open-Meteo weather model. Tide highs/lows come from NOAA CO-OPS; the curve between them is a cosine interpolation, which is the standard approximation and typically within a few tenths of a foot. Data is fetched fresh on load or refresh; the last successful fetch per site is cached on this device so the app still shows (stale) data offline.</p>' +
+    '<h4>Known limitations</h4>' +
+    '<p>Models can\u2019t see plankton blooms, red tide, or very local effects inside the surf zone — a 5 km ocean grid cell is not the water at the steps. Visibility is an inference from swell/rain/wind history, not a measurement. Exposure adjustment uses a single facing direction per site, which is a simplification of real bathymetry and refraction. Treat 5-star days as \u201cprobably worth the drive,\u201d not a guarantee, and always verify with the linked live sources. Logging your observed visibility against the prediction (via the Log dive button) is the fastest way to learn how your home site deviates from the model.</p>';
+}
+
+/* ============ orchestration ============ */
+function setBanner(msg, isErr){
+  const b = $('banner');
+  if (!msg){ b.hidden = true; return; }
+  b.hidden = false; b.className = 'banner' + (isErr ? ' err' : ''); b.innerHTML = msg;
+}
+function renderAt(whenArg){
+  const now = new Date();
+  let when = whenArg || now;
+  const b = dataBounds();
+  const msgs = [];
+  if (b){
+    const cl = clamp(+when, b.lo, b.hi);
+    if (Math.abs(cl - +when) > 30 * 60e3){
+      msgs.push('<strong>Out of range.</strong> Loaded data covers ' + fmtFull(new Date(b.lo)) + ' through ' + fmtFull(new Date(b.hi)) + ' — showing the nearest available time instead. Ratings can\u2019t be produced beyond this window.');
+      when = new Date(cl);
+      $('whenInput').value = toLocalInput(when);
+    }
+  }
+  const m = snapshotAt(current, when);
+  const R = scoreDive(current, m);
+  lastM = m; lastR = R;
+  evalWhen = m.isNow ? null : new Date(+when);
+  const aheadH = (+when - +now) / HR;
+  if (aheadH > 120) msgs.push('<strong>5+ days out:</strong> wave and weather models have little skill this far ahead. Treat this as a rough tendency, not a forecast — re-check within 3 days of the dive.');
+  else if (aheadH > 72) msgs.push('<strong>3\u20135 days out:</strong> useful for planning, but model accuracy drops at this range. Verify as the day approaches.');
+  if (aheadH < -0.75) msgs.push('Showing a <strong>hindcast</strong> — the model\u2019s reconstruction of past conditions, useful for comparing against what you actually saw.');
+  if ((m.ok.marine || m.ok.wx) && !m.ok.tides) msgs.push('Tide predictions don\u2019t cover this time — rating computed without the tide factor.');
+  setBanner(msgs.join('<br>'));
+  renderHero(current, m, R);
+  renderFactors(R.factors);
+  renderTideCurve(when);
+  renderMethodology(R.factors);
+}
+
+async function loadAll(site){
+  setBanner('');
+  $('updatedAt').textContent = 'loading\u2026';
+  $('factors').innerHTML = '<div class="skel">Fetching marine model, weather, and tide data\u2026</div>';
+  $('outlook').innerHTML = '<div class="skel">Computing outlook\u2026</div>';
+  curStation = site.station ? (STATIONS.find(s => s.id === site.station) || nearestStation(site.lat, site.lon)) : nearestStation(site.lat, site.lon);
+
+  const [mr, wr, tr] = await Promise.allSettled([
+    fetchJSON(marineURL(site)), fetchJSON(weatherURL(site)), fetchJSON(tideURL(curStation.id))
+  ]);
+  const marine = mr.status === 'fulfilled' ? mr.value : null;
+  const wx     = wr.status === 'fulfilled' ? wr.value : null;
+  const tides  = tr.status === 'fulfilled' ? tr.value : null;
+
+  S = parseSeries(marine, wx, tides);
+  let staleNote = '';
+  if (!S.ok.marine && !S.ok.wx){
+    const cached = await store.get('cache2:' + site.id);
+    if (cached){
+      try {
+        const c = JSON.parse(cached);
+        S = parseSeries(c.marine, c.wx, c.tides);
+        staleNote = 'Live fetch failed — showing cached data from ' + new Date(c.at).toLocaleString() + '.<br>';
+      } catch(e){}
+    }
+    if (!S.ok.marine && !S.ok.wx){
+      setBanner('<strong>Couldn\u2019t reach the data services.</strong> Check your connection — or, if you\u2019re viewing this inside a sandboxed preview, download the file and open it directly in Chrome/Safari (data APIs need normal browser network access).', true);
+      $('factors').innerHTML = ''; $('outlook').innerHTML = ''; $('updatedAt').textContent = '';
+      renderSources(site, curStation);
+      return;
+    }
+  } else {
+    store.set('cache2:' + site.id, JSON.stringify({ at: Date.now(), marine, wx, tides }));
+  }
+  const bo = dataBounds();
+  if (bo){ $('whenInput').min = toLocalInput(new Date(bo.lo)); $('whenInput').max = toLocalInput(new Date(bo.hi)); }
+  renderSources(site, curStation);
+  renderOutlook(site);
+  const target = evalWhen || new Date();
+  if (!evalWhen) $('whenInput').value = toLocalInput(new Date());
+  renderAt(target);
+  if (staleNote) setBanner(staleNote + ($('banner').hidden ? '' : $('banner').innerHTML));
+  $('updatedAt').textContent = 'updated ' + fmtTime(new Date());
+}
+
+/* ============ Subsurface export ============ */
+function buildLogText(userNotes){
+  const site = current, m = lastM, R = lastR;
+  const vf = R.factors.find(f => f.key === 'vis');
+  const sg = R.factors.find(f => f.key === 'surge');
+  const L = [];
+  L.push('DiveCast @ ' + site.name);
+  L.push(m.when.toLocaleDateString('en-US', { weekday:'short', year:'numeric', month:'short', day:'numeric' }) + ' ' + fmtTime(m.when));
+  L.push('Predicted: ' + '\u2605' + R.stars.toFixed(1) + ' ' + R.verdict + ' (' + R.composite + '/100)' + (R.caps.length ? ' — ' + R.caps.join('; ') : ''));
+  L.push('Seas ' + f1(m.waveNow) + ' ft @ ' + f0(m.perNow) + ' s \u00b7 swell ' + f1(m.swellNow) + ' ft @ ' + f0(m.swellPer) + ' s from ' + compass(m.swellDir) + ' \u00b7 wind ' + f0(m.windNow) + ' kn ' + compass(m.windDir));
+  L.push('Est vis ~' + (vf && vf.extra ? vf.extra.visFt : '—') + ' ft \u00b7 water ' + f0(m.sstF) + '\u00b0F \u00b7 rain 72h ' + f1(m.rain72) + '\u2033' + (sg ? ' \u00b7 surge factor ' + sg.score + '/100' : ''));
+  if (m.ok.tides) L.push('Tide: ' + f1(m.tideH) + ' ft ' + (m.rising ? 'rising' : 'falling') + (m.nextTide ? ', next ' + (m.nextTide.type==='H'?'high':'low') + ' ' + f1(m.nextTide.v) + ' ft @ ' + fmtTime(m.nextTide.t) : '') + ' (range ' + f1(m.tideRange) + ' ft)');
+  const obs = [];
+  const vo = $('fVisObs').value.trim(), md = $('fMaxD').value.trim();
+  if (vo) obs.push('vis ' + vo + ' ft');
+  if (md) obs.push('max depth ' + md + ' ft');
+  L.push('---');
+  L.push('Observed: ' + (obs.length ? obs.join(' \u00b7 ') : '(fill in)'));
+  if (userNotes) L.push(userNotes);
+  return L.join('\n');
+}
+function visStars(ft){ return ft >= 40 ? 5 : ft >= 25 ? 4 : ft >= 15 ? 3 : ft >= 8 ? 2 : ft > 0 ? 1 : 0; }
+function buildSSRF(){
+  const site = current, m = lastM;
+  const p = n => String(n).padStart(2, '0');
+  const d = m.when;
+  const date = d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
+  const time = p(d.getHours()) + ':' + p(d.getMinutes()) + ':00';
+  const dur = clamp(parseInt($('fDur').value) || 40, 1, 600);
+  const uuid = (Math.abs((site.lat * 1e5 | 0) ^ ((site.lon * 1e5 | 0) << 7)) >>> 0).toString(16).padStart(8, '0').slice(0, 8);
+  const vo = parseFloat($('fVisObs').value);
+  const md = parseFloat($('fMaxD').value);
+  const notes = buildLogText($('fNotes').value.trim());
+  let x = "<divelog program='subsurface' version='3'>\n<settings>\n</settings>\n<divesites>\n";
+  x += "<site uuid='" + uuid + "' name='" + xesc(site.name) + "' gps='" + site.lat.toFixed(6) + " " + site.lon.toFixed(6) + "'>\n</site>\n</divesites>\n<dives>\n";
+  x += "<dive" + (isFinite(vo) && vo > 0 ? " visibility='" + visStars(vo) + "'" : "") + " tags='divecast' divesiteid='" + uuid + "' date='" + date + "' time='" + time + "' duration='" + dur + ":00 min'>\n";
+  x += "  <notes>" + xesc(notes) + "</notes>\n";
+  x += "  <divecomputer model='manually added dive'>\n";
+  if (isFinite(md) && md > 0) x += "  <depth max='" + (md / M2FT).toFixed(1) + " m' />\n";
+  if (m.sstF != null) x += "  <temperature water='" + ((m.sstF - 32) * 5 / 9).toFixed(1) + " C' />\n";
+  x += "  </divecomputer>\n</dive>\n</dives>\n</divelog>\n";
+  return x;
+}
+function showLog(show){
+  $('logOverlay').classList.toggle('show', show);
+  if (show){
+    if (!lastM || !lastR){ $('logPreview').textContent = 'Load conditions first.'; return; }
+    $('logPreview').textContent = buildLogText('');
+  }
+}
+async function copyLog(){
+  const text = buildLogText($('fNotes').value.trim());
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { ok = document.execCommand('copy'); } catch(e2){}
+    ta.remove();
+  }
+  $('btnCopyLog').textContent = ok ? 'Copied \u2713' : 'Copy failed — select & copy from preview';
+  if (!ok) $('logPreview').textContent = text;
+  setTimeout(() => { $('btnCopyLog').textContent = 'Copy for notes'; }, 2200);
+}
+function downloadSSRF(){
+  const xml = buildSSRF();
+  const d = lastM.when, p = n => String(n).padStart(2,'0');
+  const fn = 'divecast-' + d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + '-' + current.id + '.ssrf';
+  const blob = new Blob([xml], { type: 'application/xml' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = fn;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+}
+
+/* ============ add / delete sites ============ */
+function showModal(show){ $('addOverlay').classList.toggle('show', show); if (show) setTimeout(() => $('fName').focus(), 50); }
+function validateForm(){
+  const name = $('fName').value.trim();
+  const lat = parseFloat($('fLat').value), lon = parseFloat($('fLon').value);
+  if (!name) return { err: 'Give the site a name.' };
+  if (!isFinite(lat) || lat < -90 || lat > 90) return { err: 'Latitude must be between \u221290 and 90.' };
+  if (!isFinite(lon) || lon < -180 || lon > 180) return { err: 'Longitude must be between \u2212180 and 180.' };
+  if (lon > 0 && lat > 20 && lat < 50) return { err: 'Longitude ' + lon + ' is in the eastern hemisphere — West-coast longitudes are negative. <button id="btnFixLon">Use \u2212' + lon + '</button>', fixable: true };
+  return { name, lat, lon };
+}
+async function saveSite(){
+  const v = validateForm();
+  if (v.err){
+    $('fMsg').innerHTML = v.err;
+    const fx = $('btnFixLon');
+    if (fx) fx.onclick = () => { $('fLon').value = '-' + Math.abs(parseFloat($('fLon').value)); $('fMsg').textContent = ''; };
+    return;
+  }
+  const depth = parseInt($('fDepth').value) || 30;
+  const site = { id: 'c' + Date.now(), name: v.name, lat: +v.lat.toFixed(5), lon: +v.lon.toFixed(5), depth: clamp(depth, 10, 130) };
+  if ($('fFace').value !== '') site.face = Number($('fFace').value);
+  const cam = $('fCam').value.trim();
+  if (cam && /^https?:\/\//i.test(cam)){ site.cam = cam; site.camLabel = 'Site webcam / report'; }
+  customSites.push(site);
+  await store.set('divesites', JSON.stringify(customSites));
+  sites = [...BUILTIN, ...customSites];
+  current = site;
+  await store.set('lastsite', site.id);
+  renderSiteSelect();
+  $('btnDel').hidden = false;
+  showModal(false);
+  ['fName','fLat','fLon','fCam'].forEach(id => $(id).value = '');
+  $('fMsg').textContent = '';
+  evalWhen = null;
+  loadAll(site);
+}
+async function deleteSite(){
+  if (!current || BUILTIN.some(b => b.id === current.id)) return;
+  if (!confirm('Delete "' + current.name + '"?')) return;
+  customSites = customSites.filter(s => s.id !== current.id);
+  await store.set('divesites', JSON.stringify(customSites));
+  sites = [...BUILTIN, ...customSites];
+  current = BUILTIN[0];
+  await store.set('lastsite', current.id);
+  renderSiteSelect();
+  $('btnDel').hidden = true;
+  evalWhen = null;
+  loadAll(current);
+}
+
+/* ============ boot ============ */
+async function boot(){
+  await loadSites();
+  const lastId = await store.get('lastsite');
+  current = sites.find(s => s.id === lastId) || sites[0];
+  renderSiteSelect();
+  $('btnDel').hidden = BUILTIN.some(b => b.id === current.id);
+  renderStars(0);
+  $('whenInput').value = toLocalInput(new Date());
+
+  $('siteSel').addEventListener('change', async e => {
+    current = sites.find(s => s.id === e.target.value) || sites[0];
+    await store.set('lastsite', current.id);
+    $('btnDel').hidden = BUILTIN.some(b => b.id === current.id);
+    evalWhen = null;
+    loadAll(current);
+  });
+  $('btnRefresh').addEventListener('click', () => loadAll(current));
+  $('btnAdd').addEventListener('click', () => showModal(true));
+  $('btnCancel').addEventListener('click', () => showModal(false));
+  $('addOverlay').addEventListener('click', e => { if (e.target === $('addOverlay')) showModal(false); });
+  $('btnSave').addEventListener('click', saveSite);
+  $('btnDel').addEventListener('click', deleteSite);
+  $('btnGeo').addEventListener('click', () => {
+    if (!navigator.geolocation){ $('fMsg').textContent = 'Geolocation not available in this browser.'; return; }
+    $('fMsg').textContent = 'Locating\u2026';
+    navigator.geolocation.getCurrentPosition(
+      p => { $('fLat').value = p.coords.latitude.toFixed(5); $('fLon').value = p.coords.longitude.toFixed(5); $('fMsg').textContent = ''; },
+      () => { $('fMsg').textContent = 'Couldn\u2019t get a location fix — enter coordinates manually.'; },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  });
+  $('whenInput').addEventListener('change', e => {
+    if (!S) return;
+    const d = new Date(e.target.value);
+    if (isFinite(+d)) renderAt(d);
+  });
+  $('btnNow').addEventListener('click', () => {
+    if (!S) return;
+    $('whenInput').value = toLocalInput(new Date());
+    renderAt(new Date());
+  });
+  $('outlook').addEventListener('click', e => {
+    const btn = e.target.closest('.oslot');
+    if (!btn || !btn.dataset.ts) return;
+    const d = new Date(+btn.dataset.ts);
+    $('whenInput').value = toLocalInput(d);
+    renderAt(d);
+    document.querySelector('.hero').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  $('btnLog').addEventListener('click', () => showLog(true));
+  $('btnLogClose').addEventListener('click', () => showLog(false));
+  $('logOverlay').addEventListener('click', e => { if (e.target === $('logOverlay')) showLog(false); });
+  $('btnCopyLog').addEventListener('click', copyLog);
+  $('btnSsrf').addEventListener('click', downloadSSRF);
+
+  loadAll(current);
+}
+boot();
+</script>
+</body>
+</html>

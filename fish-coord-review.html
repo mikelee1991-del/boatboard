@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fish Spot Coordinate Review — SoCal Boat Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<style>
+:root {
+  --bg: #060a10; --card: #0c121c; --line: #1e2a38; --ink: #e8ecff;
+  --ink2: #9aa8bc; --ink3: #7a8a9a; --mono: ui-monospace, Consolas, monospace;
+  --red: #ff6644; --cyan: #56d4e9; --amber: #ffd966; --good: #3dff9a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, sans-serif; }
+a { color: var(--cyan); }
+header {
+  padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--card);
+  display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center;
+}
+header h1 { margin: 0; font-size: 16px; font-weight: 600; }
+.stats { font-size: 12px; color: var(--ink2); }
+.stats strong { color: var(--ink); }
+.coast-note {
+  font-size: 11px; color: var(--ink3); max-width: 720px; padding: 8px 12px;
+  background: rgba(255,176,32,.08); border: 1px solid rgba(255,176,32,.25); border-radius: 8px;
+}
+.coast-note.ok { background: rgba(61,255,154,.06); border-color: rgba(61,255,154,.25); }
+.layout { display: grid; grid-template-columns: minmax(340px, 42%) 1fr; height: calc(100% - var(--hdr, 88px)); }
+aside {
+  border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; background: var(--card);
+}
+.toolbar {
+  padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+}
+.toolbar label { font-size: 11px; color: var(--ink3); }
+.toolbar select, .toolbar input[type=search] {
+  background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font-size: 12px;
+}
+.toolbar input[type=search] { flex: 1; min-width: 120px; }
+.table-wrap { overflow: auto; flex: 1; }
+table { width: 100%; border-collapse: collapse; font-size: 11px; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { position: sticky; top: 0; background: #101822; color: var(--ink3); font-weight: 600; z-index: 2; }
+tr { cursor: pointer; }
+tr:hover td { background: rgba(110,181,255,.06); }
+tr.active td { background: rgba(86,212,233,.12); }
+.verdict-fix { color: var(--red); font-weight: 600; }
+.verdict-ok { color: var(--good); }
+.mono { font-family: var(--mono); font-size: 10px; color: var(--ink2); white-space: nowrap; }
+.why { color: var(--amber); font-size: 10px; max-width: 140px; word-break: break-word; }
+#map { height: 100%; min-height: 320px; background: var(--bg); }
+.legend {
+  position: absolute; bottom: 12px; left: 12px; z-index: 900; background: rgba(6,10,16,.88);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 11px; color: var(--ink2);
+  pointer-events: none;
+}
+.legend div { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.line-sample { width: 18px; height: 0; border-top: 2px dashed var(--cyan); }
+.map-wrap { position: relative; min-height: 0; }
+.sug-banner {
+  position: absolute; top: 10px; right: 10px; z-index: 900; max-width: 280px;
+  background: rgba(6,10,16,.9); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+  font-size: 11px; color: var(--ink3); pointer-events: none;
+}
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; grid-template-rows: 45vh 1fr; height: auto; min-height: calc(100vh - var(--hdr, 120px)); }
+  aside { border-right: none; border-bottom: 1px solid var(--line); max-height: 45vh; }
+  #map { min-height: 50vh; }
+}
+</style>
+</head>
+<body>
+<header id="hdr">
+  <h1>Fish Spot Coordinate Review</h1>
+  <div class="stats" id="stats">Loading…</div>
+  <div class="coast-note" id="coastNote"></div>
+</header>
+<div class="layout">
+  <aside>
+    <div class="toolbar">
+      <label>Filter</label>
+      <select id="filterRegion">
+        <option value="suspects">Audit failures (FIX)</option>
+        <option value="watch">PV bluff watch (manual)</option>
+        <option value="all">All spots</option>
+        <option value="PV">PV only</option>
+        <option value="SD">SD only</option>
+        <option value="kml">KML-imported</option>
+      </select>
+      <input type="search" id="searchBox" placeholder="Search name…">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Raw lat/lon</th>
+            <th>Suggested</th>
+            <th>localEastM</th>
+            <th>Verdict</th>
+            <th>Why</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </aside>
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="legend">
+      <div><span class="dot" style="background:var(--red)"></span> Raw stored coord</div>
+      <div><span class="dot" style="background:var(--cyan)"></span> Algorithmic suggestion</div>
+      <div><span class="line-sample"></span> Suggested push vector</div>
+      <div><span style="width:18px;height:0;border-top:2px solid #ffd966"></span> coast-geo.js shoreline</div>
+      <div><span style="width:18px;height:0;border-top:2px solid #b89ad4"></span> coast-geo.js islands</div>
+    </div>
+    <div class="sug-banner">Suggested coords are algorithmic only — not authoritative. Verify on Esri satellite before editing FISH_SPOTS.</div>
+  </div>
+</div>
+
+<script src="coast-geo.js"></script>
+<script src="location-audit-core.js"></script>
+<script src="fish-coord-review-data.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+(function () {
+  'use strict';
+  var R = window.FISH_COORD_REVIEW;
+  if (!R) { document.getElementById('stats').textContent = 'Missing fish-coord-review-data.js — run: cscript //Nologo build-fish-coord-review.js'; return; }
+
+  LocationAudit.init(window.COAST_GEO);
+
+  var hdr = document.getElementById('hdr');
+  function syncHdrH() { document.documentElement.style.setProperty('--hdr', hdr.offsetHeight + 'px'); }
+  syncHdrH();
+  window.addEventListener('resize', syncHdrH);
+
+  var ca = R.coastAccuracy || {};
+  document.getElementById('stats').innerHTML =
+    '<strong>' + R.suspectCount + '</strong> audit FAIL · <strong>' + (R.watchCount || 0) + '</strong> PV bluff watch · <strong>' + R.total + '</strong> total · ' +
+    'Generated ' + (R.generated || '').slice(0, 19).replace('T', ' ') + ' UTC';
+  var cn = document.getElementById('coastNote');
+  cn.className = 'coast-note' + (ca.pvMeets10ft ? ' ok' : '');
+  cn.innerHTML = '<strong>coast-geo.js accuracy:</strong> ' + (ca.note || '') +
+    '<br><span style="opacity:.85">' + (ca.source || '') + '</span>' +
+    ' · PV max segment ' + (ca.pvMaxSegM || '?') + ' m · ' + (ca.linePts || 0) + ' coastline pts, ' + (ca.islandPts || 0) + ' island pts.' +
+    (ca.pvMeets10ft ? '' : '<br>To repair: <code>cscript //Nologo densify-coast-pv.js</code> or <code>node fetch-coast.mjs</code> then rebuild.');
+
+  var map = L.map('map', { zoomControl: true }).setView([33.75, -118.35], 11);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19,
+    attribution: 'Imagery © Esri — Maxar, Earthstar Geographics, USDA FSA, USGS, AeroGRID, IGN, GIS User Community'
+  }).addTo(map);
+
+  var coastLayer = L.layerGroup().addTo(map);
+  var spotLayer = L.layerGroup().addTo(map);
+  var homeLayer = L.layerGroup().addTo(map);
+
+  function drawCoast() {
+    var G = window.COAST_GEO;
+    if (!G) return;
+    (G.lines || []).forEach(function (line) {
+      var pts = (line.pts || line).map(function (p) { return [p.lat, p.lon]; });
+      if (pts.length >= 2) {
+        L.polyline(pts, { color: '#ffd966', weight: 2, opacity: 0.85 }).addTo(coastLayer);
+      }
+    });
+    (G.islands || []).forEach(function (isle) {
+      var pts = (isle.pts || []).map(function (p) { return [p.lat, p.lon]; });
+      if (pts.length >= 2) {
+        L.polygon(pts, { color: '#b89ad4', weight: 1.5, fillOpacity: 0.08, opacity: 0.9 }).addTo(coastLayer);
+      }
+    });
+    (G.land || []).forEach(function (l) {
+      var pts = (l.pts || []).map(function (p) { return [p.lat, p.lon]; });
+      if (pts.length >= 2) {
+        L.polygon(pts, { color: '#ffb020', weight: 1, dashArray: '4 4', fillOpacity: 0.05, opacity: 0.7 }).addTo(coastLayer);
+      }
+    });
+  }
+  drawCoast();
+
+  if (R.home) {
+    L.circleMarker([R.home.lat, R.home.lon], {
+      radius: 6, color: '#6eb5ff', fillColor: '#6eb5ff', fillOpacity: 0.9, weight: 2
+    }).bindPopup('<b>' + R.home.name + '</b><br>Home / slip reference').addTo(homeLayer);
+  }
+
+  var activeIdx = null;
+  var markers = {};
+
+  function fmt7(n) { return Number(n).toFixed(7); }
+
+  function showSpot(row) {
+    spotLayer.clearLayers();
+    activeIdx = row.idx;
+    var rawIcon = L.divIcon({
+      className: '', html: '<div style="width:14px;height:14px;border-radius:50%;background:#ff6644;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,.6)"></div>',
+      iconSize: [14, 14], iconAnchor: [7, 7]
+    });
+    var sugIcon = L.divIcon({
+      className: '', html: '<div style="width:14px;height:14px;border-radius:50%;background:#56d4e9;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,.6)"></div>',
+      iconSize: [14, 14], iconAnchor: [7, 7]
+    });
+
+    L.marker([row.lat, row.lon], { icon: rawIcon, zIndexOffset: 1000 })
+      .bindPopup('<b>RAW</b> ' + row.name + '<br><span class="mono">' + fmt7(row.lat) + ', ' + fmt7(row.lon) + '</span><br>' + (row.why || ''))
+      .addTo(spotLayer);
+
+    if (row.sugLat != null && row.sugLon != null) {
+      L.marker([row.sugLat, row.sugLon], { icon: sugIcon, zIndexOffset: 1001 })
+        .bindPopup('<b>SUGGESTED</b> (algorithmic only)<br><span class="mono">' + fmt7(row.sugLat) + ', ' + fmt7(row.sugLon) + '</span><br>' + (row.sugPush || ''))
+        .addTo(spotLayer);
+      L.polyline([[row.lat, row.lon], [row.sugLat, row.sugLon]], {
+        color: '#56d4e9', weight: 2, dashArray: '6 6', opacity: 0.9
+      }).addTo(spotLayer);
+    }
+
+    var bounds = L.latLngBounds([[row.lat, row.lon]]);
+    if (row.sugLat != null) bounds.extend([row.sugLat, row.sugLon]);
+    map.fitBounds(bounds.pad(0.35), { maxZoom: 15 });
+    renderTable();
+  }
+
+  function filteredRows() {
+    var mode = document.getElementById('filterRegion').value;
+    var q = (document.getElementById('searchBox').value || '').toLowerCase();
+    var base = mode === 'all' ? R.rows.slice() : mode === 'suspects' ? R.suspects.slice() :
+      mode === 'watch' ? (R.watch || []).slice() :
+      mode === 'kml' ? R.rows.filter(function (r) { return r.kmlImported; }) :
+      R.rows.filter(function (r) { return r.region === mode; });
+    if (mode === 'suspects' || mode === 'watch' || mode === 'PV' || mode === 'SD' || mode === 'kml') {
+      base.sort(function (a, b) { return (b.localEastM || 0) - (a.localEastM || 0); });
+    }
+    if (!q) return base;
+    return base.filter(function (r) { return (r.name || '').toLowerCase().indexOf(q) >= 0 || (r.id || '').toLowerCase().indexOf(q) >= 0; });
+  }
+
+  function renderTable() {
+    var rows = filteredRows();
+    var tb = document.getElementById('tbody');
+    tb.innerHTML = rows.map(function (r) {
+      var sug = r.sugLat != null ? fmt7(r.sugLat) + '<br>' + fmt7(r.sugLon) : '—';
+      return '<tr data-idx="' + r.idx + '"' + (r.idx === activeIdx ? ' class="active"' : '') + '>' +
+        '<td>' + esc(r.name) + (r.kmlImported ? ' <span title="KML import" style="color:var(--ink3)">KML</span>' : '') + '</td>' +
+        '<td class="mono">' + fmt7(r.lat) + '<br>' + fmt7(r.lon) + '</td>' +
+        '<td class="mono">' + sug + '</td>' +
+        '<td class="mono">' + r.localEastM + '</td>' +
+        '<td class="' + (r.verdict === 'FIX' ? 'verdict-fix' : r.watch ? 'why' : 'verdict-ok') + '">' + (r.verdict === 'FIX' ? 'FIX' : r.watch ? 'WATCH' : 'OK') + '</td>' +
+        '<td class="why">' + esc(r.why || r.watchWhy || '') + '</td></tr>';
+    }).join('');
+    Array.prototype.forEach.call(tb.querySelectorAll('tr'), function (tr) {
+      tr.addEventListener('click', function () {
+        var idx = Number(tr.getAttribute('data-idx'));
+        var row = R.rows[idx];
+        if (row) showSpot(row);
+      });
+    });
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  document.getElementById('filterRegion').addEventListener('change', renderTable);
+  document.getElementById('searchBox').addEventListener('input', renderTable);
+
+  renderTable();
+  if (R.suspects.length) showSpot(R.suspects[0]);
+  else if (R.rows.length) showSpot(R.rows[0]);
+})();
+</script>
+</body>
+</html>

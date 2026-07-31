@@ -1,0 +1,71 @@
+---
+description: Require multi-source GPS verification for dive/fish pins; never nudge coords
+globs: dive-engine.js,index.html,coast-geo.js,coast-overlay-lite.js,location-audit-core.js,scan-*-onshore.js,audit-map-water-pins.js,audit-all-water-pins.js,verified-water-pins.json,cdfg-artificial-reefs.json,import-cdfg-reefs.js,import-sd-kml-fish.js,import-sd-kml-fish.cjs,sync-verified-pins-live.cjs,auto-seed-default-trust-yes.cjs,apply-pin-trust-yes.js,build-pin-trust-review.js,apply-verified-pins.cjs,coast-audit-sanitize.js
+alwaysApply: false
+---
+
+# Water-pin GPS — multi-source only (no manual nudges)
+
+All **displayed** **FISH_SPOTS** and **DIVE_SITES** must be **in-water targets** whose coordinates come from **authoritative published GPS** or an **explicit user-provided chart file**, not invented or geometry-hacked positions.
+
+## Non-negotiable policy
+
+1. **Default-trusted live sources** (no pin-trust yes required; coords never nudged):
+   - **`verified-water-pins.json`** (≥2 independent sources within ~**0.2 NM / ~370 m**): display with **`verified: true`** on fish/dive (see `sync-verified-pins-live.cjs`). Additive merge — do not wipe KML/CDFG/userTrusted when syncing.
+   - **CDFG/CDFW Artificial Reef Appendix** ([DocumentID=30217](https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline)): convert published **deg/min/sec** to decimal exactly, mark **`cdfgAppendix: true`**, prefer over KML/other chart copies when they conflict (`cdfg-artificial-reefs.json`, `import-cdfg-reefs.js`). No second source required for appendix reefs.
+   - **`San Diego Fishing Spots.kml`**: display with **`kmlImported: true`**, coords **verbatim** (`import-sd-kml-fish.js`). Prefer `cdfgAppendix` / `verified` when KML overlaps those pins.
+2. **User no / unsure overrides** any of the above for that pin id (`pin-trust-review-results.json` → `apply-pin-trust-yes.js`). Those exclusions still win.
+3. **User trust review:** other spots confirmed in `pin-trust-review.html` are marked **`userTrusted: true`** and displayed as-is. Pending KML / verified candidates may be **auto-seeded yes** (`auto-seed-default-trust-yes.cjs`) so they are not stuck as must-review; they remain listable for optional spot-check at low priority.
+4. **NEVER manually manipulate coordinates** — no seaward nudges, no “push west by 200 m”, no inventing coords to pass `isOnLand` / overlay audits, no `mapOffshoreM` display pushes.
+5. Cross-check initial GPS against other internet sources when promoting *new* sites into `verified-water-pins.json` (USC Sea Grant, NOAA/GNIS, published dive GPS tables such as diver.net DMS / CA Diving News / PADI / cawreckdivers). Entries already in that log are default-trusted for display.
+6. **Never display pins that have been manually manipulated.** If a non-trusted pin fails the onshore audit, **omit it** (report it) rather than nudging. Do **not** auto-omit `kmlImported` / `verified` / `cdfgAppendix` / `userTrusted` for strict-onshore model noise — audits exempt those flags (display as-is).
+7. If a non-KML / non-verified / non-appendix / non-userTrusted site cannot be multi-source confirmed, **remove it from active display lists** (archive it) rather than guessing.
+
+Sources of truth: **`cdfg-artificial-reefs.json`** (official appendix) + **`verified-water-pins.json`** (multi-source — default-trusted) + **`San Diego Fishing Spots.kml`** (user chart — default-trusted) + **`pin-trust-review-results.json`** (user imagery trust / no / unsure overrides).
+
+## How to add a newly verified pin
+
+1. Find **published** GPS (DMS or decimal) from ≥2 independent sources. Good pairs:
+   - **CDFW/CDFG Artificial Reef Appendix** ([DocumentID=30217](https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline)) + **USC Sea Grant LA Fishing Guide** waypoints
+   - CDFG Appendix + an independently published fishing waypoint table (e.g. Bloodydecks wrecks/reefs list) when USC does not cover the site **and** agreement is ≤0.2 NM
+   - Published dive GPS (CDN / PADI / diver.net DMS) + a second independent source (CDFW MPA polygon containing the point, cawreckdivers site identity with corroborating published DM, etc.)
+2. **Independence:** southcoastdivers.com reprinting CDFG, or two copies of the same fishing-guide waypoint list, do **not** count as two sources. Prefer the official CDFG PDF over a third-party reprint when they differ.
+3. Convert DMS carefully; adopt the **best authoritative published value** when sources agree (usually CDFG for artificial reefs). Record both source coords + URLs and the agreement distance in `verified-water-pins.json`.
+4. Modules inside a reef complex may use the complex’s USC (or equivalent) named waypoint as source 2 **only if** the module is within ~0.2 NM of that waypoint — document that.
+5. If sources disagree by **>0.2 NM**, do **not** add (and do not average or “split the difference”). Exception: clearly official CDFG + a corroborating source within tolerance — document why.
+6. Sync display lists from the log (`dive-engine.js` `DIVE_SITES`, `index.html` `FISH_SPOTS`). Set `verified: true`. Remove from unverified archives only when promoted.
+7. Run `cscript //Nologo audit-all-water-pins.js` — hard gates must stay green **without** nudge/fix scripts.
+
+## After editing location data
+
+Before considering the task done, run:
+
+```
+cscript //Nologo audit-all-water-pins.js
+```
+
+Or individually:
+
+```
+cscript //Nologo scan-fish-onshore.js
+cscript //Nologo scan-dive-onshore.js
+cscript //Nologo audit-map-water-pins.js
+```
+
+**Hard gates:** `scan-fish-onshore.js` and `scan-dive-onshore.js` must report **Strict onshore FAIL: 0** (exit 0).
+
+If an audit fails because a pin is onshore or wrong-geography: **replace coords from published multi-source GPS** (or hide the pin). Do **not** run nudge / mega-push / `suggestOffshore` / `apply-pv-water-fix` / `fix-map-water-pins` to silence the audit. Exception: `kmlImported` / `verified` / `cdfgAppendix` / `userTrusted` pins may remain displayed as-is when the user (or inherent KML/verified/CDFG policy) trusts them — audits exempt those flags.
+
+**Advisory only:** `audit-map-water-pins.js` can overfire. Do not mega-push pins solely to silence it.
+
+## Coord rules
+
+- 6–7 decimal places; preserve `face`, `depth`, `boat`, `regional`
+- Set `verified: true` only after documenting ≥2 sources in `verified-water-pins.json`
+- Prefer official CDFG / published dive GPS tables when sources disagree slightly — document why in the log
+- Cap / disable automated nudges: scripts that invent offshore points are **forbidden for production coords**
+- Never relocate San Pedro / PVR / named grounds onto the wrong coastline
+
+## Coast geometry
+
+Map overlay (`coast-overlay-lite.js`) is rebuilt from OSM via `powershell -File build-coast-overlay-lite.ps1` — independent of `coast-geo.js`. Audit tools still use `coast-geo.js` (may contain phantom chords; `coast-audit-sanitize.js` strips known ones). After regenerating the overlay, re-run map-pin audits if needed — still fix failures with source GPS, not nudges.

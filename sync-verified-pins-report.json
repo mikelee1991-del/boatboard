@@ -1,0 +1,10 @@
+{
+  "policy": "Default-trust verified-water-pins.json: verified:true, coords verbatim; no/unsure overrides; additive merge",
+  "fishKept": 49,
+  "diveKept": 57,
+  "fishStamped": 0,
+  "fishAdded": 0,
+  "diveStamped": 0,
+  "diveAdded": 0,
+  "skippedExclusions": 0
+}

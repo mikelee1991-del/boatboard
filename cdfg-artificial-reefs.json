@@ -1,0 +1,1772 @@
+{
+  "note": "Official CDFG/CDFW Artificial Reef Appendix â€” inherently trusted. DMS converted to decimal; no nudges.",
+  "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline",
+  "updated": "2001-06",
+  "count": 196,
+  "reefs": [
+    {
+      "name": "Atascadero Artificial Reef",
+      "lat": 35.3933333,
+      "lon": -120.8755556,
+      "dms": "35°23'36\"N 120°52'32\"W",
+      "depthFt": 55,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "San Luis Obispo Artificial Reef",
+      "lat": 35.1902778,
+      "lon": -120.8319444,
+      "dms": "35°11'25\"N 120°49'55\"W",
+      "depthFt": 47,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pitas Point Artificial Reef",
+      "lat": 34.3022222,
+      "lon": -119.3683333,
+      "dms": "34°18'8\"N 119°22'6\"W",
+      "depthFt": 28,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Malibu Artificial Reef A",
+      "lat": 34.0301806,
+      "lon": -118.6505306,
+      "dms": "34°1'48.65\"N 118°39'1.91\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Malibu Artificial Reef B",
+      "lat": 34.0302778,
+      "lon": -118.6513889,
+      "dms": "34°1'49\"N 118°39'5\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Malibu Artificial Reef Center",
+      "lat": 34.0302778,
+      "lon": -118.6505556,
+      "dms": "34°1'49\"N 118°39'2\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Topanga Artificial Reef",
+      "lat": 34.0272222,
+      "lon": -118.5325,
+      "dms": "34°1'38\"N 118°31'57\"W",
+      "depthFt": 28,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 2",
+      "lat": 34.0141667,
+      "lon": -118.5341667,
+      "dms": "34°0'51\"N 118°32'3\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 3",
+      "lat": 34.0172389,
+      "lon": -118.53605,
+      "dms": "34°1'2.06\"N 118°32'9.78\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 4",
+      "lat": 34.0182639,
+      "lon": -118.5382444,
+      "dms": "34°1'5.75\"N 118°32'17.68\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 5",
+      "lat": 34.0196,
+      "lon": -118.5404333,
+      "dms": "34°1'10.56\"N 118°32'25.56\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 6",
+      "lat": 34.0220556,
+      "lon": -118.5447222,
+      "dms": "34°1'19.4\"N 118°32'41\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 7",
+      "lat": 34.0229472,
+      "lon": -118.5469222,
+      "dms": "34°1'22.61\"N 118°32'48.92\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 8",
+      "lat": 34.0211111,
+      "lon": -118.5477778,
+      "dms": "34°1'16\"N 118°32'52\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 9",
+      "lat": 34.0080556,
+      "lon": -118.5344444,
+      "dms": "34°0'29\"N 118°32'4\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 10",
+      "lat": 34.0100139,
+      "lon": -118.5339389,
+      "dms": "34°0'36.05\"N 118°32'2.18\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 11",
+      "lat": 34.0115194,
+      "lon": -118.5361389,
+      "dms": "34°0'41.47\"N 118°32'10.1\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 12",
+      "lat": 34.0118806,
+      "lon": -118.5383278,
+      "dms": "34°0'42.77\"N 118°32'17.98\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 13",
+      "lat": 34.0130778,
+      "lon": -118.54065,
+      "dms": "34°0'47.08\"N 118°32'26.34\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 14",
+      "lat": 34.0140194,
+      "lon": -118.5438333,
+      "dms": "34°0'50.47\"N 118°32'37.8\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 15",
+      "lat": 34.0138889,
+      "lon": -118.5483333,
+      "dms": "34°0'50\"N 118°32'54\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 16",
+      "lat": 34.0158333,
+      "lon": -118.5508333,
+      "dms": "34°0'57\"N 118°33'3\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 17",
+      "lat": 34.0025,
+      "lon": -118.5372222,
+      "dms": "34°0'9\"N 118°32'14\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 18",
+      "lat": 34.0049556,
+      "lon": -118.5370278,
+      "dms": "34°0'17.84\"N 118°32'13.3\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 19",
+      "lat": 34.0047222,
+      "lon": -118.5405556,
+      "dms": "34°0'17\"N 118°32'26\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 20",
+      "lat": 34.0058333,
+      "lon": -118.5436111,
+      "dms": "34°0'21\"N 118°32'37\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 21",
+      "lat": 34.0075,
+      "lon": -118.5466667,
+      "dms": "34°0'27\"N 118°32'48\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 22",
+      "lat": 34.0088889,
+      "lon": -118.5497222,
+      "dms": "34°0'32\"N 118°32'59\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 23",
+      "lat": 34.0105556,
+      "lon": -118.5513889,
+      "dms": "34°0'38\"N 118°33'5\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef 24",
+      "lat": 34.0108333,
+      "lon": -118.5541667,
+      "dms": "34°0'39\"N 118°33'15\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Bay Artificial Reef Center",
+      "lat": 34.0130556,
+      "lon": -118.5425,
+      "dms": "34°0'47\"N 118°32'33\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Artificial Reef A",
+      "lat": 34.0095,
+      "lon": -118.5303333,
+      "dms": "34°0'34.2\"N 118°31'49.2\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Artificial Reef B",
+      "lat": 34.0091667,
+      "lon": -118.53,
+      "dms": "34°0'33\"N 118°31'48\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Artificial Reef C",
+      "lat": 34.0091667,
+      "lon": -118.5306778,
+      "dms": "34°0'33\"N 118°31'50.44\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Santa Monica Artificial Reef Center",
+      "lat": 34.0094444,
+      "lon": -118.5297222,
+      "dms": "34°0'34\"N 118°31'47\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2A",
+      "lat": 33.9666667,
+      "lon": -118.4861111,
+      "dms": "33°58'0\"N 118°29'10\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2B",
+      "lat": 33.9667111,
+      "lon": -118.4863889,
+      "dms": "33°58'0.16\"N 118°29'11\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2C",
+      "lat": 33.9668056,
+      "lon": -118.4866667,
+      "dms": "33°58'0.5\"N 118°29'12\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2D",
+      "lat": 33.9669444,
+      "lon": -118.4869444,
+      "dms": "33°58'1\"N 118°29'13\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2E",
+      "lat": 33.9668056,
+      "lon": -118.4858333,
+      "dms": "33°58'0.5\"N 118°29'9\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2F",
+      "lat": 33.9669444,
+      "lon": -118.4861111,
+      "dms": "33°58'1\"N 118°29'10\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2G",
+      "lat": 33.9670833,
+      "lon": -118.4866667,
+      "dms": "33°58'1.5\"N 118°29'12\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2H",
+      "lat": 33.9672222,
+      "lon": -118.4869444,
+      "dms": "33°58'2\"N 118°29'13\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2I",
+      "lat": 33.9680556,
+      "lon": -118.4852778,
+      "dms": "33°58'5\"N 118°29'7\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2J",
+      "lat": 33.9683333,
+      "lon": -118.4863889,
+      "dms": "33°58'6\"N 118°29'11\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2K",
+      "lat": 33.9686111,
+      "lon": -118.4872222,
+      "dms": "33°58'7\"N 118°29'14\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2L",
+      "lat": 33.9686111,
+      "lon": -118.4877778,
+      "dms": "33°58'7\"N 118°29'16\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2M",
+      "lat": 33.9688889,
+      "lon": -118.4852778,
+      "dms": "33°58'8\"N 118°29'7\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2N",
+      "lat": 33.9688889,
+      "lon": -118.4861111,
+      "dms": "33°58'8\"N 118°29'10\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2O",
+      "lat": 33.9691667,
+      "lon": -118.4866667,
+      "dms": "33°58'9\"N 118°29'12\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2P",
+      "lat": 33.9691667,
+      "lon": -118.4875,
+      "dms": "33°58'9\"N 118°29'15\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 2 Center",
+      "lat": 33.9683333,
+      "lon": -118.4863889,
+      "dms": "33°58'6\"N 118°29'11\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 1Q",
+      "lat": 33.9655556,
+      "lon": -118.4869444,
+      "dms": "33°57'56\"N 118°29'13\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 1R",
+      "lat": 33.9658333,
+      "lon": -118.4861111,
+      "dms": "33°57'57\"N 118°29'10\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 1S",
+      "lat": 33.965,
+      "lon": -118.4861111,
+      "dms": "33°57'54\"N 118°29'10\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 1T",
+      "lat": 33.9644444,
+      "lon": -118.4861111,
+      "dms": "33°57'52\"N 118°29'10\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Marina Del Rey Artificial Reef 1 Center",
+      "lat": 33.965,
+      "lon": -118.4861111,
+      "dms": "33°57'54\"N 118°29'10\"W",
+      "depthFt": 65,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Hermosa Beach Artificial Reef A",
+      "lat": 33.8541667,
+      "lon": -118.4138889,
+      "dms": "33°51'15\"N 118°24'50\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Hermosa Beach Artificial Reef B",
+      "lat": 33.8544444,
+      "lon": -118.4130556,
+      "dms": "33°51'16\"N 118°24'47\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Hermosa Beach Artificial Reef C",
+      "lat": 33.8536111,
+      "lon": -118.4136111,
+      "dms": "33°51'13\"N 118°24'49\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Hermosa Beach Artificial Reef D",
+      "lat": 33.8530556,
+      "lon": -118.4127778,
+      "dms": "33°51'11\"N 118°24'46\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Hermosa Beach Artificial Reef Center",
+      "lat": 33.8536111,
+      "lon": -118.4133333,
+      "dms": "33°51'13\"N 118°24'48\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef A",
+      "lat": 33.8383333,
+      "lon": -118.4094444,
+      "dms": "33°50'18\"N 118°24'34\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef B (Barge)",
+      "lat": 33.8383333,
+      "lon": -118.4091667,
+      "dms": "33°50'18\"N 118°24'33\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef C",
+      "lat": 33.8380556,
+      "lon": -118.4086111,
+      "dms": "33°50'17\"N 118°24'31\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef D",
+      "lat": 33.8377778,
+      "lon": -118.4091667,
+      "dms": "33°50'16\"N 118°24'33\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef E",
+      "lat": 33.8375,
+      "lon": -118.4086111,
+      "dms": "33°50'15\"N 118°24'31\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef F",
+      "lat": 33.8372222,
+      "lon": -118.4094444,
+      "dms": "33°50'14\"N 118°24'34\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef G",
+      "lat": 33.8372222,
+      "lon": -118.4088889,
+      "dms": "33°50'14\"N 118°24'32\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef H",
+      "lat": 33.8372222,
+      "lon": -118.4083333,
+      "dms": "33°50'14\"N 118°24'30\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef I",
+      "lat": 33.8369444,
+      "lon": -118.4091667,
+      "dms": "33°50'13\"N 118°24'33\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef J",
+      "lat": 33.8366667,
+      "lon": -118.4094444,
+      "dms": "33°50'12\"N 118°24'34\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef K",
+      "lat": 33.8363889,
+      "lon": -118.4086111,
+      "dms": "33°50'11\"N 118°24'31\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Redondo Beach Artificial Reef Center",
+      "lat": 33.8372222,
+      "lon": -118.4088889,
+      "dms": "33°50'14\"N 118°24'32\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "SS Palawan Artificial Reef",
+      "lat": 33.8236111,
+      "lon": -118.4147222,
+      "dms": "33°49'25\"N 118°24'53\"W",
+      "depthFt": 120,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef A",
+      "lat": 33.6591278,
+      "lon": -118.1007972,
+      "dms": "33°39'32.86\"N 118°6'2.87\"W",
+      "depthFt": 92,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef C",
+      "lat": 33.6547778,
+      "lon": -118.1021389,
+      "dms": "33°39'17.2\"N 118°6'7.7\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef D",
+      "lat": 33.6543472,
+      "lon": -118.0994806,
+      "dms": "33°39'15.65\"N 118°5'58.13\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef E",
+      "lat": 33.6503333,
+      "lon": -118.1028056,
+      "dms": "33°39'1.2\"N 118°6'10.1\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef F",
+      "lat": 33.6496389,
+      "lon": -118.10175,
+      "dms": "33°38'58.7\"N 118°6'6.3\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef G",
+      "lat": 33.6468611,
+      "lon": -118.1057222,
+      "dms": "33°38'48.7\"N 118°6'20.6\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef H",
+      "lat": 33.6452222,
+      "lon": -118.1017778,
+      "dms": "33°38'42.8\"N 118°6'6.4\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 9",
+      "lat": 33.6552639,
+      "lon": -118.0989889,
+      "dms": "33°39'18.95\"N 118°5'56.36\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 10",
+      "lat": 33.6554556,
+      "lon": -118.1010222,
+      "dms": "33°39'19.64\"N 118°6'3.68\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 11",
+      "lat": 33.6536111,
+      "lon": -118.1012222,
+      "dms": "33°39'13\"N 118°6'4.4\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 12",
+      "lat": 33.6494444,
+      "lon": -118.1048611,
+      "dms": "33°38'58\"N 118°6'17.5\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 13",
+      "lat": 33.6540278,
+      "lon": -118.0984444,
+      "dms": "33°39'14.5\"N 118°5'54.4\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 14",
+      "lat": 33.6558333,
+      "lon": -118.1022222,
+      "dms": "33°39'21\"N 118°6'8\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 15",
+      "lat": 33.655,
+      "lon": -118.1030556,
+      "dms": "33°39'18\"N 118°6'11\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 16",
+      "lat": 33.6541667,
+      "lon": -118.1033333,
+      "dms": "33°39'15\"N 118°6'12\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 17",
+      "lat": 33.6536111,
+      "lon": -118.1027778,
+      "dms": "33°39'13\"N 118°6'10\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 18",
+      "lat": 33.6528611,
+      "lon": -118.0998611,
+      "dms": "33°39'10.3\"N 118°5'59.5\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 19",
+      "lat": 33.659,
+      "lon": -118.09875,
+      "dms": "33°39'32.4\"N 118°5'55.5\"W",
+      "depthFt": 85,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 20",
+      "lat": 33.65825,
+      "lon": -118.0967222,
+      "dms": "33°39'29.7\"N 118°5'48.2\"W",
+      "depthFt": 85,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 21",
+      "lat": 33.6581111,
+      "lon": -118.0991944,
+      "dms": "33°39'29.2\"N 118°5'57.1\"W",
+      "depthFt": 85,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 22",
+      "lat": 33.6574444,
+      "lon": -118.097,
+      "dms": "33°39'26.8\"N 118°5'49.2\"W",
+      "depthFt": 85,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 23",
+      "lat": 33.6572778,
+      "lon": -118.0994444,
+      "dms": "33°39'26.2\"N 118°5'58\"W",
+      "depthFt": 85,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 24",
+      "lat": 33.6567222,
+      "lon": -118.0973889,
+      "dms": "33°39'24.2\"N 118°5'50.6\"W",
+      "depthFt": 85,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 25",
+      "lat": 33.6518611,
+      "lon": -118.0985556,
+      "dms": "33°39'6.7\"N 118°5'54.8\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 26",
+      "lat": 33.6511389,
+      "lon": -118.0988611,
+      "dms": "33°39'4.1\"N 118°5'55.9\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 27",
+      "lat": 33.6505556,
+      "lon": -118.0991389,
+      "dms": "33°39'2\"N 118°5'56.9\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 28",
+      "lat": 33.6497778,
+      "lon": -118.0993056,
+      "dms": "33°38'59.2\"N 118°5'57.5\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 29",
+      "lat": 33.6490833,
+      "lon": -118.0996389,
+      "dms": "33°38'56.7\"N 118°5'58.7\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 30",
+      "lat": 33.6484444,
+      "lon": -118.0998889,
+      "dms": "33°38'54.4\"N 118°5'59.6\"W",
+      "depthFt": 95,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 31",
+      "lat": 33.6477778,
+      "lon": -118.1003056,
+      "dms": "33°38'52\"N 118°6'1.1\"W",
+      "depthFt": 95,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 32",
+      "lat": 33.6469167,
+      "lon": -118.1004167,
+      "dms": "33°38'48.9\"N 118°6'1.5\"W",
+      "depthFt": 100,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Bolsa Chica Artificial Reef 33",
+      "lat": 33.6462222,
+      "lon": -118.1008056,
+      "dms": "33°38'46.4\"N 118°6'2.9\"W",
+      "depthFt": 100,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef A1",
+      "lat": 33.6152778,
+      "lon": -117.9808333,
+      "dms": "33°36'55\"N 117°58'51\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef A2",
+      "lat": 33.6144444,
+      "lon": -117.9802778,
+      "dms": "33°36'52\"N 117°58'49\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef A3",
+      "lat": 33.6138889,
+      "lon": -117.98,
+      "dms": "33°36'50\"N 117°58'48\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef A4",
+      "lat": 33.6136111,
+      "lon": -117.9797222,
+      "dms": "33°36'49\"N 117°58'47\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef B1",
+      "lat": 33.6194444,
+      "lon": -117.9883333,
+      "dms": "33°37'10\"N 117°59'18\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef B2",
+      "lat": 33.6191667,
+      "lon": -117.9880556,
+      "dms": "33°37'9\"N 117°59'17\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef B3",
+      "lat": 33.6186111,
+      "lon": -117.9877778,
+      "dms": "33°37'7\"N 117°59'16\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef C1",
+      "lat": 33.6216667,
+      "lon": -117.9977778,
+      "dms": "33°37'18\"N 117°59'52\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef C2",
+      "lat": 33.6213889,
+      "lon": -117.9975,
+      "dms": "33°37'17\"N 117°59'51\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef C3",
+      "lat": 33.6208333,
+      "lon": -117.9972222,
+      "dms": "33°37'15\"N 117°59'50\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef D1",
+      "lat": 33.6247222,
+      "lon": -118.0013889,
+      "dms": "33°37'29\"N 118°0'5\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef D2",
+      "lat": 33.6244444,
+      "lon": -118.0011111,
+      "dms": "33°37'28\"N 118°0'4\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef D3",
+      "lat": 33.6238889,
+      "lon": -118.0008333,
+      "dms": "33°37'26\"N 118°0'3\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef D4",
+      "lat": 33.6233333,
+      "lon": -118.0005556,
+      "dms": "33°37'24\"N 118°0'2\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef A Center",
+      "lat": 33.6144444,
+      "lon": -117.9830556,
+      "dms": "33°36'52\"N 117°58'59\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef B Center",
+      "lat": 33.6213889,
+      "lon": -117.9975,
+      "dms": "33°37'17\"N 117°59'51\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef C Center",
+      "lat": 33.6191667,
+      "lon": -117.9880556,
+      "dms": "33°37'9\"N 117°59'17\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Huntington Beach Artificial Reef D Center",
+      "lat": 33.6244444,
+      "lon": -118.0011111,
+      "dms": "33°37'28\"N 118°0'4\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Newport Beach Artificial Reef A",
+      "lat": 33.6022222,
+      "lon": -117.9644444,
+      "dms": "33°36'8\"N 117°57'52\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Newport Beach Artificial Reef B",
+      "lat": 33.6036111,
+      "lon": -117.9638889,
+      "dms": "33°36'13\"N 117°57'50\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Newport Beach Artificial Reef C",
+      "lat": 33.6044444,
+      "lon": -117.9622222,
+      "dms": "33°36'16\"N 117°57'44\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Newport Beach Artificial Reef E",
+      "lat": 33.6019444,
+      "lon": -117.9647222,
+      "dms": "33°36'7\"N 117°57'53\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Newport Beach Artificial Reef Center",
+      "lat": 33.6036111,
+      "lon": -117.9636111,
+      "dms": "33°36'13\"N 117°57'49\"W",
+      "depthFt": 72,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pendleton Artificial Reef 1",
+      "lat": 33.3248,
+      "lon": -117.5277889,
+      "dms": "33°19'29.28\"N 117°31'40.04\"W",
+      "depthFt": 43,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pendleton Artificial Reef 3",
+      "lat": 33.3237806,
+      "lon": -117.5268306,
+      "dms": "33°19'25.61\"N 117°31'36.59\"W",
+      "depthFt": 43,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pendleton Artificial Reef 4",
+      "lat": 33.3249,
+      "lon": -117.5274333,
+      "dms": "33°19'29.64\"N 117°31'38.76\"W",
+      "depthFt": 43,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pendleton Artificial Reef 6",
+      "lat": 33.3251861,
+      "lon": -117.5274056,
+      "dms": "33°19'30.67\"N 117°31'38.66\"W",
+      "depthFt": 43,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pendleton Artificial Reef 7",
+      "lat": 33.3249639,
+      "lon": -117.5269111,
+      "dms": "33°19'29.87\"N 117°31'36.88\"W",
+      "depthFt": 43,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pendleton Artificial Reef Center",
+      "lat": 33.325,
+      "lon": -117.5283333,
+      "dms": "33°19'30\"N 117°31'42\"W",
+      "depthFt": 43,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 2 1A",
+      "lat": 33.2042167,
+      "lon": -117.4348111,
+      "dms": "33°12'15.18\"N 117°26'5.32\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 2 2A",
+      "lat": 33.2057639,
+      "lon": -117.4344778,
+      "dms": "33°12'20.75\"N 117°26'4.12\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 2 3A",
+      "lat": 33.2068028,
+      "lon": -117.4362667,
+      "dms": "33°12'24.49\"N 117°26'10.56\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 2 4A",
+      "lat": 33.208775,
+      "lon": -117.43735,
+      "dms": "33°12'31.59\"N 117°26'14.46\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 2 1B",
+      "lat": 33.2067917,
+      "lon": -117.4276333,
+      "dms": "33°12'24.45\"N 117°25'39.48\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 2 2B",
+      "lat": 33.208725,
+      "lon": -117.4295361,
+      "dms": "33°12'31.41\"N 117°25'46.33\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 2 3B",
+      "lat": 33.21035,
+      "lon": -117.4313306,
+      "dms": "33°12'37.26\"N 117°25'52.79\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 2 4B",
+      "lat": 33.2123028,
+      "lon": -117.4323833,
+      "dms": "33°12'44.29\"N 117°25'56.58\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 2 1C",
+      "lat": 33.212,
+      "lon": -117.4193806,
+      "dms": "33°12'43.2\"N 117°25'9.77\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 2 2C",
+      "lat": 33.2132639,
+      "lon": -117.4204361,
+      "dms": "33°12'47.75\"N 117°25'13.57\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 2 3C",
+      "lat": 33.215175,
+      "lon": -117.4217694,
+      "dms": "33°12'54.63\"N 117°25'18.37\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 2 4C",
+      "lat": 33.2174889,
+      "lon": -117.4233528,
+      "dms": "33°13'2.96\"N 117°25'24.07\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 2 Center",
+      "lat": 33.2111583,
+      "lon": -117.4288389,
+      "dms": "33°12'40.17\"N 117°25'43.82\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 1A",
+      "lat": 33.1830556,
+      "lon": -117.4169444,
+      "dms": "33°10'59\"N 117°25'1\"W",
+      "depthFt": 91,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 1B",
+      "lat": 33.1833333,
+      "lon": -117.4163889,
+      "dms": "33°11'0\"N 117°24'59\"W",
+      "depthFt": 67,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 1C",
+      "lat": 33.1827778,
+      "lon": -117.4169444,
+      "dms": "33°10'58\"N 117°25'1\"W",
+      "depthFt": 91,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 1D",
+      "lat": 33.1830556,
+      "lon": -117.4163889,
+      "dms": "33°10'59\"N 117°24'59\"W",
+      "depthFt": 91,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 1E",
+      "lat": 33.1825,
+      "lon": -117.4172222,
+      "dms": "33°10'57\"N 117°25'2\"W",
+      "depthFt": 91,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 1F",
+      "lat": 33.1825,
+      "lon": -117.4163889,
+      "dms": "33°10'57\"N 117°24'59\"W",
+      "depthFt": 91,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 1G",
+      "lat": 33.1818889,
+      "lon": -117.4180556,
+      "dms": "33°10'54.8\"N 117°25'5\"W",
+      "depthFt": 91,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 1H",
+      "lat": 33.1816667,
+      "lon": -117.4163889,
+      "dms": "33°10'54\"N 117°24'59\"W",
+      "depthFt": 91,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Oceanside Artificial Reef 1 Center",
+      "lat": 33.1825,
+      "lon": -117.4166667,
+      "dms": "33°10'57\"N 117°25'0\"W",
+      "depthFt": 91,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Carlsbad Artificial Reef 1",
+      "lat": 33.0887472,
+      "lon": -117.3203111,
+      "dms": "33°5'19.49\"N 117°19'13.12\"W",
+      "depthFt": 48,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Carlsbad Artificial Reef 2",
+      "lat": 33.0872361,
+      "lon": -117.3197333,
+      "dms": "33°5'14.05\"N 117°19'11.04\"W",
+      "depthFt": 48,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Carlsbad Artificial Reef 3",
+      "lat": 33.0860444,
+      "lon": -117.3192333,
+      "dms": "33°5'9.76\"N 117°19'9.24\"W",
+      "depthFt": 48,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Carlsbad Artificial Reef 4",
+      "lat": 33.0843111,
+      "lon": -117.3186806,
+      "dms": "33°5'3.52\"N 117°19'7.25\"W",
+      "depthFt": 48,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Carlsbad Artificial Reef 5",
+      "lat": 33.088,
+      "lon": -117.3206667,
+      "dms": "33°5'16.8\"N 117°19'14.4\"W",
+      "depthFt": 48,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Carlsbad Artificial Reef 6",
+      "lat": 33.0865,
+      "lon": -117.3203333,
+      "dms": "33°5'11.4\"N 117°19'13.2\"W",
+      "depthFt": 48,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Carlsbad Artificial Reef 7",
+      "lat": 33.0848333,
+      "lon": -117.3198333,
+      "dms": "33°5'5.4\"N 117°19'11.4\"W",
+      "depthFt": 48,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Carlsbad Artificial Reef 8",
+      "lat": 33.0833333,
+      "lon": -117.3191667,
+      "dms": "33°5'0\"N 117°19'9\"W",
+      "depthFt": 48,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Carlsbad Artificial Reef 9",
+      "lat": 33.0876667,
+      "lon": -117.3236667,
+      "dms": "33°5'15.6\"N 117°19'25.2\"W",
+      "depthFt": 48,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Carlsbad Artificial Reef 10",
+      "lat": 33.0863333,
+      "lon": -117.323,
+      "dms": "33°5'10.8\"N 117°19'22.8\"W",
+      "depthFt": 48,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Carlsbad Artificial Reef 11",
+      "lat": 33.0846667,
+      "lon": -117.3223333,
+      "dms": "33°5'4.8\"N 117°19'20.4\"W",
+      "depthFt": 48,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Carlsbad Artificial Reef 12",
+      "lat": 33.0828333,
+      "lon": -117.322,
+      "dms": "33°4'58.2\"N 117°19'19.2\"W",
+      "depthFt": 48,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Torrey Pines Artificial Reef 2",
+      "lat": 32.8930556,
+      "lon": -117.2597222,
+      "dms": "32°53'35\"N 117°15'35\"W",
+      "depthFt": 44,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Torrey Pines Artificial Reef 1",
+      "lat": 32.8866667,
+      "lon": -117.2638889,
+      "dms": "32°53'12\"N 117°15'50\"W",
+      "depthFt": 67,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pacific Beach Artificial Reef 1A",
+      "lat": 32.7888889,
+      "lon": -117.2783333,
+      "dms": "32°47'20\"N 117°16'42\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pacific Beach Artificial Reef 2A",
+      "lat": 32.7902778,
+      "lon": -117.2791667,
+      "dms": "32°47'25\"N 117°16'45\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pacific Beach Artificial Reef 3A",
+      "lat": 32.7930556,
+      "lon": -117.2805556,
+      "dms": "32°47'35\"N 117°16'50\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pacific Beach Artificial Reef 4A",
+      "lat": 32.7944444,
+      "lon": -117.2819444,
+      "dms": "32°47'40\"N 117°16'55\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pacific Beach Artificial Reef 1B",
+      "lat": 32.79,
+      "lon": -117.275,
+      "dms": "32°47'24\"N 117°16'30\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pacific Beach Artificial Reef 2B",
+      "lat": 32.7916667,
+      "lon": -117.275,
+      "dms": "32°47'30\"N 117°16'30\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pacific Beach Artificial Reef 3B",
+      "lat": 32.7938889,
+      "lon": -117.2761111,
+      "dms": "32°47'38\"N 117°16'34\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pacific Beach Artificial Reef 4B",
+      "lat": 32.7961111,
+      "lon": -117.2763889,
+      "dms": "32°47'46\"N 117°16'35\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pacific Beach Artificial Reef 1C",
+      "lat": 32.7916667,
+      "lon": -117.27,
+      "dms": "32°47'30\"N 117°16'12\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pacific Beach Artificial Reef 2C",
+      "lat": 32.7933333,
+      "lon": -117.27,
+      "dms": "32°47'36\"N 117°16'12\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pacific Beach Artificial Reef 3C",
+      "lat": 32.7955556,
+      "lon": -117.2705556,
+      "dms": "32°47'44\"N 117°16'14\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pacific Beach Artificial Reef 4C",
+      "lat": 32.7972222,
+      "lon": -117.2716667,
+      "dms": "32°47'50\"N 117°16'18\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Pacific Beach Artificial Reef Center",
+      "lat": 32.7930556,
+      "lon": -117.2763889,
+      "dms": "32°47'35\"N 117°16'35\"W",
+      "depthFt": 57,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Mission Bay Park El Rey Wreck",
+      "lat": 32.7641667,
+      "lon": -117.2772222,
+      "dms": "32°45'51\"N 117°16'38\"W",
+      "depthFt": 80,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Mission Bay Park Ruby E Wreck",
+      "lat": 32.7672222,
+      "lon": -117.2766667,
+      "dms": "32°46'2\"N 117°16'36\"W",
+      "depthFt": 90,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Mission Bay Park Kelp Reef",
+      "lat": 32.77,
+      "lon": -117.2677778,
+      "dms": "32°46'12\"N 117°16'4\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Mission Bay Park NEL Tower",
+      "lat": 32.7727778,
+      "lon": -117.2675,
+      "dms": "32°46'22\"N 117°16'3\"W",
+      "depthFt": 60,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "Mission Bay Park Concrete Rubble",
+      "lat": 32.7641667,
+      "lon": -117.2752778,
+      "dms": "32°45'51\"N 117°16'31\"W",
+      "depthFt": 85,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "International Reef 1",
+      "lat": 32.5445278,
+      "lon": -117.2480833,
+      "dms": "32°32'40.3\"N 117°14'53.1\"W",
+      "depthFt": 165,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "International Reef 2",
+      "lat": 32.5443611,
+      "lon": -117.2483333,
+      "dms": "32°32'39.7\"N 117°14'54\"W",
+      "depthFt": 165,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "International Reef 3",
+      "lat": 32.54375,
+      "lon": -117.2472222,
+      "dms": "32°32'37.5\"N 117°14'50\"W",
+      "depthFt": 165,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "International Reef 4",
+      "lat": 32.5441111,
+      "lon": -117.2467222,
+      "dms": "32°32'38.8\"N 117°14'48.2\"W",
+      "depthFt": 165,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "International Reef 5",
+      "lat": 32.5447222,
+      "lon": -117.2473611,
+      "dms": "32°32'41\"N 117°14'50.5\"W",
+      "depthFt": 165,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    },
+    {
+      "name": "International Reef Missile Tower",
+      "lat": 32.5415833,
+      "lon": -117.2465,
+      "dms": "32°32'29.7\"N 117°14'47.4\"W",
+      "depthFt": 165,
+      "source": "CDFW/CDFG Artificial Reef Coordinates Appendix (DocumentID=30217, updated 6/01)",
+      "sourceUrl": "https://nrm.dfg.ca.gov/FileHandler.ashx?DocumentID=30217&inline"
+    }
+  ]
+}

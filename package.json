@@ -1,0 +1,12 @@
+{
+  "name": "boatboard",
+  "private": true,
+  "description": "SoCal BoatBoard dashboard + optional AISStream WebSocket relay",
+  "type": "module",
+  "scripts": {
+    "ais-relay": "node ais-relay.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
