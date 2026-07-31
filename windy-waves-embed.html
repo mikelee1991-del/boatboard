@@ -34,7 +34,9 @@
       if(!isFinite(lon)) lon = -118.396;
       var key = params.get('key') || 'AkUvStRT3vKB9WjogxlKxVGxkt1SjUyR';
       var zoom = parseInt(params.get('zoom') || '10', 10);
-      /* overlay=waves|wind — never invalid "swell" (gray map). */
+      /* overlay=waves|wind — Cruise uses this host for WIND only.
+       * Map Forecast Testing keys: wind/temp/pressure — waves paint blank gray
+       * (waves requires Professional). Cruise waves panel uses embed.windy.com instead. */
       var modeRaw = (params.get('overlay') || params.get('mode') || 'waves').toLowerCase();
       var MODE = modeRaw === 'wind' ? 'wind' : 'waves';
       /**

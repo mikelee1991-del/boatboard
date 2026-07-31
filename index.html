@@ -2246,12 +2246,12 @@ const OV_HAB_THRESH = { watch: 0.25, elevated: 0.45 };
 const OV_CHL_ZONE_IDS = ['sm_bay', 'pv', 'catalina_ch', 'slip'];
 const SURF_MAP_MAX_MARKERS = 20;
 let cruiseWindyLastKey = null;
-/** Windy Map Forecast API key — waves ft / wind kt via windy-waves-embed.html (?overlay=waves|wind). embed2 has no metricWave URL param (only metricWind/Temp/Rain). https://api.windy.com/keys */
+/** Windy Map Forecast Testing key — layers: wind/temp/pressure only (no waves). https://api.windy.com/map-forecast/pricing */
 const WINDY_MAP_API_KEY = 'AkUvStRT3vKB9WjogxlKxVGxkt1SjUyR';
-const CRUISE_WINDY_EMBED_VER = 12;
+const CRUISE_WINDY_EMBED_VER = 13;
 const CRUISE_SECTOR_SAMPLE_NM = 5;
 const CRUISE_WINDY_DEFAULT_ZOOM = 10;
-/** Map Forecast waves/swell tiles often 404/"No data!" past zoom 7; wind stays at DEFAULT. */
+/** Map Forecast host only (wind). Waves use public embed2 — Testing keys cannot paint waves. */
 const CRUISE_WINDY_WAVES_ZOOM = 7;
 const CRUISE_SECTOR_LABELS = [
   { label:'N', brg:0 }, { label:'NE', brg:45 }, { label:'E', brg:90 }, { label:'SE', brg:135 },
@@ -10413,7 +10413,15 @@ function cruiseWindyUseDirectEmbed(){
   return location.protocol === 'file:';
 }
 
-/** Map Forecast host — overlay=waves|wind; locks ft / kt in the embed. */
+/**
+ * Waves always use public embed2 — Map Forecast Testing keys only allow wind/temp/pressure
+ * (waves requires Professional). Wind keeps Map Forecast host on http(s) for kt lock.
+ */
+function cruiseWindyUseEmbed2(overlay){
+  return cruiseWindyUseDirectEmbed() || overlay === 'waves';
+}
+
+/** Map Forecast host — wind (kt). Waves should not use this on Testing keys (blank gray). */
 function windyHostIframeUrl(lat, lon, zoom, overlay){
   overlay = overlay === 'wind' ? 'wind' : 'waves';
   if(zoom == null) zoom = overlay === 'waves' ? CRUISE_WINDY_WAVES_ZOOM : CRUISE_WINDY_DEFAULT_ZOOM;
@@ -10424,14 +10432,12 @@ function windyHostIframeUrl(lat, lon, zoom, overlay){
   return 'windy-waves-embed.html?'+q;
 }
 
-/** Windy public embed — works from file:// parent. Use overlay=waves or overlay=wind (never invalid "swell").
- *  embed2.js applies metricWind/metricTemp/metricRain URL params only — there is no metricWave.
- *  Wave height then follows GeoIP isImperial (ft for us/my/lr). Prefer windy-waves-embed.html for locked ft. */
+/** Public Windy embed2 — full waves product (colored field). No metricWave URL param; US GeoIP → ft. */
 function windyEmbedDirectUrl(lat, lon, zoom, overlay){
   overlay = overlay === 'wind' ? 'wind' : 'waves';
-  if(zoom == null) zoom = overlay === 'waves' ? CRUISE_WINDY_WAVES_ZOOM : CRUISE_WINDY_DEFAULT_ZOOM;
-  if(overlay === 'waves' && zoom > CRUISE_WINDY_WAVES_ZOOM) zoom = CRUISE_WINDY_WAVES_ZOOM;
-  const product = overlay === 'wind' ? 'ecmwf' : 'gfsWaves';
+  /* embed2 is not limited by Map Forecast zoom-7 wave tile bug — use coastal zoom. */
+  if(zoom == null) zoom = CRUISE_WINDY_DEFAULT_ZOOM;
+  const product = overlay === 'wind' ? 'ecmwf' : 'ecmwfWaves';
   const q = 'lat='+lat.toFixed(3)+'&lon='+lon.toFixed(3)+
     '&detailLat='+lat.toFixed(3)+'&detailLon='+lon.toFixed(3)+
     '&zoom='+zoom+'&level=surface&overlay='+overlay+'&product='+product+
@@ -10454,10 +10460,10 @@ function setCruiseWindyFrameSrc(frame, lat, lon, overlay){
   frame.dataset.fallbackLat = String(lat);
   frame.dataset.fallbackLon = String(lon);
   frame.dataset.windyOverlay = overlay;
-  const direct = cruiseWindyUseDirectEmbed();
-  frame.src = direct ? windyEmbedDirectUrl(lat, lon, null, overlay) : windyHostIframeUrl(lat, lon, null, overlay);
+  const useEmbed2 = cruiseWindyUseEmbed2(overlay);
+  frame.src = useEmbed2 ? windyEmbedDirectUrl(lat, lon, null, overlay) : windyHostIframeUrl(lat, lon, null, overlay);
   frame.onerror = ()=>{
-    if(!direct && frame.src.indexOf('embed.windy.com') < 0){
+    if(!useEmbed2 && frame.src.indexOf('embed.windy.com') < 0){
       frame.src = windyEmbedDirectUrl(lat, lon, null, overlay);
     }
   };
@@ -10588,9 +10594,8 @@ function renderCruise(){
     updateCruiseWindyEmbed(bp.lat, bp.lon);
     const cap = document.querySelector('#tab-cruise .cruise-windy-caption');
     if(cap){
-      cap.textContent = cruiseWindyUseDirectEmbed()
-        ? 'Pan/zoom · marker = boat · left: waves (ft via geoIP; may show m elsewhere) · right: wind (kt) · Windy logo must remain visible per embed terms.'
-        : 'Pan/zoom · marker = boat · left: wave height (ft) · right: wind (kt) · GFS/ECMWF (per API tier) · Windy logo must remain visible per embed terms.';
+      cap.textContent =
+        'Pan/zoom · marker = boat · left: waves via Windy embed (ft in US) · right: wind (kt) · Windy logo must remain visible per embed terms.';
     }
   }catch(e){ console.error('renderCruise windy', e); }
 }
