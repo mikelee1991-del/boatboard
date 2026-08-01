@@ -4,7 +4,7 @@ Read this first in a new session. Details: `README.md`, `PROJECT.md`, `.cursor/r
 
 ## North star
 
-Tablet/phone **BoatBoard** for a boat at **Port Royal, King Harbor** (33.84817, −118.39633). SoCal fishing, diving, cruising, swell-aware nav. Primary entry: **`index.html`** (+ `dive-engine.js`) — local **`file://`** or **GitHub Pages** (`https://mikelee1991-del.github.io/boatboard/`). Dark, mobile-first. No onboard AIS TX — device GPS + AISStream. Legacy `socal-boat-dashboard.html` redirects to `index.html`.
+Tablet/phone **BoatBoard** for a boat at **Port Royal, King Harbor** (33.84817, −118.39633). SoCal fishing, diving, cruising, swell-aware nav. Primary entry: **`index.html`** (+ `dive-engine.js`) — local **`file://`** or **GitHub Pages** (`https://mikelee1991-del.github.io/boatboard/`). Dark, mobile-first. No onboard AIS TX — device GPS + AISStream via **`ais-relay.mjs` + wss tunnel** on phone/HTTPS (see README “How to connect AIS on phone”; in-app **AIS → Setup help**). Legacy `socal-boat-dashboard.html` redirects to `index.html`.
 
 ## Trust policy (non-negotiable)
 

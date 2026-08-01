@@ -8,10 +8,31 @@ Single-page marine dashboard for a multipurpose fishing / diving / cruising boat
 **Hosted:** https://mikelee1991-del.github.io/boatboard/ (after GitHub Pages is enabled).
 
 1. Allow GPS, or turn **Use device GPS** off and use slip / manual lat-lon (Overview + Settings).
-2. AIS: AISStream **blocks browsers** (WebSocket 1006). Run `node ais-relay.mjs YOUR_KEY`, then for **HTTPS / phone** expose it with `cloudflared tunnel --url http://localhost:8765` and paste the **wss://** (or https://) URL in Settings → AIS relay. Plain `ws://192.168.x.x` only works on non-HTTPS pages.
+2. AIS on phone / GitHub Pages: see **[How to connect AIS on phone](#how-to-connect-ais-on-phone)** below (relay + cloudflared). Plain `ws://192.168.x.x` only works on non-HTTPS pages.
 3. Cruise / Windy needs network. On **https** hosting, Map Forecast (`windy-waves-embed.html`) locks wave height to **ft**.
 
 No build step. See **[CONTEXT.md](CONTEXT.md)**, **[PROJECT.md](PROJECT.md)**, and **`.cursor/rules/water-pin-coords.mdc`**.
+
+## How to connect AIS on phone
+
+AISStream **blocks browser WebSockets** (close code 1006). BoatBoard on GitHub Pages is **HTTPS**, so a laptop `ws://192.168.…` relay is also blocked (mixed content). Phones need a **secure `wss://` tunnel**.
+
+1. On a computer or Raspberry Pi (with Node.js): in this repo run `npm install`, then:
+   ```bash
+   node ais-relay.mjs YOUR_AISSTREAM_API_KEY
+   ```
+   Free API key: [aisstream.io](https://aisstream.io).
+2. Install [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/), then in another terminal:
+   ```bash
+   cloudflared tunnel --url http://localhost:8765
+   ```
+3. Copy the printed `https://….trycloudflare.com` URL.
+4. On the phone open BoatBoard → **⚙ Settings** → paste that URL into **AIS relay URL** → **Save**. (BoatBoard rewrites `https://` to `wss://`.)
+5. Leave the relay and cloudflared running while you want live ships. Cached positions still show if the feed drops.
+
+**In-app:** AIS tab → **Setup help**, or the expandable guide under Settings.
+
+LAN-only / plain HTTP pages may use `ws://YOUR_LAN_IP:8765` without cloudflared.
 
 ## GitHub Pages deploy
 

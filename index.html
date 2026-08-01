@@ -129,10 +129,27 @@ svg text{font-family:var(--font-mono)}
 .dive-briefing-placeholder{font-size:13px;color:var(--ink3);line-height:1.5}
 @media(max-width:719px){.dive-briefing-card .dive-briefing-prose{max-height:min(70vh,640px);overflow-y:auto;padding-right:4px}}
 
-#mapWrap{height:calc(100% - 44px);min-height:300px}
+#mapWrap{position:relative;height:calc(100% - 44px);min-height:300px}
 #map{height:100%;width:100%;background:var(--bg2)}
 .mapbar{padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--card);border-bottom:1px solid var(--line);font-size:12px;color:var(--ink2)}
 .mapbar .grow{flex:1}
+.ais-help-btn{flex:0 0 auto;min-height:32px;padding:4px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg2);color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation;letter-spacing:.02em}
+.ais-help-btn:active{transform:scale(.97)}
+.ais-setup{position:absolute;left:8px;right:8px;top:8px;z-index:500;max-height:min(58%,360px);overflow:auto;-webkit-overflow-scrolling:touch;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(10,16,24,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 28px rgba(0,0,0,.45);color:var(--ink2);font-size:13px;line-height:1.45}
+.ais-setup[hidden]{display:none!important}
+.ais-setup h3{margin:0 0 6px;font-size:14px;font-weight:700;color:var(--ink);letter-spacing:.01em}
+.ais-setup .ais-setup-why{margin:0 0 8px;color:var(--fair)}
+.ais-setup ol{margin:0 0 10px;padding-left:1.25em}
+.ais-setup li{margin-bottom:6px}
+.ais-setup .mono{font-size:11px;word-break:break-all}
+.ais-setup-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.ais-setup-actions button{flex:1;min-width:120px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font-weight:600;cursor:pointer;touch-action:manipulation}
+.ais-setup-actions button.primary{background:var(--accent);color:#060a10;border-color:var(--accent)}
+.ais-howto{margin:0 0 10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg2)}
+.ais-howto summary{font-size:12px;font-weight:600;color:var(--accent);cursor:pointer;touch-action:manipulation;padding:4px 0}
+.ais-howto ol{margin:8px 0 0;padding-left:1.25em;font-size:12px;color:var(--ink2);line-height:1.45}
+.ais-howto li{margin-bottom:5px}
+.ais-howto .mono{font-size:11px;word-break:break-all}
 .legend{display:flex;gap:10px;flex-wrap:wrap;font-family:var(--font-mono);font-size:11px;font-weight:500}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:3px;vertical-align:middle}
 .legend-toggle{cursor:pointer;user-select:none;opacity:0.92}
@@ -1079,6 +1096,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
     <section class="tabpanel nopad" id="tab-ais" data-tab="ais">
       <div class="mapbar">
         <span id="aisStatus">AIS —</span>
+        <button type="button" class="ais-help-btn" id="btnAisHelp" title="How to connect AIS on phone">Setup help</button>
         <div class="grow"></div>
         <div class="legend">
           <span><i style="background:var(--good)"></i>fresh &lt;1m</span>
@@ -1091,7 +1109,24 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <span id="aisLanesLegend" class="legend-toggle" style="margin-left:6px" title="Click to toggle shipping lanes"><i class="lane-swatch"></i>shipping lanes</span>
         </div>
       </div>
-      <div id="mapWrap"><div id="map"></div></div>
+      <div id="mapWrap">
+        <div id="aisSetup" class="ais-setup" hidden>
+          <h3>How to connect AIS on phone</h3>
+          <p class="ais-setup-why" id="aisSetupWhy">AISStream (the free vessel feed) blocks web browsers for security. This HTTPS site also cannot use a plain <span class="mono">ws://</span> laptop address — you need a secure <span class="mono">wss://</span> relay.</p>
+          <ol>
+            <li>On a computer or Pi with internet: open this BoatBoard folder, run <span class="mono">npm install</span>, then <span class="mono">node ais-relay.mjs YOUR_AISSTREAM_KEY</span> (free key at aisstream.io).</li>
+            <li>In a second terminal: <span class="mono">cloudflared tunnel --url http://localhost:8765</span> (install cloudflared once from Cloudflare).</li>
+            <li>Copy the <span class="mono">https://….trycloudflare.com</span> URL it prints.</li>
+            <li>On this phone: open <strong>⚙ Settings</strong>, paste that URL into <strong>AIS relay URL</strong>, tap Save. (BoatBoard converts https → wss automatically.)</li>
+          </ol>
+          <p style="margin:0 0 8px;font-size:12px;color:var(--ink3)">Last-known ships still show from cache when live feed is down. Full write-up: README → “How to connect AIS on phone”.</p>
+          <div class="ais-setup-actions">
+            <button type="button" class="primary" id="btnAisOpenSettings">Open Settings</button>
+            <button type="button" id="btnAisSetupDismiss">Dismiss</button>
+          </div>
+        </div>
+        <div id="map"></div>
+      </div>
     </section>
 
     <section class="tabpanel" id="tab-wildlife" data-tab="wildlife">
@@ -1160,9 +1195,19 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
   <div class="modal">
     <h2>Settings</h2>
     <p>Stored on this device only. Port Royal (King Harbor) is the home reference.</p>
-    <div class="field"><label for="fAisKey">AISStream API key</label><input id="fAisKey" type="password" placeholder="Paste your aisstream.io key" autocomplete="off"></div>
-    <div class="field"><label for="fAisRelay">AIS relay URL (required on phone / GitHub Pages)</label><input id="fAisRelay" placeholder="wss://your-tunnel.trycloudflare.com — not ws:// on HTTPS" autocomplete="off"></div>
-    <p style="font-size:12px;color:var(--ink3);margin:-6px 0 10px">AISStream blocks direct browser WebSockets (close 1006). On this HTTPS site, use a <strong>wss://</strong> relay — not <span class="mono">ws://</span> (mixed content). Run <span class="mono">node ais-relay.mjs YOUR_KEY</span>, then <span class="mono">cloudflared tunnel --url http://localhost:8765</span> and paste the <span class="mono">wss://…</span> URL here. LAN tablets on plain HTTP may use <span class="mono">ws://192.168.x.x:8765</span>.</p>
+    <div class="field"><label for="fAisKey">AISStream API key</label><input id="fAisKey" type="password" placeholder="Optional on phone if relay has the key" autocomplete="off"></div>
+    <div class="field"><label for="fAisRelay">AIS relay URL (required on phone / GitHub Pages)</label><input id="fAisRelay" placeholder="https://….trycloudflare.com or wss://…" autocomplete="off"></div>
+    <details class="ais-howto" id="aisSettingsHowto" open>
+      <summary>How to connect AIS on phone</summary>
+      <p style="margin:8px 0 6px;font-size:12px;color:var(--ink2);line-height:1.45"><strong>Why:</strong> AISStream refuses browser WebSockets (you’ll see connection closed / 1006). GitHub Pages is HTTPS, so a boat-Wi‑Fi <span class="mono">ws://192.168.…</span> address is blocked — phones need a secure <span class="mono">wss://</span> tunnel.</p>
+      <ol>
+        <li>Computer/Pi: <span class="mono">npm install</span> then <span class="mono">node ais-relay.mjs YOUR_KEY</span></li>
+        <li>Same machine: <span class="mono">cloudflared tunnel --url http://localhost:8765</span></li>
+        <li>Paste the printed <span class="mono">https://….trycloudflare.com</span> URL into <strong>AIS relay URL</strong> above and Save</li>
+        <li>Keep both commands running while you want live ships on the phone</li>
+      </ol>
+      <p style="margin:6px 0 0;font-size:11px;color:var(--ink3)">LAN-only (not this HTTPS site): <span class="mono">ws://192.168.x.x:8765</span> can work on plain HTTP pages. More detail in the repo README.</p>
+    </details>
     <div class="field">
       <label class="gps-switch-row" for="togUseGpsSettings" style="margin-bottom:6px">
         <span style="font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-weight:600">Use device GPS</span>
@@ -2184,6 +2229,7 @@ let aisMarkers = {}, aisPinnedMmsi = null, aisRefreshing = false;
 let aisReconnectTimer = null, aisConnectTimer = null, aisBackoffMs = 2000;
 let aisDirectBlocked = false, aisMixedContent = false, aisReconnectAttempt = 0;
 let aisStatusHint = '';
+let aisHelpDismissed = false;
 let shippingLanesLayer = null, shippingLanesVisible = store.get('aisShippingLanes') !== '0';
 let mapInited = false;
 let swellMap = null, swellMapInited = false, swellRayLayer = null, swellObstLayer = null, swellBuoyLayer = null, swellBoatMarker = null;
@@ -2438,6 +2484,7 @@ function saveSettings(){
   if(settings.aisKey || settings.aisRelay){
     aisDirectBlocked = false;
     aisMixedContent = false;
+    aisHelpDismissed = false;
     aisBackoffMs = 2000;
     aisReconnectAttempt = 0;
     closeAisSocket(true);
@@ -11656,8 +11703,8 @@ function uwAisStatusText(){
     if(ds.stale) stale++;
   }
   const ws = aisWs ? ['connecting','open','closing','closed'][aisWs.readyState] : 'none';
-  if(!settings.aisKey && !settings.aisRelay) return 'Add AIS key in Settings';
-  if(aisMixedContent) return 'Need wss:// relay · '+count+' cached';
+  if(!settings.aisKey && !settings.aisRelay) return 'AIS setup needed';
+  if(aisMixedContent) return 'Need secure relay · '+count+' cached';
   if(aisDirectBlocked && !aisUsesRelay()) return 'Need relay · '+count+' cached';
   if(ws !== 'open') return (count ? count+' cached · reconnecting' : 'AIS reconnecting');
   if(aisStats.rx === 0) return 'AIS subscribed · waiting for data';
@@ -12312,6 +12359,41 @@ function parseShipStatic(msg){
   if(imo != null && +imo > 0) v.imo = String(+imo);
 }
 
+function aisNeedsSetupHelp(){
+  if(!settings.aisKey && !settings.aisRelay) return true;
+  if(aisMixedContent) return true;
+  if(aisDirectBlocked && !aisUsesRelay()) return true;
+  return false;
+}
+
+function updateAisHelpPanel(forceOpen){
+  const box = $('aisSetup');
+  const why = $('aisSetupWhy');
+  if(!box) return;
+  const count = aisLiveVesselCount();
+  const cached = count
+    ? ' Showing <strong>'+count+'</strong> last-known ship'+(count===1?'':'s')+' from cache.'
+    : '';
+  if(why){
+    if(aisMixedContent){
+      why.innerHTML = 'This page is <strong>HTTPS</strong>, so a plain boat-Wi‑Fi <span class="mono">ws://</span> address is blocked by the phone. Paste a secure tunnel URL (<span class="mono">https://….trycloudflare.com</span> or <span class="mono">wss://…</span>) instead.'+cached;
+    } else if(aisDirectBlocked && !aisUsesRelay()){
+      why.innerHTML = '<strong>AISStream</strong> refuses direct browser connections (that’s the closed / 1006 error). A small relay on a computer/Pi must hold your API key and speak <span class="mono">wss://</span> to this phone.'+cached;
+    } else {
+      why.innerHTML = 'Live AIS needs a secure relay URL in Settings. AISStream blocks browsers, and HTTPS pages can’t use <span class="mono">ws://</span> LAN addresses.'+cached;
+    }
+  }
+  const show = forceOpen || (aisNeedsSetupHelp() && !aisHelpDismissed);
+  box.hidden = !show;
+  if(map && show) setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 50);
+}
+
+function showAisSetupHelp(){
+  aisHelpDismissed = false;
+  updateAisHelpPanel(true);
+  if(activeTab() !== 'ais') switchTab('ais');
+}
+
 function updateAisStatus(){
   const st = $('aisStatus');
   if(!st) return;
@@ -12326,11 +12408,11 @@ function updateAisStatus(){
   }
   const ws = aisWs ? ['connecting','open','closing','closed'][aisWs.readyState] : 'none';
   if(!settings.aisKey && !settings.aisRelay){
-    st.textContent = 'Add AISStream key + wss:// relay in Settings';
+    st.textContent = 'Setup needed — tap Setup help';
   } else if(aisMixedContent){
-    st.textContent = (count ? count+' cached · ' : '')+'HTTPS page needs wss:// relay (not ws:// LAN)';
+    st.textContent = (count ? count+' cached · ' : '')+'Need secure (wss) relay — Setup help';
   } else if(aisDirectBlocked && !aisUsesRelay()){
-    st.textContent = (count ? count+' cached · ' : '')+'AISStream blocks browsers — set wss:// relay in Settings';
+    st.textContent = (count ? count+' cached · ' : '')+'Browser blocked — tap Setup help';
   } else if(ws !== 'open'){
     st.textContent = count
       ? count+' cached vessels · reconnecting…'
@@ -12338,6 +12420,7 @@ function updateAisStatus(){
   } else if(!aisStats.subSent) st.textContent = 'Connected — sending subscription…';
   else if(aisStats.rx === 0) st.textContent = 'Subscribed — waiting for AIS…';
   else st.textContent = count+' vessels · '+aisStats.rx+' msgs · '+(dr?dr+' DR · ':'')+(stale?stale+' stale (>3m) · ':'')+(aisStats.lastRx ? fmtAge(Math.round((now-aisStats.lastRx)/1000))+' ago' : '');
+  updateAisHelpPanel(false);
 }
 
 const AIS_POPUP_OPTS = { autoClose: false, closeOnClick: false, maxWidth: 280 };
@@ -14304,6 +14387,16 @@ function bindUI(){
   $('btnSettings').addEventListener('click', ()=>showSettings(true));
   $('btnSetClose').addEventListener('click', ()=>showSettings(false));
   $('settingsOverlay').addEventListener('click', e=>{ if(e.target===$('settingsOverlay')) showSettings(false); });
+  $('btnAisHelp')?.addEventListener('click', ()=> showAisSetupHelp());
+  $('btnAisOpenSettings')?.addEventListener('click', ()=>{
+    aisHelpDismissed = false;
+    showSettings(true);
+  });
+  $('btnAisSetupDismiss')?.addEventListener('click', ()=>{
+    aisHelpDismissed = true;
+    const box = $('aisSetup');
+    if(box) box.hidden = true;
+  });
   $('aisLanesLegend')?.addEventListener('click', toggleShippingLanes);
   updateShippingLanesLegend();
   $('gpsPill')?.addEventListener('click', ()=>showSettings(true));
@@ -14461,7 +14554,7 @@ function boot(){
   updateAisStatus();
 
   if(!settings.aisKey && !settings.aisRelay){
-    setBanner('Tap ⚙ Settings — add a <strong>wss:// AIS relay</strong> (AISStream blocks browsers). On HTTPS / phone use cloudflared, not ws:// LAN.','');
+    setBanner('AIS on phone needs a short one-time setup — open the <strong>AIS</strong> tab and tap <strong>Setup help</strong> (or ⚙ Settings).','');
   } else setTimeout(()=> reconnectAis(), 1200);
 
   $('ovLinks').innerHTML =
