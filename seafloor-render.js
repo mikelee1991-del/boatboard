@@ -3,37 +3,49 @@
  * On-site bathymetry chart (Fish + Dive + Fish Plan) — Leaflet, not the old SVG sampler.
  *
  * Tile sources (attribution shown on the map control):
- *   1. Esri World Ocean Base — XYZ tiles with bathymetric tint + isolines
- *      (GEBCO / NOAA / Esri compilation). Primary “fishing chart” look.
- *      https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer
- *   2. Esri World Ocean Reference — depth/place labels over the base.
- *   3. OpenSeaMap seamarks — navigational marks overlay (CC-BY-SA OpenSeaMap).
- *   4. Fallback basemap: Esri World Imagery if Ocean Base tile errors pile up.
+ *   1. NOAA ENC Online (Maritime Chart Service WMS) — localized soundings + depth
+ *      contours at On site zoom. Default basemap when preferEnc is set.
+ *      https://gis.charttools.noaa.gov/.../MCS/ENCOnline/.../MaritimeChartService/WMSServer
+ *   2. Esri World Ocean Base + Ocean Reference — regional bathymetric tint / isolines
+ *      (GEBCO / NOAA / Esri). Default for Fish Plan; available on On site via layers.
+ *   3. OpenSeaMap seamarks — navigational marks overlay.
+ *   4. Fallback / alternate: Esri World Imagery.
  *   5. Optional kelp polygons: CDFW biosds3135 FeatureServer (GeoJSON).
  *
- * Tradeoffs: Ocean Base is the best practical free contour-style chart for
- * static GH Pages (CORS-friendly XYZ). It is coarser than a plotter ENC and
- * not for navigation. NOAA ENC tile endpoints were not reliably available.
+ * Tradeoffs: GEBCO-alone and Esri Ocean Base are too coarse for ~0.2 nm fishing marks.
+ * NOAA ENC WMS is the best free CORS-friendly detail layer for SoCal close-in views
+ * (soundings + isobaths). Not for navigation. BlueTopo/NBS are download GeoTIFFs, not
+ * browser XYZ. nowCOAST blended bathymetry returned 403. OpenSeaMap depth/contours
+ * tiles were empty at SoCal test coords.
+ *
  * Fit defaults (caller may override radiusNm):
- *   On site — ONSITE_FIT_FT = 1800 ft (~0.30 nm) around the selected mark;
- *   nearby pins within ONSITE_NEAR_NM = 0.40 nm (~2430 ft).
- *   Fish Plan — PLAN_FIT_NM = 2.5 nm (wider vessel context).
+ *   On site — ONSITE_FIT_FT = 1300 ft (~0.21 nm) around the selected mark;
+ *   nearby pins within ONSITE_NEAR_NM = 0.32 nm (~1944 ft).
+ *   Fish Plan — PLAN_FIT_NM = 2.5 nm (wider vessel context; no ENC by default).
  */
 
 (function (global) {
   const D2R = Math.PI / 180;
   const FT_PER_NM = 6076.12;
   /** On site default fit radius — local structure scale (hundreds–low thousands of feet). */
-  const ONSITE_FIT_FT = 1800;                 // ~549 m
-  const ONSITE_FIT_NM = ONSITE_FIT_FT / FT_PER_NM; // ~0.296 nm
+  const ONSITE_FIT_FT = 1300;                 // ~396 m
+  const ONSITE_FIT_NM = ONSITE_FIT_FT / FT_PER_NM; // ~0.214 nm
   /** Nearby reef/kelp/rock pins on On site (slightly wider than fit). */
-  const ONSITE_NEAR_NM = 0.40;                // ~2430 ft
+  const ONSITE_NEAR_NM = 0.32;                // ~1944 ft
   /** Fish Plan seafloor — wider context around the vessel. */
   const PLAN_FIT_NM = 2.5;
   const PLAN_NEAR_NM = 1.0;                   // ~6076 ft
   const KELP_QUERY = 'https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds3135_fpu/FeatureServer/0/query';
   const FETCH_MS = 20000;
   const KELP_CACHE_MS = 10 * 60 * 1000;
+
+  /* NOAA ENC Online — Maritime Chart Service WMS (CORS OK for GH Pages).
+   * Layer ids: 10=chart info area, 2=depths/currents, 4=seabed/obstructions, 1=features. */
+  const ENC_WMS =
+    'https://gis.charttools.noaa.gov/arcgis/rest/services/MCS/ENCOnline/MapServer/exts/MaritimeChartService/WMSServer';
+  const ENC_LAYERS = '10,2,4,1';
+  const ENC_ATTR =
+    'NOAA ENC Online © Office of Coast Survey — not for navigation';
 
   const OCEAN_BASE =
     'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}';
@@ -181,9 +193,12 @@
     });
   }
 
-  function buildLegendHtml() {
+  function buildLegendHtml(preferEnc) {
     return '<div class="seafloor-legend">' +
       '<span class="seafloor-legend-title">Chart layers</span>' +
+      (preferEnc
+        ? '<span><i style="background:#9ec4dc"></i>NOAA ENC soundings / contours</span>'
+        : '<span><i style="background:#2a4a62"></i>Esri Ocean Base</span>') +
       '<span><i style="background:#ffd966"></i>Selected mark</span>' +
       '<span><i style="background:#3dd6f5"></i>You</span>' +
       '<span><i style="background:#e89a4a"></i>Reef / wreck</span>' +
@@ -193,7 +208,7 @@
       '</div>';
   }
 
-  function ensureShell(host) {
+  function ensureShell(host, preferEnc) {
     let mapEl = host.querySelector('.seafloor-map');
     let legendEl = host.querySelector('.seafloor-legend');
     if (!mapEl) {
@@ -203,13 +218,14 @@
       mapEl.setAttribute('role', 'application');
       mapEl.setAttribute('aria-label', 'Bathymetry chart — pinch to zoom');
       host.appendChild(mapEl);
-      host.insertAdjacentHTML('beforeend', buildLegendHtml());
+      host.insertAdjacentHTML('beforeend', buildLegendHtml(!!preferEnc));
       legendEl = host.querySelector('.seafloor-legend');
     }
     return { mapEl, legendEl };
   }
 
-  function addBaseLayers(map) {
+  function addBaseLayers(map, opts) {
+    const preferEnc = !!opts.preferEnc;
     /* Ocean Base native tiles stop at z16; allow upscale so pinch-in stays useful locally. */
     const ocean = L.tileLayer(OCEAN_BASE, {
       maxNativeZoom: 16,
@@ -236,27 +252,55 @@
       attribution: SEAMARK_ATTR,
       opacity: 0.9
     });
-
-    let switched = false;
-    let errCount = 0;
-    ocean.on('tileerror', () => {
-      errCount++;
-      if (switched || errCount < 5) return;
-      switched = true;
-      if (map.hasLayer(oceanGroup)) map.removeLayer(oceanGroup);
-      if (!map.hasLayer(imagery)) imagery.addTo(map);
+    /* ENC WMS: one GetMap per Leaflet tile — keep On site only (tight zoom → few tiles). */
+    const enc = L.tileLayer.wms(ENC_WMS, {
+      layers: ENC_LAYERS,
+      format: 'image/png',
+      transparent: true,
+      version: '1.3.0',
+      attribution: ENC_ATTR,
+      maxZoom: 19,
+      minZoom: 11,
+      opacity: 1,
+      uppercase: true
     });
 
-    oceanGroup.addTo(map);
+    let oceanFallback = false;
+    let oceanErr = 0;
+    ocean.on('tileerror', () => {
+      oceanErr++;
+      if (oceanFallback || oceanErr < 5) return;
+      oceanFallback = true;
+      if (map.hasLayer(oceanGroup)) map.removeLayer(oceanGroup);
+      if (!map.hasLayer(imagery) && !map.hasLayer(enc)) imagery.addTo(map);
+    });
+
+    let encFallback = false;
+    let encErr = 0;
+    enc.on('tileerror', () => {
+      encErr++;
+      if (encFallback || encErr < 6) return;
+      encFallback = true;
+      if (map.hasLayer(enc)) map.removeLayer(enc);
+      if (!map.hasLayer(oceanGroup) && !map.hasLayer(imagery)) oceanGroup.addTo(map);
+    });
+
+    const bases = {
+      'NOAA ENC detail': enc,
+      'Ocean chart': oceanGroup,
+      'Satellite': imagery
+    };
+    if (preferEnc) enc.addTo(map);
+    else oceanGroup.addTo(map);
     seamarks.addTo(map);
 
-    const layersControl = L.control.layers(
-      { 'Ocean chart': oceanGroup, 'Satellite': imagery },
-      { 'Seamarks': seamarks },
-      { position: 'topright', collapsed: true }
-    ).addTo(map);
+    const overlays = { 'Seamarks': seamarks };
+    const layersControl = L.control.layers(bases, overlays, {
+      position: 'topright',
+      collapsed: true
+    }).addTo(map);
 
-    return { oceanGroup, imagery, seamarks, layersControl };
+    return { oceanGroup, imagery, seamarks, enc, layersControl };
   }
 
   function paintMarkers(st, opts) {
@@ -357,7 +401,7 @@
         (opts.markLat == null || haversineNm(focusLat, focusLon, opts.centerLat, opts.centerLon) <= radiusNm * 1.2)) {
       bounds.extend([opts.centerLat, opts.centerLon]);
     }
-    const fitMax = opts.fitMaxZoom != null ? opts.fitMaxZoom : (radiusNm <= 0.5 ? 17 : 15);
+    const fitMax = opts.fitMaxZoom != null ? opts.fitMaxZoom : (radiusNm <= 0.5 ? 18 : 15);
     map.fitBounds(bounds.pad(0.06), { maxZoom: fitMax, animate: false });
   }
 
@@ -389,7 +433,9 @@
       await ensureLeaflet();
       if (hosts.get(host)?.reqId !== reqId) return;
 
-      const { mapEl } = ensureShell(host);
+      const preferEnc = opts.preferEnc === true ||
+        (opts.preferEnc !== false && (opts.radiusNm == null || opts.radiusNm <= 0.5));
+      const { mapEl } = ensureShell(host, preferEnc);
       let st = hosts.get(host) || { reqId, opts };
       st.reqId = reqId;
       st.opts = opts;
@@ -404,8 +450,12 @@
           tapTolerance: 18
         });
         L.control.attribution({ prefix: false, position: 'bottomright' }).addTo(st.map);
-        mapEl.classList.add('ocean-map-dark', 'seafloor-leaflet');
-        addBaseLayers(st.map);
+        if (preferEnc) {
+          mapEl.classList.add('seafloor-leaflet', 'seafloor-enc');
+        } else {
+          mapEl.classList.add('ocean-map-dark', 'seafloor-leaflet');
+        }
+        addBaseLayers(st.map, { preferEnc });
         st.markers = L.layerGroup().addTo(st.map);
       }
 
@@ -432,8 +482,9 @@
       const spanLbl = radiusNm <= 0.5
         ? '~' + radiusFt + ' ft (' + f1(radiusNm) + ' nm)'
         : '~' + f1(radiusNm) + ' nm';
+      const chartLbl = preferEnc ? 'NOAA ENC detail + OpenSeaMap' : 'Esri Ocean Base + OpenSeaMap';
       const baseMeta =
-        'Esri Ocean Base + OpenSeaMap · pinch-zoom · ' +
+        chartLbl + ' · pinch-zoom · ' +
         nearCount + ' nearby pin' + (nearCount === 1 ? '' : 's') +
         ' · ' + kelpCount + ' kelp bed' + (kelpCount === 1 ? '' : 's') +
         ' · ' + spanLbl +

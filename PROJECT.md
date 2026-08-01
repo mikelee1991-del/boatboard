@@ -19,7 +19,7 @@ BoatBoard consolidates Southern California marine forecasts, GPS position, AIS t
 | `dive-engine.js` | Dive site library (**358 sites**), scoring (ported from DiveCast), Plan/On site rendering, dive maps, briefing UI |
 | `dive-briefings-data.js` | Pre-dive briefing content — `window.__BOAT_DIVE_BRIEFINGS__` keyed by site id |
 | `dive-site-intel.js` | Extra dive intel helpers |
-| `seafloor-render.js` | On-site Leaflet ocean chart (Esri Ocean Base + OpenSeaMap + CDFW kelp) |
+| `seafloor-render.js` | On-site Leaflet chart (NOAA ENC + Esri Ocean + kelp) |
 | `coast-geo.js` | Audit-only high-res coastline (CScript pin tools). May contain phantom chords — not used by maps |
 | `coast-overlay-lite.js` | **Map display** shoreline (~100 ft, ~100 NM of slip). Loaded by dashboard |
 | `build-coast-overlay-lite.ps1` / `.js` | Rebuild overlay from OSM (`coast-osm.json`). **Do not** rebuild overlay from `coast-geo.js` |
@@ -241,10 +241,10 @@ Full enforceable rules: `.cursor/rules/water-pin-coords.mdc`.
 
 ### Seafloor (On site — dive & fish)
 `SeafloorRender` in `seafloor-render.js` (Leaflet, lazy-loaded with the On site / Plan seafloor hosts):
-- **Basemap**: Esri World Ocean Base + Ocean Reference (bathymetric tint / isolines; GEBCO–NOAA–Esri). Fallback: Esri World Imagery on repeated tile errors. Toggle Satellite via layers control. Ocean tiles `maxNativeZoom` 16, map `maxZoom` 19 (upscale on pinch-in).
-- **Overlay**: OpenSeaMap seamarks; CDFW kelp bed polygons (`biosds3135_fpu`)
-- **Pins**: selected mark + nearby FISH_SPOTS / DIVE_SITES (verbatim coords) classified as reef / kelp / rock
-- **Fit**: On site `ONSITE_FIT_FT = 1800` (~0.30 nm) around the mark; nearby pins `ONSITE_NEAR_NM = 0.40`. Fish Plan stays wider (`PLAN_FIT_NM = 2.5`). Not for navigation.
+- **On site basemap**: NOAA ENC Online WMS (Maritime Chart Service — soundings + depth contours; layers 10,2,4,1). Toggle Ocean chart / Satellite via layers control. ENC CORS-friendly on GH Pages; not for navigation.
+- **Plan basemap**: Esri World Ocean Base + Ocean Reference (regional). Fallback: Esri World Imagery. OpenSeaMap seamarks on both.
+- **Overlay**: CDFW kelp bed polygons (`biosds3135_fpu`); nearby FISH_SPOTS / DIVE_SITES pins (verbatim coords)
+- **Fit**: On site `ONSITE_FIT_FT = 1300` (~0.21 nm) around the mark; nearby pins `ONSITE_NEAR_NM = 0.32`. Fish Plan `PLAN_FIT_NM = 2.5` (no ENC by default — fewer WMS tile requests).
 
 ## Data sources
 
@@ -258,7 +258,7 @@ Full enforceable rules: `.cursor/rules/water-pin-coords.mdc`.
 | MPAs | CDFW ArcGIS MarineProtectedAreas_WebMer (SCSR) | 90-day cache |
 | AIS | AISStream WebSocket (direct or `ais-relay.mjs`) | live |
 | Coastline / shadow | `coast-overlay-lite.js` (OSM) + runtime `OBSTACLES` | static |
-| Bathymetry | Esri Ocean Base + OpenSeaMap (+ CDFW kelp) | on tab open |
+| Bathymetry | NOAA ENC WMS (On site) · Esri Ocean Base (Plan) · OpenSeaMap · CDFW kelp | on tab open |
 | SST / chlorophyll | CoastWatch ERDDAP WMS (+ JSONP where needed) | tab/cache |
 | Cruise swell map | Windy embed (waves) | live iframe |
 | Underway radar imagery | Esri World Imagery tiles (same URL as plan maps) | cached per view |
