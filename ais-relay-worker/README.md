@@ -4,6 +4,8 @@ GitHub **Pages cannot** run a WebSocket relay (static hosting only). GitHub **Ac
 
 ## One-time deploy (~5 minutes)
 
+> **Important (mobile):** This Worker must open AISStream *after* the phone sends its subscription (AISStream closes idle upstream sockets in 3s). Older Worker builds opened upstream too early — phones could sit on “Subscribed — waiting…” forever. Redeploy after pulling latest `src/worker.js`.
+
 1. Free accounts: [Cloudflare](https://dash.cloudflare.com/sign-up) + [AISStream API key](https://aisstream.io)
 2. Install Node.js, then from this folder:
 

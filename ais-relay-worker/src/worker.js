@@ -1,22 +1,19 @@
 /**
  * BoatBoard AIS relay — Cloudflare Worker
  *
- * AISStream blocks browser WebSockets. GitHub Pages is static (no server),
- * so this Worker provides a permanent wss:// endpoint on workers.dev.
+ * AISStream blocks browser WebSockets and requires a subscription within 3s of
+ * *its* upstream WebSocket opening. We therefore:
+ *   1) accept the phone/browser socket first
+ *   2) wait for the client's subscription JSON (with API key)
+ *   3) *then* open AISStream and send that subscription immediately
  *
- * Auth: client sends APIKey in the subscription JSON (recommended),
- * OR set secret AISSTREAM_API_KEY on the Worker (optional convenience).
- * Never commit API keys to git.
+ * Opening upstream before the client is ready races on slow mobile networks:
+ * laptop may beat the 3s window; phones often do not — client stays "subscribed"
+ * to the Worker while upstream is already dead → zero vessels.
  *
- * Deploy (one-time, free tier):
- *   cd ais-relay-worker
- *   npx wrangler login
- *   npx wrangler deploy
- * Optional server-side key:
- *   npx wrangler secret put AISSTREAM_API_KEY
- *
- * Then paste https://boatboard-ais.<account>.workers.dev into BoatBoard
- * Settings → AIS relay URL (BoatBoard rewrites https → wss).
+ * Deploy:
+ *   cd ais-relay-worker && npx wrangler deploy
+ * Optional: npx wrangler secret put AISSTREAM_API_KEY
  */
 
 const UPSTREAM = 'https://stream.aisstream.io/v0/stream';
@@ -28,8 +25,17 @@ function jsonError(msg, status = 400) {
   });
 }
 
-function injectKey(raw, envKey) {
-  const sub = JSON.parse(typeof raw === 'string' ? raw : new TextDecoder().decode(raw));
+async function dataToText(data) {
+  if (data == null) return '';
+  if (typeof data === 'string') return data;
+  if (data instanceof ArrayBuffer) return new TextDecoder().decode(data);
+  if (ArrayBuffer.isView(data)) return new TextDecoder().decode(data);
+  if (typeof Blob !== 'undefined' && data instanceof Blob) return data.text();
+  return String(data);
+}
+
+function injectKey(rawText, envKey) {
+  const sub = JSON.parse(rawText);
   const clientKey = sub.APIKey || sub.Apikey || sub.apiKey || '';
   const key = envKey || clientKey;
   if (!key) {
@@ -48,39 +54,70 @@ async function openUpstream() {
   return ws;
 }
 
-function pipePair(client, upstream, env) {
-  let pendingSub = null;
+/**
+ * Accept client first; open AISStream only after first subscription arrives,
+ * then send it immediately (must be within AISStream's 3s window).
+ */
+function handleClientSocket(client, env) {
+  client.accept({ allowHalfOpen: true });
+
+  let upstream = null;
   let closed = false;
+  let started = false;
 
   const closeBoth = (code = 1000, reason = '') => {
     if (closed) return;
     closed = true;
-    try { client.close(code, reason); } catch (_) {}
-    try { upstream.close(code, reason); } catch (_) {}
+    try { client.close(code, reason.slice(0, 120)); } catch (_) {}
+    try { if (upstream) upstream.close(code, reason.slice(0, 120)); } catch (_) {}
   };
 
-  upstream.addEventListener('message', (ev) => {
-    if (closed || client.readyState !== 1) return;
-    try {
-      client.send(ev.data);
-    } catch (_) {
-      closeBoth(1011, 'forward failed');
-    }
-  });
-
-  upstream.addEventListener('close', (ev) => {
-    closeBoth(ev.code || 1000, ev.reason || 'upstream closed');
-  });
-  upstream.addEventListener('error', () => closeBoth(1011, 'upstream error'));
+  const forwardText = (sock, text) => {
+    if (closed || !sock || sock.readyState !== 1) return;
+    try { sock.send(text); } catch (_) { closeBoth(1011, 'forward failed'); }
+  };
 
   client.addEventListener('message', (ev) => {
-    try {
-      pendingSub = injectKey(ev.data, env.AISSTREAM_API_KEY || '');
-      if (upstream.readyState === 1) upstream.send(pendingSub);
-    } catch (e) {
-      try { client.send(JSON.stringify({ error: e.message || String(e) })); } catch (_) {}
-      closeBoth(1008, 'bad subscription');
-    }
+    (async () => {
+      try {
+        const rawText = await dataToText(ev.data);
+        if (!rawText) return;
+        const subText = injectKey(rawText, env.AISSTREAM_API_KEY || '');
+
+        if (!started) {
+          started = true;
+          upstream = await openUpstream();
+          if (closed) {
+            try { upstream.close(); } catch (_) {}
+            return;
+          }
+
+          upstream.addEventListener('message', (uev) => {
+            (async () => {
+              try {
+                forwardText(client, await dataToText(uev.data));
+              } catch (_) {
+                closeBoth(1011, 'upstream decode failed');
+              }
+            })();
+          });
+          upstream.addEventListener('close', (uev) => {
+            closeBoth(uev.code || 1000, uev.reason || 'upstream closed');
+          });
+          upstream.addEventListener('error', () => closeBoth(1011, 'upstream error'));
+
+          /* Send subscription immediately after upstream open — beats AISStream 3s rule */
+          forwardText(upstream, subText);
+          return;
+        }
+
+        /* Later messages = subscription updates */
+        if (upstream && upstream.readyState === 1) forwardText(upstream, subText);
+      } catch (e) {
+        try { client.send(JSON.stringify({ error: e.message || String(e) })); } catch (_) {}
+        closeBoth(1008, 'bad subscription');
+      }
+    })();
   });
 
   client.addEventListener('close', (ev) => {
@@ -100,8 +137,8 @@ export default {
           'Connect with WebSocket from BoatBoard Settings → AIS relay URL.',
           'Use this origin as https://… or wss://…',
           '',
-          'GitHub Pages cannot host this relay (static files only).',
-          'Deploy docs: ais-relay-worker/ in the BoatBoard repo.',
+          'Upstream AISStream opens only after your first subscription (mobile-safe).',
+          'Deploy: cd ais-relay-worker && npx wrangler deploy',
           ''
         ].join('\n'),
         {
@@ -117,11 +154,7 @@ export default {
     try {
       const pair = new WebSocketPair();
       const [clientSock, serverSock] = Object.values(pair);
-      serverSock.accept({ allowHalfOpen: true });
-
-      const upstream = await openUpstream();
-      pipePair(serverSock, upstream, env);
-
+      handleClientSocket(serverSock, env);
       return new Response(null, { status: 101, webSocket: clientSock });
     } catch (e) {
       return jsonError(e.message || 'relay failed', 502);
