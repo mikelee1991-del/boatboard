@@ -522,20 +522,27 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .wild-intel-sp:last-child{margin-bottom:0}
 
 .seafloor-card{padding:10px 12px 12px}
-.seafloor-host{min-height:340px;background:var(--bg2);border:1px solid var(--line2);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;position:relative;width:100%}
+.seafloor-host{min-height:340px;height:min(62vh,520px);background:var(--bg2);border:1px solid var(--line2);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;position:relative;width:100%}
+.seafloor-map{flex:1 1 auto;min-height:280px;width:100%;background:var(--bg)}
+.seafloor-map.leaflet-container.seafloor-leaflet{background:#0a1520!important}
+.seafloor-map.leaflet-container.seafloor-leaflet .leaflet-tile-pane{filter:brightness(.92) contrast(1.05) saturate(.92)}
 .seafloor-status{font-family:var(--mono);font-size:12px;color:var(--ink3);padding:24px 16px;text-align:center;line-height:1.5}
 .seafloor-status.err{color:var(--poor)}
-.seafloor-svg{display:block;width:100%;max-width:100%;height:auto;aspect-ratio:1/1;margin:0 auto;max-height:min(62vh,520px);cursor:crosshair;touch-action:manipulation}
-.seafloor-probe{position:absolute;pointer-events:none;padding:3px 8px;border-radius:6px;background:rgba(6,10,16,.88);border:1px solid rgba(61,214,245,.45);color:#3dd6f5;font-family:var(--mono);font-size:11px;font-weight:600;z-index:2;white-space:nowrap}
-.seafloor-probe[hidden]{display:none}
-.seafloor-legend{display:flex;flex-wrap:wrap;gap:6px 10px;padding:10px 8px 4px;font-size:10px;color:var(--ink2);font-family:var(--mono);justify-content:center;border-top:1px solid var(--line2);background:rgba(0,0,0,.12)}
+.seafloor-legend{display:flex;flex-wrap:wrap;gap:6px 10px;padding:8px 8px 6px;font-size:10px;color:var(--ink2);font-family:var(--mono);justify-content:center;border-top:1px solid var(--line2);background:rgba(0,0,0,.18);flex:0 0 auto}
 .seafloor-legend-title{flex-basis:100%;text-align:center;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);font-weight:600;margin-bottom:2px}
-.seafloor-legend-break{flex-basis:100%;height:0}
 .seafloor-legend span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .seafloor-legend i{display:inline-block;width:14px;height:14px;border-radius:3px;border:1px solid rgba(255,255,255,.15);flex-shrink:0}
 .seafloor-meta{font-size:11px;color:var(--ink3);line-height:1.45;margin-top:8px;font-family:var(--mono)}
 .seafloor-meta .seafloor-habitat{color:var(--good)}
 .seafloor-meta .seafloor-note{display:block;margin-top:4px;color:var(--ink3);font-size:10px}
+.sf-pin,.sf-boat{background:transparent!important;border:none!important}
+.sf-pin-wrap{display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.sf-pin-dot{border-radius:50%;border-style:solid;border-color:#060a10;box-shadow:0 0 0 1px rgba(255,255,255,.2);pointer-events:auto}
+.sf-pin-lab{margin-top:2px;padding:1px 5px;border-radius:4px;background:rgba(6,10,16,.82);font:700 10px/1.2 var(--font-mono,ui-monospace,monospace);white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
+.sf-boat-mark{font-size:18px;line-height:1;color:#3dd6f5;filter:drop-shadow(0 0 4px rgba(61,214,245,.85));text-align:center}
+.seafloor-map .leaflet-control-layers{background:rgba(6,10,16,.88);color:var(--ink2);border:1px solid var(--line);border-radius:8px}
+.seafloor-map .leaflet-control-layers-toggle{background-color:rgba(6,10,16,.88)}
+.seafloor-map .leaflet-control-layers label{color:var(--ink2);font-family:var(--font-ui);font-size:12px}
 
 .boat-icon{background:transparent;border:none}
 .ais-ship-icon{background:transparent;border:none}
@@ -669,8 +676,8 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         <div id="diveSiteGuide"><div class="skel">Select a site above — exposure details and charts load here.</div></div>
         <div class="sec">Seafloor around the vessel</div>
         <div class="card seafloor-card">
-          <div id="diveSeafloorRender" class="seafloor-host" role="img" aria-label="Seafloor bathymetry around your position">
-            <div class="seafloor-status">Open On site — loads NOAA bathymetry and kelp beds…</div>
+          <div id="diveSeafloorRender" class="seafloor-host" role="img" aria-label="Bathymetry chart around your position">
+            <div class="seafloor-status">Open On site — loads ocean chart, seamarks, and kelp beds…</div>
           </div>
           <div class="seafloor-meta" id="diveSeafloorMeta"></div>
         </div>
@@ -773,8 +780,8 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         </div>
         <div class="sec">Seafloor around the vessel</div>
         <div class="card seafloor-card">
-          <div id="fishPlanSeafloorRender" class="seafloor-host" role="img" aria-label="Seafloor bathymetry around your position and top fishing picks">
-            <div class="seafloor-status">Loads bathymetry and kelp beds when you open Plan…</div>
+          <div id="fishPlanSeafloorRender" class="seafloor-host" role="img" aria-label="Bathymetry chart around your position and top fishing picks">
+            <div class="seafloor-status">Loads ocean chart and kelp beds when you open Plan…</div>
           </div>
           <div class="seafloor-meta" id="fishPlanSeafloorMeta"></div>
         </div>
@@ -805,8 +812,8 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         <div id="fishSpotBriefing" class="card dive-briefing-card"><p class="dive-briefing-placeholder">Select a fishing spot to load the briefing.</p></div>
         <div class="sec">Seafloor at the mark</div>
         <div class="card seafloor-card">
-          <div id="fishSeafloorRender" class="seafloor-host" role="img" aria-label="Seafloor bathymetry around vessel and fishing mark">
-            <div class="seafloor-status">Open On site — loads NOAA bathymetry and kelp beds…</div>
+          <div id="fishSeafloorRender" class="seafloor-host" role="img" aria-label="Bathymetry chart around vessel and fishing mark">
+            <div class="seafloor-status">Open On site — loads ocean chart, seamarks, and kelp beds…</div>
           </div>
           <div class="seafloor-meta" id="fishSeafloorMeta"></div>
         </div>
@@ -1277,11 +1284,26 @@ let _seafloorPromise = null;
 function ensureSeafloorRender(){
   if(window.SeafloorRender) return Promise.resolve(window.SeafloorRender);
   if(_seafloorPromise) return _seafloorPromise;
-  _seafloorPromise = loadCoastOverlayLite().catch(()=>{}).then(()=> loadScript('seafloor-render.js')).then(()=>{
-    if(window.SeafloorRender) SeafloorRender.init({ fetchJSON });
+  _seafloorPromise = loadScript('seafloor-render.js').then(()=>{
+    if(window.SeafloorRender) SeafloorRender.init({ fetchJSON, loadLeaflet });
     return window.SeafloorRender;
   }).catch(e=>{ _seafloorPromise = null; throw e; });
   return _seafloorPromise;
+}
+/** Nearby structure pins for on-site chart (coords verbatim — never nudged). */
+function seafloorNearbyFromFish(centerLat, centerLon, radiusNm, excludeLat, excludeLon){
+  const out = [];
+  const exKey = excludeLat != null ? excludeLat.toFixed(5)+','+excludeLon.toFixed(5) : '';
+  for(const sp of FISH_SPOTS){
+    if(!sp || sp.lat == null || sp.lon == null) continue;
+    const key = sp.lat.toFixed(5)+','+sp.lon.toFixed(5);
+    if(exKey && key === exKey) continue;
+    const dist = haversineM(centerLat, centerLon, sp.lat, sp.lon) / 1852;
+    if(dist > radiusNm) continue;
+    out.push({ lat: sp.lat, lon: sp.lon, name: sp.name, habitat: sp.habitat, depth: sp.depth });
+  }
+  out.sort((a,b)=> haversineM(centerLat,centerLon,a.lat,a.lon) - haversineM(centerLat,centerLon,b.lat,b.lon));
+  return out.slice(0, 48);
 }
 let _diveEnginePromise = null;
 function diveInitOpts(){
@@ -9561,6 +9583,9 @@ function refreshFishPlanSeafloor(ranked){
     if(!SR) return;
     const bp = boatPos();
     const top = ranked?.[0]?.spot;
+    const radiusNm = 2.5;
+    const focusLat = top?.lat ?? bp.lat;
+    const focusLon = top?.lon ?? bp.lon;
     SR.update('fishPlanSeafloorRender', {
       centerLat: bp.lat,
       centerLon: bp.lon,
@@ -9568,7 +9593,8 @@ function refreshFishPlanSeafloor(ranked){
       markLon: top?.lon,
       markLabel: top ? fishGroupListName(top) : undefined,
       habitat: top ? ('Top pick · ' + (top.habitat || top.depth || '')) : '',
-      radiusNm: 2.5,
+      nearby: seafloorNearbyFromFish(focusLat, focusLon, radiusNm, top?.lat, top?.lon),
+      radiusNm,
       metaEl: 'fishPlanSeafloorMeta'
     });
   }).catch(()=>{});
@@ -9579,6 +9605,7 @@ function refreshFishSeafloor(row, ctx){
   ensureSeafloorRender().then(SR=>{
     if(!SR) return;
     const bp = boatPos();
+    const radiusNm = 2.5;
     SR.update('fishSeafloorRender', {
       centerLat: bp.lat,
       centerLon: bp.lon,
@@ -9586,7 +9613,8 @@ function refreshFishSeafloor(row, ctx){
       markLon: row.spot.lon,
       markLabel: fishGroupListName(row.spot),
       habitat: row.spot.habitat || '',
-      radiusNm: 2.5,
+      nearby: seafloorNearbyFromFish(row.spot.lat, row.spot.lon, radiusNm, row.spot.lat, row.spot.lon),
+      radiusNm,
       metaEl: 'fishSeafloorMeta'
     });
   }).catch(()=>{});
@@ -13570,19 +13598,21 @@ function switchSubtab(section, name){
     }).catch(e=>console.error(e));
   }
   if(section === 'dive' && name === 'onsite'){
-    ensureDiveEngine().then(BD=>{
+    Promise.all([ensureDiveEngine(), ensureSeafloorRender()]).then(([BD])=>{
       if(!BD) return;
       if(BD.renderDiveBriefing) BD.renderDiveBriefing(BD.currentSite?.());
       if(BD.renderSiteGuide) BD.renderSiteGuide();
       const site = BD.currentSite?.();
       if(site && BD.refreshDiveSeafloor) BD.refreshDiveSeafloor(site);
-      else ensureSeafloorRender().then(SR=>{
-        if(!SR) return;
+      else {
         const bp = boatPos();
-        SR.update('diveSeafloorRender', {
-          centerLat: bp.lat, centerLon: bp.lon, radiusNm: 2.2, metaEl: 'diveSeafloorMeta'
+        const radiusNm = 2.2;
+        const nearby = (BD.DIVE_SITES || []).filter(s => s && haversineM(bp.lat, bp.lon, s.lat, s.lon) / 1852 <= radiusNm)
+          .slice(0, 48).map(s => ({ lat: s.lat, lon: s.lon, name: s.name, depth: s.depth, kind: 'reef' }));
+        SeafloorRender.update('diveSeafloorRender', {
+          centerLat: bp.lat, centerLon: bp.lon, radiusNm, nearby, metaEl: 'diveSeafloorMeta'
         });
-      }).catch(()=>{});
+      }
     }).catch(e=>console.error(e));
   }
   if(section === 'fishing' && name === 'onsite'){

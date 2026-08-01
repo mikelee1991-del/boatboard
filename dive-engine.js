@@ -1837,20 +1837,38 @@
   }
 
   function refreshDiveSeafloor(site) {
-    if (!window.SeafloorRender || !site) return;
-    const p = getPos ? getPos() : null;
-    const lat = p?.lat ?? site.lat;
-    const lon = p?.lon ?? site.lon;
-    window.SeafloorRender.update('diveSeafloorRender', {
-      centerLat: lat,
-      centerLon: lon,
-      markLat: site.lat,
-      markLon: site.lon,
-      markLabel: site.name,
-      habitat: site.depth != null ? 'Site depth ~' + site.depth + ' ft' : '',
-      radiusNm: 2.2,
-      metaEl: 'diveSeafloorMeta'
-    });
+    if (!site) return;
+    const run = () => {
+      if (!window.SeafloorRender) return;
+      const p = getPos ? getPos() : null;
+      const lat = p?.lat ?? site.lat;
+      const lon = p?.lon ?? site.lon;
+      const radiusNm = 2.2;
+      const markKey = site.lat.toFixed(5) + ',' + site.lon.toFixed(5);
+      const nearby = [];
+      for (let i = 0; i < DIVE_SITES.length; i++) {
+        const s = DIVE_SITES[i];
+        if (!s || s.lat == null || s.lon == null) continue;
+        if (s.lat.toFixed(5) + ',' + s.lon.toFixed(5) === markKey) continue;
+        const dist = haversineNm(site.lat, site.lon, s.lat, s.lon);
+        if (dist > radiusNm) continue;
+        nearby.push({ lat: s.lat, lon: s.lon, name: s.name, depth: s.depth });
+      }
+      nearby.sort((a, b) => haversineNm(site.lat, site.lon, a.lat, a.lon) - haversineNm(site.lat, site.lon, b.lat, b.lon));
+      window.SeafloorRender.update('diveSeafloorRender', {
+        centerLat: lat,
+        centerLon: lon,
+        markLat: site.lat,
+        markLon: site.lon,
+        markLabel: site.name,
+        habitat: site.depth != null ? 'Site depth ~' + site.depth + ' ft' : '',
+        nearby: nearby.slice(0, 48),
+        radiusNm,
+        metaEl: 'diveSeafloorMeta'
+      });
+    };
+    if (window.SeafloorRender) run();
+    else setTimeout(run, 80);
   }
 
   function renderRecommendations(when, marine, wx, tides, lat, lon) {

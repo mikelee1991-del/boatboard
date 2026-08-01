@@ -36,7 +36,7 @@ Notes:
 | `dive-engine.js` | `DIVE_SITES`, dive scoring, plan/on-site maps |
 | `dive-briefings-data.js` | Pre-dive briefing prose |
 | `dive-site-intel.js` | Extra dive intel helpers |
-| `seafloor-render.js` | Bathymetry + kelp on-site |
+| `seafloor-render.js` | On-site Leaflet ocean chart + kelp |
 | `coast-overlay-lite.js` | Map shoreline (visual) |
 | `pin-feature-groups-data.js` | Feature-group metadata for fish/dive ranking |
 | `shipping-lanes-geo.js` | Shipping-lane overlay data (lazy) |

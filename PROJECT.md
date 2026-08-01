@@ -19,7 +19,7 @@ BoatBoard consolidates Southern California marine forecasts, GPS position, AIS t
 | `dive-engine.js` | Dive site library (**358 sites**), scoring (ported from DiveCast), Plan/On site rendering, dive maps, briefing UI |
 | `dive-briefings-data.js` | Pre-dive briefing content — `window.__BOAT_DIVE_BRIEFINGS__` keyed by site id |
 | `dive-site-intel.js` | Extra dive intel helpers |
-| `seafloor-render.js` | NOAA/Open Waters bathymetry + CDFW kelp overlay (SVG/canvas host) |
+| `seafloor-render.js` | On-site Leaflet ocean chart (Esri Ocean Base + OpenSeaMap + CDFW kelp) |
 | `coast-geo.js` | Audit-only high-res coastline (CScript pin tools). May contain phantom chords — not used by maps |
 | `coast-overlay-lite.js` | **Map display** shoreline (~100 ft, ~100 NM of slip). Loaded by dashboard |
 | `build-coast-overlay-lite.ps1` / `.js` | Rebuild overlay from OSM (`coast-osm.json`). **Do not** rebuild overlay from `coast-geo.js` |
@@ -240,11 +240,11 @@ Full enforceable rules: `.cursor/rules/water-pin-coords.mdc`.
 - **Underway tab**: Esri tiles sampled into circular canvas (not Leaflet)
 
 ### Seafloor (On site — dive & fish)
-`SeafloorRender` in `seafloor-render.js`:
-- **Primary bathy**: Open Waters Seascape Terrarium tiles (`tiles.openwaters.io/seascape`)
-- **Fallback**: NOAA ERDDAP SRTM30+/ETOPO gradient grids
-- **Kelp**: CDFW ArcGIS FeatureServer `biosds3135_fpu`
-- Renders depth contours, kelp polygons, dark blue-gray palette; probe on tap
+`SeafloorRender` in `seafloor-render.js` (Leaflet, lazy-loaded with the On site / Plan seafloor hosts):
+- **Basemap**: Esri World Ocean Base + Ocean Reference (bathymetric tint / isolines; GEBCO–NOAA–Esri). Fallback: Esri World Imagery on repeated tile errors. Toggle Satellite via layers control.
+- **Overlay**: OpenSeaMap seamarks; CDFW kelp bed polygons (`biosds3135_fpu`)
+- **Pins**: selected mark + nearby FISH_SPOTS / DIVE_SITES (verbatim coords) classified as reef / kelp / rock
+- Pinch-zoom; ~2–2.5 nm fit. Not for navigation.
 
 ## Data sources
 
@@ -258,7 +258,7 @@ Full enforceable rules: `.cursor/rules/water-pin-coords.mdc`.
 | MPAs | CDFW ArcGIS MarineProtectedAreas_WebMer (SCSR) | 90-day cache |
 | AIS | AISStream WebSocket (direct or `ais-relay.mjs`) | live |
 | Coastline / shadow | `coast-overlay-lite.js` (OSM) + runtime `OBSTACLES` | static |
-| Bathymetry | Open Waters + ERDDAP | 8 min cache |
+| Bathymetry | Esri Ocean Base + OpenSeaMap (+ CDFW kelp) | on tab open |
 | SST / chlorophyll | CoastWatch ERDDAP WMS (+ JSONP where needed) | tab/cache |
 | Cruise swell map | Windy embed (waves) | live iframe |
 | Underway radar imagery | Esri World Imagery tiles (same URL as plan maps) | cached per view |
@@ -330,7 +330,7 @@ Re-run after any coordinate edit. Committed JSON may lag behind source arrays.
 | Underway | Canvas bitmap cache; reuse canvas on AIS tick; step-2 pixel fill when >1.5M px; SVG-only overlay refresh |
 | Cruise | Windy iframe (lazy `src`); no canvas/grid compute; sector table only uses model math |
 | Weather | Single SVG stacked chart; width from container |
-| Seafloor | Tile + ERDDAP cache; 55 s fetch timeout |
+| Seafloor | Leaflet chart; kelp GeoJSON ~10 min cache |
 | SST / chl | WMS + ERDDAP JSONP; `boatCache:*` metadata |
 | Coast segments | `_coastSegsCache` memoization |
 | AIS | Bbox filter ~0.55°; prune stale contacts; shared `aisDisplayState()` |
