@@ -416,7 +416,18 @@
     { id: 'cat_nooksandcrannies', name: 'Nooks and Crannies — Catalina', lat: 33.4234833, lon: -118.4132, face: 250, depth: 50, boat: true, userTrusted: true },
     /* —— Near-slip trusted fish→dive mirrors (KML + userTrusted; coords verbatim) —— */
     { id: 'hermosahardbottom', name: 'Hermosa Hard Bottom', lat: 33.8682, lon: -118.4205, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true },
-    { id: 'manhattanhardbottom', name: 'Manhattan Hard Bottom', lat: 33.88, lon: -118.4333, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true }
+    { id: 'manhattanhardbottom', name: 'Manhattan Hard Bottom', lat: 33.88, lon: -118.4333, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true },
+    /* —— Pin-trust yes fish→dive (coords verbatim from FISH_SPOTS / pin-trust-review-results) —— */
+    { id: 'pv_pvr_2a', name: 'PVR Restoration Reef — Module 2A', lat: 33.72311, lon: -118.34993, face: 220, depth: 50, boat: true, userTrusted: true },
+    { id: 'pv_ptfermin_usc', name: 'Pt. Fermin Kelp — San Pedro (USC waypoint)', lat: 33.7018333, lon: -118.2995, face: 250, depth: 55, boat: true, userTrusted: true },
+    { id: 'pv_portuguesekelp_usc', name: 'Portuguese Kelp — Palos Verdes (USC waypoint)', lat: 33.7215, lon: -118.3578333, face: 220, depth: 55, boat: true, userTrusted: true },
+    { id: 'cat_yellowtailpoint', name: 'Yellowtail Point — Catalina (frontside)', lat: 33.4333333, lon: -118.4486111, face: 90, depth: 50, boat: true, regional: true, userTrusted: true },
+    { id: 'cat_eaglerock_west', name: 'Eagle Rock — Catalina West End', lat: 33.4722222, lon: -118.6055556, face: 270, depth: 50, boat: true, regional: true, userTrusted: true },
+    /* —— Local KML fish→dive (userTrusted; coords verbatim) —— */
+    { id: 'sculpinhardbottom', name: 'Sculpin Hardbottom Area', lat: 33.8858, lon: -118.525, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true },
+    { id: 'insidesouthbankpinnacle', name: 'Inside South Bank Pinnacle 26 Fathom', lat: 33.8812, lon: -118.5355, face: 250, depth: 150, boat: true, kmlImported: true, userTrusted: true },
+    /* —— Dual-source Catalina (CDN + Tackle Trader ≤0.2 NM; coords from dual-dive-sites-candidates) —— */
+    { id: 'johnsonsrocks', name: 'Johnson\'s Rocks — Catalina (West End)', lat: 33.4768833, lon: -118.5885667, face: 90, depth: 50, boat: true, regional: true, verified: true, userTrusted: true }
   ];
 
   /** Pre-dive briefing — loaded from dive-briefings-data.js (sectioned { h, body[] } per site). */

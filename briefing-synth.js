@@ -98,6 +98,14 @@
     ut_marinelandreef80ft_283: 'ptvicente',     ut_venicereef_429: 'hermosa',
     hermosahardbottom: 'hermosa',
     manhattanhardbottom: 'hermosa',
+    sculpinhardbottom: 'hermosa',
+    insidesouthbankpinnacle: 'horseshoe',
+    pv_pvr_2a: 'portuguese',
+    pv_ptfermin_usc: 'rockypoint',
+    pv_portuguesekelp_usc: 'portuguese',
+    cat_yellowtailpoint: 'empirelanding',
+    cat_eaglerock_west: 'shiprock',
+    johnsonsrocks: 'shiprock',
     cat_littlegeiger: 'goatharbor', cat_littlefarnsworth: 'farnsworth', cat_garibaldireef: 'casino',
     cat_doctorscove: 'goatharbor', cat_lulureef: 'birdrock', cat_nooksandcrannies: 'shiprock'
   };
