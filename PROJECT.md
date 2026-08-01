@@ -340,13 +340,19 @@ Re-run after any coordinate edit. Committed JSON may lag behind source arrays.
 
 ## AIS relay
 
-AISStream often blocks browser WebSockets. Run on boat LAN:
+AISStream blocks browser WebSockets. **GitHub Pages cannot host a relay** (static only).
+
+**Preferred (phones, no always-on Pi):** deploy `ais-relay-worker/` once — see that folder’s README / root README “How to connect AIS on phone”.
+
+**Optional local:**
 
 ```bash
 npm install
 node ais-relay.mjs YOUR_AISSTREAM_API_KEY
-# Tablet Settings → AIS relay URL: ws://LAPTOP_IP:8765
+# Tablet Settings → AIS relay URL: ws://LAPTOP_IP:8765  (plain HTTP / LAN only)
 ```
+
+HTTPS BoatBoard needs `wss://` (Worker URL or temporary cloudflared in front of the Node relay).
 
 ## Known fixes (historical)
 
