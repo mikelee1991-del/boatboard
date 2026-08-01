@@ -421,6 +421,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .fish-spot .spot-bar i{display:block;height:100%;flex:1;min-width:2px}
 .fish-spot .spot-rec{font-size:12px;color:var(--accent);margin-top:6px;line-height:1.4}
 .fish-spot .spot-bait{font-size:12px;color:var(--ink2);margin-top:4px;line-height:1.4}
+.fish-style-badge{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.02em;padding:1px 6px;margin-left:6px;border:1px dashed var(--ink3);border-radius:3px;color:var(--ink2);vertical-align:middle;white-space:nowrap}
 .fish-pick{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line2);font-size:13px}
 .fish-pick:last-child{border-bottom:none}
 .fish-pick .rank{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);min-width:22px}
@@ -5681,6 +5682,7 @@ const FISH_SPOTS = [
     species: ["calico bass","bonito","barracuda","yellowtail"],
     depth: '35-90 ft', habitat: 'Historic Horseshoe kelp grounds (San Pedro Bay)',
     tactics: 'Troll feathers or cast irons when bait is up; live bait on structure.',
+    fishStyle: 'surface',
     bestTide: 'incoming', bestTime: 'morning', minSstF: 62, userTrusted: true}, // USC Sea Grant Horseshoe Kelp + FishDope Horseshoe North
   { name: 'Valiant Wreck fish grounds - Avalon', lat: 33.350856, lon: -118.325962, verified: true,
     species: ["calico bass","sheephead","rockfish","garibaldi"],
@@ -6543,6 +6545,7 @@ const FISH_SPOTS = [
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
     depth: '30-120 ft', habitat: 'Offshore fishing grounds',
     tactics: 'San Diego Fishing Spots.kml chart waypoint; drift or live bait on structure.',
+    fishStyle: 'surface',
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58, userTrusted: true},
   { name: 'East of Pukey Point – Yellowtail & Rockfish', lat: 32.45, lon: -117.235, face: 270, kmlImported: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
@@ -6683,16 +6686,19 @@ const FISH_SPOTS = [
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
     depth: '30-120 ft', habitat: 'Offshore fishing grounds',
     tactics: 'San Diego Fishing Spots.kml chart waypoint; drift or live bait on structure.',
+    fishStyle: 'surface',
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58, userTrusted: true},
   { name: 'Horseshoe North', lat: 33.6667, lon: -118.2223, face: 270, kmlImported: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
     depth: '30-120 ft', habitat: 'Offshore fishing grounds',
     tactics: 'San Diego Fishing Spots.kml chart waypoint; drift or live bait on structure.',
+    fishStyle: 'surface',
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58, userTrusted: true},
   { name: 'Horseshoe South', lat: 33.6645, lon: -118.225, face: 270, kmlImported: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
     depth: '30-120 ft', habitat: 'Offshore fishing grounds',
     tactics: 'San Diego Fishing Spots.kml chart waypoint; drift or live bait on structure.',
+    fishStyle: 'surface',
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58, userTrusted: true},
   { name: 'Hotel Coral Marina Entrance', lat: 31.858, lon: -116.6612, face: 270, kmlImported: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
@@ -8677,6 +8683,33 @@ function fishScoreColor(score){
   return '#ff6644';
 }
 
+/**
+ * fishStyle: 'structure' (default circle pin) vs 'surface' (diamond — troll / surface iron /
+ * open-water pelagic drift). Explicit spot.fishStyle wins. Else surface only when tactics/
+ * habitat use troll, feathers, surface/yo-yo irons, slow-troll, fly-line, or open-water /
+ * color-break / paddy framing. Plain "drift" on reef/modules stays structure. Pelagic
+ * species (YT/bonito/barracuda) alone do not flip the class — need surface/troll language
+ * or an explicit fishStyle tag.
+ */
+function classifyFishStyle(spot){
+  if(!spot) return 'structure';
+  if(spot.fishStyle === 'surface' || spot.fishStyle === 'structure') return spot.fishStyle;
+  const tactics = String(spot.tactics || '');
+  const habitat = String(spot.habitat || '');
+  const name = String(spot.name || '');
+  const text = tactics + ' ' + habitat + ' ' + name;
+  if(/\btrolls?\b|\bfeathers?\b|surface\s*irons?|yo-?yos?|cast\s+irons?|slow[- ]trolls?|fly[- ]lines?/i.test(tactics))
+    return 'surface';
+  if(/open[- ]water|pelagic\s+corridor|color[- ]breaks?|bait\s*balls?|kelp\s+padd(?:y|ies)|weed\s+lines?/i.test(text))
+    return 'surface';
+  return 'structure';
+}
+
+function fishStyleBadgeHtml(spot){
+  if(classifyFishStyle(spot) !== 'surface') return '';
+  return '<span class="fish-style-badge" title="Surface / troll / open-water drift">◆ Surface</span>';
+}
+
 function comfortColor(score){
   if(score >= 75) return CHART.good;
   if(score >= 58) return CHART.feel;
@@ -8885,7 +8918,7 @@ function renderFishTopPicks(ranked, ctx, sol){
     return '<div class="fish-pick '+cls+'">'+
       '<span class="rank">#'+(i+1)+'</span>'+
       '<div class="body">'+
-        '<b>'+esc(label)+'</b>'+
+        '<b>'+esc(label)+'</b>'+fishStyleBadgeHtml(spot)+
         '<div class="meta">'+score+'/100 '+scoreLbl+' · '+f1(distNm)+' nm · '+esc(fmtFishCoordsDepth(spot))+esc(modNote)+'</div>'+
         '<div class="rec">'+esc(spotConditionRec(spot, score, ctx))+(peakTxt ? ' · '+esc(peakTxt) : '')+'</div>'+
         '<div class="rec"><strong>Bait:</strong> '+esc(spotBaitLine(spot))+'</div>'+
@@ -8954,16 +8987,29 @@ function fishNearestRanked(ranked, limit){
   return [...ranked].sort((a, b) => a.distNm - b.distNm).slice(0, limit);
 }
 
-function fishMapMarkerHtml(rank, score, mode){
+function fishMapMarkerHtml(rank, score, mode, fishStyle){
   const col = fishScoreColor(score);
+  const surface = fishStyle === 'surface';
   if(mode === 'dot'){
+    if(surface){
+      return '<div style="width:9px;height:9px;transform:rotate(45deg);background:'+col+';border:1.5px solid #fff;opacity:0.85;box-shadow:0 0 4px rgba(0,0,0,.7);margin:1px"></div>';
+    }
     return '<div style="width:10px;height:10px;border-radius:50%;background:'+col+';border:1.5px solid #fff;opacity:0.8;box-shadow:0 0 4px rgba(0,0,0,.7)"></div>';
   }
   if(mode === 'secondary'){
+    if(surface){
+      return '<div style="width:11px;height:11px;transform:rotate(45deg);background:'+col+';border:2px solid #fff;opacity:0.9;box-shadow:0 0 6px rgba(0,0,0,.8);margin:2px"></div>';
+    }
     return '<div style="width:14px;height:14px;border-radius:50%;background:'+col+';border:2px solid #fff;opacity:0.85;box-shadow:0 0 6px rgba(0,0,0,.8)"></div>';
   }
   const sz = rank <= 6 ? 28 : 24;
   const fs = rank <= 6 ? 12 : 10;
+  if(surface){
+    const diamond = Math.round(sz * 0.72);
+    return '<div style="width:'+sz+'px;height:'+sz+'px;display:flex;align-items:center;justify-content:center">'+
+      '<div style="width:'+diamond+'px;height:'+diamond+'px;transform:rotate(45deg);background:'+col+';border:2px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px rgba(0,0,0,.85)">'+
+      '<span style="transform:rotate(-45deg);font-family:var(--font-mono);font-size:'+fs+'px;font-weight:700;color:#060a10;line-height:1">'+rank+'</span></div></div>';
+  }
   return '<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+col+';border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:'+fs+'px;font-weight:700;color:#060a10;box-shadow:0 0 8px rgba(0,0,0,.85)">'+rank+'</div>';
 }
 
@@ -9020,9 +9066,10 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     const peak = spotBestPeak(tl);
     const peakTxt = peak ? fmtDayTime(new Date(peak.t))+' · '+peak.score+'/100' : '—';
     const sz = rank <= 6 ? 28 : 24;
+    const style = classifyFishStyle(spot);
     const icon = L.divIcon({
       className:'',
-      html: fishMapMarkerHtml(rank, score, 'numbered'),
+      html: fishMapMarkerHtml(rank, score, 'numbered', style),
       iconSize:[sz,sz], iconAnchor:[sz/2,sz/2]
     });
     const comfortBlock = comfort
@@ -9032,8 +9079,9 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
       : '';
     const label = fishGroupListName(spot);
     const modLine = spot.featureGroupSize > 1 ? '<br><span style="opacity:.85">Best module: '+esc(spot.name)+'</span>' : '';
+    const styleLine = style === 'surface' ? '<br><span style="opacity:.9">◆ Surface / troll</span>' : '';
     L.marker([mpos.lat, mpos.lon], { icon, zIndexOffset: 500 - i })
-      .bindPopup('<b>#'+rank+' '+esc(label)+'</b><br>'+
+      .bindPopup('<b>#'+rank+' '+esc(label)+'</b>'+styleLine+'<br>'+
         '<span style="font-family:var(--font-mono);font-size:12px;font-weight:500">'+fmtFishCoordsDepth(spot)+'</span><br>'+
         'Bite: <strong>'+score+'/100</strong> · '+f1(distNm)+' nm'+modLine+'<br>'+
         'Peak today: '+peakTxt+'<br>'+
@@ -9046,15 +9094,16 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     const mpos = fishMapPos(spot);
     if(distNm <= FISH_MAP_FIT_NM) bounds.extend([mpos.lat, mpos.lon]);
     plotted++;
+    const style = classifyFishStyle(spot);
     const dotSz = distNm > FISH_MAP_LOCAL_NM ? 10 : 14;
     const icon = L.divIcon({
       className:'',
-      html: fishMapMarkerHtml(0, score, distNm > FISH_MAP_LOCAL_NM ? 'dot' : 'secondary'),
+      html: fishMapMarkerHtml(0, score, distNm > FISH_MAP_LOCAL_NM ? 'dot' : 'secondary', style),
       iconSize:[dotSz, dotSz], iconAnchor:[dotSz/2, dotSz/2]
     });
     const label = fishGroupListName(spot);
     L.marker([mpos.lat, mpos.lon], { icon, zIndexOffset: 50 })
-      .bindPopup('<b>'+esc(label)+'</b><br>'+
+      .bindPopup('<b>'+esc(label)+'</b>'+(style === 'surface' ? '<br><span style="opacity:.9">◆ Surface / troll</span>' : '')+'<br>'+
         '<span style="font-family:var(--font-mono);font-size:12px;font-weight:500">'+fmtFishCoordsDepth(spot)+'</span><br>'+
         'Bite '+score+'/100 · '+f1(distNm)+' nm'+(spot.regional ? ' · regional run' : '')+
         (spot.featureGroupSize > 1 ? '<br><span style="opacity:.85">Best module: '+esc(spot.name)+'</span>' : '')+'<br>'+
@@ -9068,14 +9117,15 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     const mpos = fishMapPos(spot);
     if(distNm <= FISH_MAP_FIT_NM) bounds.extend([mpos.lat, mpos.lon]);
     plotted++;
+    const style = classifyFishStyle(spot);
     const dotSz = distNm > FISH_MAP_LOCAL_NM ? 10 : 14;
     const icon = L.divIcon({
       className:'',
-      html: fishMapMarkerHtml(0, score, distNm > FISH_MAP_LOCAL_NM ? 'dot' : 'secondary'),
+      html: fishMapMarkerHtml(0, score, distNm > FISH_MAP_LOCAL_NM ? 'dot' : 'secondary', style),
       iconSize:[dotSz, dotSz], iconAnchor:[dotSz/2, dotSz/2]
     });
     L.marker([mpos.lat, mpos.lon], { icon, zIndexOffset: 40 })
-      .bindPopup('<b>'+esc(spot.name)+'</b><br>'+
+      .bindPopup('<b>'+esc(spot.name)+'</b>'+(style === 'surface' ? '<br><span style="opacity:.9">◆ Surface / troll</span>' : '')+'<br>'+
         '<span style="font-family:var(--font-mono);font-size:12px;font-weight:500">'+fmtFishCoordsDepth(spot)+'</span><br>'+
         'Bite '+score+'/100 · '+f1(distNm)+' nm'+(spot.cdfgAppendix ? '<br>CDFG appendix' : '')+
         (spot.featureGroupSize > 1 ? '<br><span style="opacity:.85">Part of '+esc(spot.featureGroupName || fishFeatureDisplayName(spot.name))+'</span>' : ''))
@@ -9092,6 +9142,8 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#3dd6f5;vertical-align:middle;margin-right:3px"></i> Good</span>'+
     '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffb020;vertical-align:middle;margin-right:3px"></i> Fair</span>'+
     '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff6644;vertical-align:middle;margin-right:3px"></i> Poor</span>'+
+    '<span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ink3);vertical-align:middle;margin-right:3px"></i> Structure / bottom</span>'+
+    '<span><i style="display:inline-block;width:8px;height:8px;transform:rotate(45deg);background:var(--ink3);vertical-align:middle;margin:0 4px 0 2px"></i> Surface / troll</span>'+
     '<span># = top '+Math.min(FISH_MAP_MAX_MARKERS, ranked.length)+' spots · '+plotted+' pins · ~'+FISH_MAP_FIT_NM+' nm ('+localGroups+' spots / '+localPins.length+' pins)</span>'+
     MPA_LEGEND_HTML;
 }
@@ -9594,7 +9646,7 @@ function renderFishUtilDetail(row, ctx, sw, sol){
   }).join(' · ') || 'No swell direction in model';
 
   hero.innerHTML =
-    '<h3>'+esc(fishGroupListName(spot))+'</h3>'+
+    '<h3>'+esc(fishGroupListName(spot))+' '+fishStyleBadgeHtml(spot)+'</h3>'+
     '<div class="mono" style="font-size:11px;color:var(--ink3);margin-bottom:8px">'+esc(fmtFishCoordsDepth(spot))+
     (spot.featureGroupSize > 1 ? ' · best module: '+esc(spot.name) : '')+'</div>'+
     '<div class="fish-verdict" style="font-size:14px;margin-bottom:10px">'+esc(spot.tactics)+'</div>'+
@@ -9743,7 +9795,7 @@ function renderFishing(){
           : '';
         const label = fishGroupListName(spot);
         const modNote = spot.featureGroupSize > 1 ? ' · best module: '+spot.name : '';
-        return '<div class="fish-spot '+cls+'"><div class="spot-h"><b>'+esc(label)+'</b><span>'+f1(distNm)+' nm · '+score+'/100 now</span></div>'+
+        return '<div class="fish-spot '+cls+'"><div class="spot-h"><span><b>'+esc(label)+'</b>'+fishStyleBadgeHtml(spot)+'</span><span>'+f1(distNm)+' nm · '+score+'/100 now</span></div>'+
           '<div class="spot-coords mono" style="font-size:11px;color:var(--ink3);margin:2px 0 6px">'+esc(fmtFishCoordsDepth(spot))+esc(modNote)+'</div>'+
           '<div class="tags">'+species+'</div>'+
           (whenTxt ? '<div class="spot-when">'+esc(whenTxt)+'</div>' : '')+

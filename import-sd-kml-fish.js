@@ -160,6 +160,10 @@ function formatNewSpot(sp) {
   ].join('\n');
 }
 
+/* New KML spots default to structure fishStyle (omit field). Tag fishStyle:'surface'
+ * when tactics/habitat clearly support troll / surface iron / open-water drift —
+ * see classifyFishStyle in index.html / briefing-synth.js. */
+
 function jsonStringify(v) {
   function ser(o) {
     if (o === null) return 'null';

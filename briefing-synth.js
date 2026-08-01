@@ -259,6 +259,27 @@
     return synthesizeDiveBriefing(site, intel);
   }
 
+  /**
+   * fishStyle: 'structure' (default) vs 'surface' (troll / surface iron / open-water pelagic drift).
+   * Explicit spot.fishStyle wins. Else surface only when tactics/habitat use troll, feathers,
+   * surface/yo-yo irons, slow-troll, fly-line, or open-water / color-break / paddy framing.
+   * Plain "drift" on reef/modules stays structure. Pelagic species alone do not flip the class.
+   * Keep in sync with classifyFishStyle in index.html.
+   */
+  function classifyFishStyle(spot) {
+    if (!spot) return 'structure';
+    if (spot.fishStyle === 'surface' || spot.fishStyle === 'structure') return spot.fishStyle;
+    var tactics = String(spot.tactics || '');
+    var habitat = String(spot.habitat || '');
+    var name = String(spot.name || '');
+    var text = tactics + ' ' + habitat + ' ' + name;
+    if (/\btrolls?\b|\bfeathers?\b|surface\s*irons?|yo-?yos?|cast\s+irons?|slow[- ]trolls?|fly[- ]lines?/i.test(tactics))
+      return 'surface';
+    if (/open[- ]water|pelagic\s+corridor|color[- ]breaks?|bait\s*balls?|kelp\s+padd(?:y|ies)|weed\s+lines?/i.test(text))
+      return 'surface';
+    return 'structure';
+  }
+
   function synthesizeFishBriefing(spot, distNm) {
     if (!spot) return null;
     var name = spot.name || 'This mark';
@@ -266,6 +287,8 @@
     var habitat = spot.habitat || 'Offshore structure';
     var tactics = spot.tactics || 'Drift or live bait on structure.';
     var depth = spot.depth || 'mixed depths';
+    var style = classifyFishStyle(spot);
+    var surface = style === 'surface';
     var region = regionOf(name, spot.lat, spot.regional);
     var run = runFromSlip(spot.lat, spot.lon);
     var nm = distNm != null && isFinite(distNm) ? distNm : (run ? run.nm : null);
@@ -281,17 +304,21 @@
     var face = spot.face != null ? Math.round(spot.face) + '° ' + compass(spot.face) : null;
 
     var why1 = name + ' targets ' + species.slice(0, 4).join(', ') +
-      ' over ' + habitat.toLowerCase() + ' in the ' + depth + ' band. ' +
+      ' over ' + habitat.toLowerCase() + ' in the ' + depth + ' band' +
+      (surface ? ' — a surface / troll–oriented mark when bait is up' : '') + '. ' +
       'From Port Royal / King Harbor this is a ' +
       (nm != null ? f1(nm) + ' nm run' + (run ? ' (~' + Math.round(run.brg) + '° ' + compass(run.brg) + ')' : '') : 'charted local mark') +
       (spot.regional ? ' (regional day-trip fuel plan)' : ' for a same-day turn.') + ' ' + trust;
 
-    var why2 = 'Structure character: ' + habitat +
-      '. ' + (/artificial|module|cdfg|pvr|wreck|barge|pipe/i.test(name + habitat)
-        ? 'Work high spots and module edges up-current; fish stack on the first relief that breaks the sand.'
-        : /kelp|cove|point|rock/i.test(name + habitat)
-          ? 'Work kelp edges and rock fingers; keep baits just outside the fronds to avoid snags while staying in the strike zone.'
-          : 'Probe hard-to-soft transitions with the sounder — marks often sit on the first color change.');
+    var why2 = surface
+      ? ('Water character: ' + habitat +
+        '. Watch for bait marks, color/temp breaks, and birds — troll feathers or cast surface irons along the edge, then slide to nearby structure if the bite goes quiet.')
+      : ('Structure character: ' + habitat +
+        '. ' + (/artificial|module|cdfg|pvr|wreck|barge|pipe/i.test(name + habitat)
+          ? 'Work high spots and module edges up-current; fish stack on the first relief that breaks the sand.'
+          : /kelp|cove|point|rock/i.test(name + habitat)
+            ? 'Work kelp edges and rock fingers; keep baits just outside the fronds to avoid snags while staying in the strike zone.'
+            : 'Probe hard-to-soft transitions with the sounder — marks often sit on the first color change.'));
 
     var why3 = 'Condition filter: prefer ' + tod + ' windows and ' + tide +
       (spot.minSstF ? '; water above ~' + spot.minSstF + '°F helps warm-water species' : '') +
@@ -304,27 +331,41 @@
          regional: 'Treat as a dedicated run, not a quick harbor hop.',
          socal: 'Match seas and wind to the exposure before leaving the breakwater.' }[region] || '');
 
-    var tech1 = 'Primary approach: ' + tactics +
-      ' Sounder first — idle across the high spot, mark fish and relief, then set a controlled drift or short-soak anchor up-current of the bite.';
+    var tech1 = surface
+      ? ('Primary approach: ' + tactics +
+        ' Sounder for bait and temperature edges first — set a controlled troll or open-water drift along the color break, then cast irons/feathers when marks boil.')
+      : ('Primary approach: ' + tactics +
+        ' Sounder first — idle across the high spot, mark fish and relief, then set a controlled drift or short-soak anchor up-current of the bite.');
 
-    var tech2 = 'Bait & presentation: match the forage — live sardine/squid for bass and sheephead, dropper-loop squid for rockfish, iron or feathers when pelagics show. ' +
-      'Keep leader abrasion-resistant around reef; retie after snags. Vertical jigs excel on steep module faces; swimbaits shine on kelp edges.';
+    var tech2 = surface
+      ? ('Bait & presentation: feathers, yo-yos, and surface irons when bait is up; live sardine on a short flat-line or kite when YT/bonito show. ' +
+        'Keep a structure rod ready if the school stacks on nearby kelp or a high spot.')
+      : ('Bait & presentation: match the forage — live sardine/squid for bass and sheephead, dropper-loop squid for rockfish, iron or feathers when pelagics show. ' +
+        'Keep leader abrasion-resistant around reef; retie after snags. Vertical jigs excel on steep module faces; swimbaits shine on kelp edges.');
 
     var tech3 = 'Boat craft from King Harbor: clear the breakwater, then run ' +
       (run ? run.label : 'to the mark') +
-      '. Watch for dive flags on shared reefs (Hermosa / Redondo modules, PV coves). ' +
-      'If wind builds afternoon, fish the closest productive structure on the way home rather than extending the run.';
+      (surface
+        ? '. Give wide berth to dive flags and other trollers; circle bait schools wide rather than cutting through. '
+        : '. Watch for dive flags on shared reefs (Hermosa / Redondo modules, PV coves). ') +
+      'If wind builds afternoon, fish the closest productive ' + (surface ? 'bait line' : 'structure') + ' on the way home rather than extending the run.';
 
-    var season1 = 'Targets by season: calico and sand bass year-round on structure; sheephead stronger on warmer months; rockfish deeper in winter cold; ' +
-      (species.join(' ').toLowerCase().indexOf('bonito') >= 0 || species.join(' ').toLowerCase().indexOf('yellowtail') >= 0
-        ? 'bonito / yellowtail when SST and bait align in summer–fall.'
-        : 'pelagics occasional when bait and SST push into the bay.');
+    var season1 = surface
+      ? ('Targets by season: bonito / barracuda / yellowtail when SST and bait align in summer–fall; ' +
+        'calico and sand bass remain available on adjacent structure year-round.')
+      : ('Targets by season: calico and sand bass year-round on structure; sheephead stronger on warmer months; rockfish deeper in winter cold; ' +
+        (species.join(' ').toLowerCase().indexOf('bonito') >= 0 || species.join(' ').toLowerCase().indexOf('yellowtail') >= 0
+          ? 'bonito / yellowtail when SST and bait align in summer–fall.'
+          : 'pelagics occasional when bait and SST push into the bay.'));
 
     var season2 = 'MPA & regs: several PV and Catalina marks sit in or beside SMCAs — know no-take lines before fishing Portuguese Point, Pt Vicente, Abalone Cove, or island parks. ' +
       'Depth and rockfish closures change — verify current CDFW regs the morning of the trip.';
 
-    var season3 = 'Local tip: pair this mark with a nearby module or kelp line for a two-stop loop without a long reposition. ' +
-      'If the bite is soft, slide 0.1–0.2 nm along the same contour rather than abandoning the complex — feature groups often share one reef system.';
+    var season3 = surface
+      ? ('Local tip: if surface fish shut off, slide toward the nearest kelp high spot or Horseshoe structure pin rather than making a long reposition. ' +
+        'Feature-group siblings often share one bait corridor.')
+      : ('Local tip: pair this mark with a nearby module or kelp line for a two-stop loop without a long reposition. ' +
+        'If the bite is soft, slide 0.1–0.2 nm along the same contour rather than abandoning the complex — feature groups often share one reef system.');
 
     return [
       { h: 'Why fish here', body: [why1, why2, why3] },
@@ -352,6 +393,7 @@
     diveBriefingFor: diveBriefingFor,
     synthesizeDiveBriefing: synthesizeDiveBriefing,
     synthesizeFishBriefing: synthesizeFishBriefing,
+    classifyFishStyle: classifyFishStyle,
     briefingBlocksToHtml: briefingBlocksToHtml,
     DIVE_BRIEFING_ALIASES: DIVE_BRIEFING_ALIASES,
     runFromSlip: runFromSlip
