@@ -8,31 +8,34 @@ Single-page marine dashboard for a multipurpose fishing / diving / cruising boat
 **Hosted:** https://mikelee1991-del.github.io/boatboard/ (after GitHub Pages is enabled).
 
 1. Allow GPS, or turn **Use device GPS** off and use slip / manual lat-lon (Overview + Settings).
-2. AIS on phone / GitHub Pages: see **[How to connect AIS on phone](#how-to-connect-ais-on-phone)** below (relay + cloudflared). Plain `ws://192.168.x.x` only works on non-HTTPS pages.
+2. AIS on phone: **one-time** free Cloudflare Worker (no always-on Pi) — see **[How to connect AIS on phone](#how-to-connect-ais-on-phone)**. GitHub Pages cannot host the relay.
 3. Cruise / Windy needs network. On **https** hosting, Map Forecast (`windy-waves-embed.html`) locks wave height to **ft**.
 
 No build step. See **[CONTEXT.md](CONTEXT.md)**, **[PROJECT.md](PROJECT.md)**, and **`.cursor/rules/water-pin-coords.mdc`**.
 
 ## How to connect AIS on phone
 
-AISStream **blocks browser WebSockets** (close code 1006). BoatBoard on GitHub Pages is **HTTPS**, so a laptop `ws://192.168.…` relay is also blocked (mixed content). Phones need a **secure `wss://` tunnel**.
+**Why GitHub can’t host the relay:** GitHub Pages serves static files only — no persistent WebSocket server. Actions runners are ephemeral. AISStream also **blocks browser WebSockets** (close 1006).
 
-1. On a computer or Raspberry Pi (with Node.js): in this repo run `npm install`, then:
+**Recommended: free Cloudflare Worker (one-time deploy, then leave it)**
+
+1. Free [Cloudflare](https://dash.cloudflare.com/sign-up) account + free [AISStream](https://aisstream.io) API key.
+2. On any computer (once):
    ```bash
-   node ais-relay.mjs YOUR_AISSTREAM_API_KEY
+   cd ais-relay-worker
+   npx wrangler login
+   npx wrangler deploy
    ```
-   Free API key: [aisstream.io](https://aisstream.io).
-2. Install [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/install-and-setup/installation/), then in another terminal:
-   ```bash
-   cloudflared tunnel --url http://localhost:8765
-   ```
-3. Copy the printed `https://….trycloudflare.com` URL.
-4. On the phone open BoatBoard → **⚙ Settings** → paste that URL into **AIS relay URL** → **Save**. (BoatBoard rewrites `https://` to `wss://`.)
-5. Leave the relay and cloudflared running while you want live ships. Cached positions still show if the feed drops.
+3. Copy `https://boatboard-ais.<you>.workers.dev`.
+4. Phone → BoatBoard **⚙ Settings** → paste **API key** + that **relay URL** → **Save**.
 
-**In-app:** AIS tab → **Setup help**, or the expandable guide under Settings.
+No Raspberry Pi, no laptop left on, no cloudflared. Details: [`ais-relay-worker/README.md`](ais-relay-worker/README.md).
 
-LAN-only / plain HTTP pages may use `ws://YOUR_LAN_IP:8765` without cloudflared.
+Optional: after deploy, set `AIS_HOSTED_RELAY_DEFAULT` in `index.html` to your `wss://….workers.dev` URL so devices inherit it from Pages (still keep the API key in Settings / Worker secret — never commit keys).
+
+**In-app:** AIS tab → **Setup help**.
+
+**Power-user / LAN:** `node ais-relay.mjs` while a machine is online (see `ais-relay.mjs`). HTTPS sites still need `wss://` (Worker or temporary cloudflared).
 
 ## GitHub Pages deploy
 
@@ -61,7 +64,8 @@ Notes:
 | `coast-overlay-lite.js` | Map shoreline (visual) |
 | `pin-feature-groups-data.js` | Feature-group metadata for fish/dive ranking |
 | `shipping-lanes-geo.js` | Shipping-lane overlay data (lazy) |
-| `windy-waves-embed.html` | Cruise Map Forecast host (locks wave height to **ft**) |
+| `ais-relay-worker/` | Cloudflare Worker AIS proxy (deploy once for phones) |
+| `ais-relay.mjs` | Optional local Node AIS proxy |
 
 `coast-geo.js` is **audit-only** — never loaded by the dashboard.
 

@@ -1,10 +1,11 @@
 {
   "name": "boatboard",
   "private": true,
-  "description": "SoCal BoatBoard dashboard + optional AISStream WebSocket relay",
+  "description": "SoCal BoatBoard dashboard + AISStream relays (Cloudflare Worker / local Node)",
   "type": "module",
   "scripts": {
-    "ais-relay": "node ais-relay.mjs"
+    "ais-relay": "node ais-relay.mjs",
+    "ais-relay:deploy": "npm --prefix ais-relay-worker exec -- wrangler deploy"
   },
   "dependencies": {
     "ws": "^8.18.0"

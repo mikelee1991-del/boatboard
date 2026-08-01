@@ -36,7 +36,8 @@ BoatBoard consolidates Southern California marine forecasts, GPS position, AIS t
 | `location-audit-core.js`, `coast-audit-sanitize.js` | Shared audit helpers |
 | `audit-map-water-pins.js` | Advisory map-water audit |
 | `audit-dive-sites.js`, `audit-all-locations.js` | Legacy / supplemental audits |
-| `ais-relay.mjs` | Local WebSocket proxy for AISStream (browsers often blocked direct) |
+| `ais-relay.mjs` | Optional local Node WebSocket proxy (LAN / while a PC is on) |
+| `ais-relay-worker/` | **Preferred** Cloudflare Worker `wss://` proxy (one-time deploy; phones without Pi) |
 | `fetch-coast.mjs`, `regenerate-coast.ps1`, `process-coast.ps1` | Rebuild audit `coast-geo.js` from OSM (not the map overlay) |
 | `coast-osm.json`, `overpass-query.txt`, `coast-osm-ways.js` | OSM coastline cache + WSH extract for overlay builder |
 | `socal-dive-conditions.html` | Original dive conditions page — **do not edit**; BoatBoard is separate |
@@ -257,7 +258,7 @@ Full enforceable rules: `.cursor/rules/water-pin-coords.mdc`.
 | NWS surf zone text | `api.weather.gov` SRF LOX | ~10 min |
 | Buoy observations | NDBC realtime `.txt` + Open-Meteo at buoy lat/lon | ~15 min |
 | MPAs | CDFW ArcGIS MarineProtectedAreas_WebMer (SCSR) | 90-day cache |
-| AIS | AISStream WebSocket (direct or `ais-relay.mjs`) | live |
+| AIS | AISStream via Cloudflare Worker (`ais-relay-worker/`) or local `ais-relay.mjs` | live |
 | Coastline / shadow | `coast-overlay-lite.js` (OSM) + runtime `OBSTACLES` | static |
 | Bathymetry | NCEI DEM hillshade (On site) · ENC/Ocean toggles · OpenSeaMap · CDFW kelp | on tab open |
 | SST / chlorophyll | CoastWatch ERDDAP WMS (+ JSONP where needed) | tab/cache |

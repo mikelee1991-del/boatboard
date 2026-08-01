@@ -1,0 +1,11 @@
+name = "boatboard-ais"
+main = "src/worker.js"
+compatibility_date = "2024-11-01"
+workers_dev = true
+
+# Optional: store API key on the Worker so phones only need the relay URL.
+#   npx wrangler secret put AISSTREAM_API_KEY
+# Prefer client-side key in BoatBoard Settings (never commit keys).
+
+[vars]
+# No secrets here — use `wrangler secret put` for AISSTREAM_API_KEY

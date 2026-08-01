@@ -1114,14 +1114,14 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
       <div id="mapWrap">
         <div id="aisSetup" class="ais-setup" hidden>
           <h3>How to connect AIS on phone</h3>
-          <p class="ais-setup-why" id="aisSetupWhy">AISStream (the free vessel feed) blocks web browsers for security. This HTTPS site also cannot use a plain <span class="mono">ws://</span> laptop address — you need a secure <span class="mono">wss://</span> relay.</p>
+          <p class="ais-setup-why" id="aisSetupWhy">AISStream blocks browsers, and GitHub Pages is static (no server). You need a free cloud relay once — not a Pi left on.</p>
           <ol>
-            <li>On a computer or Pi with internet: open this BoatBoard folder, run <span class="mono">npm install</span>, then <span class="mono">node ais-relay.mjs YOUR_AISSTREAM_KEY</span> (free key at aisstream.io).</li>
-            <li>In a second terminal: <span class="mono">cloudflared tunnel --url http://localhost:8765</span> (install cloudflared once from Cloudflare).</li>
-            <li>Copy the <span class="mono">https://….trycloudflare.com</span> URL it prints.</li>
-            <li>On this phone: open <strong>⚙ Settings</strong>, paste that URL into <strong>AIS relay URL</strong>, tap Save. (BoatBoard converts https → wss automatically.)</li>
+            <li><strong>One-time (any computer):</strong> free Cloudflare account → in the BoatBoard repo run <span class="mono">cd ais-relay-worker</span> then <span class="mono">npx wrangler deploy</span> (see <span class="mono">ais-relay-worker/README.md</span>).</li>
+            <li>Copy the printed <span class="mono">https://boatboard-ais.…workers.dev</span> URL.</li>
+            <li>On this phone: <strong>⚙ Settings</strong> → paste your free <a href="https://aisstream.io" target="_blank" rel="noopener">AISStream</a> API key + that relay URL → <strong>Save</strong>.</li>
+            <li>Done — no home PC or Raspberry Pi required afterward. Cloudflare keeps the relay online.</li>
           </ol>
-          <p style="margin:0 0 8px;font-size:12px;color:var(--ink3)">Last-known ships still show from cache when live feed is down. Full write-up: README → “How to connect AIS on phone”.</p>
+          <p style="margin:0 0 8px;font-size:12px;color:var(--ink3)">Optional power-user: local <span class="mono">ais-relay.mjs</span> + cloudflared while a laptop is on. Cached ships still show if the feed drops.</p>
           <div class="ais-setup-actions">
             <button type="button" class="primary" id="btnAisOpenSettings">Open Settings</button>
             <button type="button" id="btnAisSetupDismiss">Dismiss</button>
@@ -1197,18 +1197,17 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
   <div class="modal">
     <h2>Settings</h2>
     <p>Stored on this device only. Port Royal (King Harbor) is the home reference.</p>
-    <div class="field"><label for="fAisKey">AISStream API key</label><input id="fAisKey" type="password" placeholder="Optional on phone if relay has the key" autocomplete="off"></div>
-    <div class="field"><label for="fAisRelay">AIS relay URL (required on phone / GitHub Pages)</label><input id="fAisRelay" placeholder="https://….trycloudflare.com or wss://…" autocomplete="off"></div>
+    <div class="field"><label for="fAisKey">AISStream API key</label><input id="fAisKey" type="password" placeholder="Free key from aisstream.io" autocomplete="off"></div>
+    <div class="field"><label for="fAisRelay">AIS relay URL (Cloudflare Worker)</label><input id="fAisRelay" placeholder="https://boatboard-ais.…workers.dev" autocomplete="off"></div>
     <details class="ais-howto" id="aisSettingsHowto" open>
-      <summary>How to connect AIS on phone</summary>
-      <p style="margin:8px 0 6px;font-size:12px;color:var(--ink2);line-height:1.45"><strong>Why:</strong> AISStream refuses browser WebSockets (you’ll see connection closed / 1006). GitHub Pages is HTTPS, so a boat-Wi‑Fi <span class="mono">ws://192.168.…</span> address is blocked — phones need a secure <span class="mono">wss://</span> tunnel.</p>
+      <summary>How to connect AIS on phone (no Pi required)</summary>
+      <p style="margin:8px 0 6px;font-size:12px;color:var(--ink2);line-height:1.45"><strong>Why:</strong> AISStream refuses browser WebSockets (closed / 1006). <strong>GitHub Pages cannot host a relay</strong> (static files only). Deploy a free Cloudflare Worker once — then leave it; nothing to keep running at home.</p>
       <ol>
-        <li>Computer/Pi: <span class="mono">npm install</span> then <span class="mono">node ais-relay.mjs YOUR_KEY</span></li>
-        <li>Same machine: <span class="mono">cloudflared tunnel --url http://localhost:8765</span></li>
-        <li>Paste the printed <span class="mono">https://….trycloudflare.com</span> URL into <strong>AIS relay URL</strong> above and Save</li>
-        <li>Keep both commands running while you want live ships on the phone</li>
+        <li>On any computer (once): <span class="mono">cd ais-relay-worker</span> → <span class="mono">npx wrangler login</span> → <span class="mono">npx wrangler deploy</span></li>
+        <li>Paste the <span class="mono">https://….workers.dev</span> URL into <strong>AIS relay URL</strong> above</li>
+        <li>Paste your AISStream API key above → <strong>Save</strong></li>
       </ol>
-      <p style="margin:6px 0 0;font-size:11px;color:var(--ink3)">LAN-only (not this HTTPS site): <span class="mono">ws://192.168.x.x:8765</span> can work on plain HTTP pages. More detail in the repo README.</p>
+      <p style="margin:6px 0 0;font-size:11px;color:var(--ink3)">Docs: <span class="mono">ais-relay-worker/README.md</span>. Optional: local <span class="mono">ais-relay.mjs</span> only while a laptop is on.</p>
     </details>
     <div class="field">
       <label class="gps-switch-row" for="togUseGpsSettings" style="margin-bottom:6px">
@@ -1292,6 +1291,12 @@ const REFRESH_NWS = 10 * 60e3;
 const REFRESH_CDIP = 15 * 60e3;
 const REFRESH_TIDES = 15 * 60e3;
 const AIS_BBOX_DEG = 0.55;
+/**
+ * Optional baked-in Cloudflare Worker URL after you deploy ais-relay-worker/ once.
+ * Example: 'wss://boatboard-ais.YOUR_SUBDOMAIN.workers.dev'
+ * Leave empty to require Settings → AIS relay URL. Never put API keys here.
+ */
+const AIS_HOSTED_RELAY_DEFAULT = '';
 const COMPASS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const CDIP_BUOYS = [
   /* NDBC station pages — DMS converted to 6-decimal degrees, audit 2026-07-23 */
@@ -2488,7 +2493,7 @@ function saveSettings(){
     manualLat: settings.manualLat,
     manualLon: settings.manualLon
   });
-  if(settings.aisKey || settings.aisRelay){
+  if(settings.aisKey || settings.aisRelay || AIS_HOSTED_RELAY_DEFAULT){
     aisDirectBlocked = false;
     aisMixedContent = false;
     aisHelpDismissed = false;
@@ -11712,9 +11717,10 @@ function uwAisStatusText(){
     if(ds.stale) stale++;
   }
   const ws = aisWs ? ['connecting','open','closing','closed'][aisWs.readyState] : 'none';
-  if(!settings.aisKey && !settings.aisRelay) return 'AIS setup needed';
-  if(aisMixedContent) return 'Need secure relay · '+count+' cached';
-  if(aisDirectBlocked && !aisUsesRelay()) return 'Need relay · '+count+' cached';
+  if(!settings.aisKey && !aisRelayUrlRaw()) return 'AIS setup needed';
+  if(aisMixedContent) return 'Need workers.dev relay · '+count+' cached';
+  if(aisDirectBlocked && !aisUsesRelay()) return 'Need cloud relay · '+count+' cached';
+  if(settings.aisKey && !aisUsesRelay() && location.protocol === 'https:') return 'Add Worker URL · '+count+' cached';
   if(ws !== 'open') return (count ? count+' cached · reconnecting' : 'AIS reconnecting');
   if(aisStats.rx === 0) return 'AIS subscribed · waiting for data';
   const inView = nearbyAisContacts(uwRadarView.rangeNm).length;
@@ -12240,10 +12246,12 @@ function scheduleAisReconnect(delayMs){
   }, wait);
 }
 function aisUsesRelay(){
-  return !!(settings.aisRelay && settings.aisRelay.trim());
+  return !!aisRelayUrlRaw();
 }
 function aisRelayUrlRaw(){
-  return settings.aisRelay ? settings.aisRelay.trim() : '';
+  const custom = settings.aisRelay ? settings.aisRelay.trim() : '';
+  if(custom) return custom;
+  return AIS_HOSTED_RELAY_DEFAULT || '';
 }
 function aisIsPrivateHost(host){
   const h = String(host || '').toLowerCase().replace(/[\[\]]/g, '');
@@ -12369,9 +12377,11 @@ function parseShipStatic(msg){
 }
 
 function aisNeedsSetupHelp(){
-  if(!settings.aisKey && !settings.aisRelay) return true;
+  if(!settings.aisKey && !aisRelayUrlRaw()) return true;
   if(aisMixedContent) return true;
   if(aisDirectBlocked && !aisUsesRelay()) return true;
+  /* Key alone without relay → will fail on Pages; nudge setup */
+  if(settings.aisKey && !aisUsesRelay() && (aisDirectBlocked || location.protocol === 'https:')) return true;
   return false;
 }
 
@@ -12385,11 +12395,13 @@ function updateAisHelpPanel(forceOpen){
     : '';
   if(why){
     if(aisMixedContent){
-      why.innerHTML = 'This page is <strong>HTTPS</strong>, so a plain boat-Wi‑Fi <span class="mono">ws://</span> address is blocked by the phone. Paste a secure tunnel URL (<span class="mono">https://….trycloudflare.com</span> or <span class="mono">wss://…</span>) instead.'+cached;
+      why.innerHTML = 'This page is <strong>HTTPS</strong>, so a plain boat-Wi‑Fi <span class="mono">ws://</span> address is blocked. Use your Cloudflare Worker URL (<span class="mono">https://….workers.dev</span>) instead.'+cached;
     } else if(aisDirectBlocked && !aisUsesRelay()){
-      why.innerHTML = '<strong>AISStream</strong> refuses direct browser connections (that’s the closed / 1006 error). A small relay on a computer/Pi must hold your API key and speak <span class="mono">wss://</span> to this phone.'+cached;
+      why.innerHTML = '<strong>AISStream</strong> refuses browser connections (closed / 1006), and <strong>GitHub Pages cannot run a relay</strong>. Deploy the free Cloudflare Worker once (no Pi to leave on).'+cached;
+    } else if(settings.aisKey && !aisUsesRelay()){
+      why.innerHTML = 'You have an API key, but phones still need a <strong>cloud relay URL</strong> (AISStream blocks browsers). One-time: <span class="mono">npx wrangler deploy</span> in <span class="mono">ais-relay-worker/</span>.'+cached;
     } else {
-      why.innerHTML = 'Live AIS needs a secure relay URL in Settings. AISStream blocks browsers, and HTTPS pages can’t use <span class="mono">ws://</span> LAN addresses.'+cached;
+      why.innerHTML = 'Live AIS needs your AISStream key + a Cloudflare Worker relay URL in Settings. No always-on home computer required.'+cached;
     }
   }
   const show = forceOpen || (aisNeedsSetupHelp() && !aisHelpDismissed);
@@ -12416,12 +12428,14 @@ function updateAisStatus(){
     if(ds.drActive) dr++;
   }
   const ws = aisWs ? ['connecting','open','closing','closed'][aisWs.readyState] : 'none';
-  if(!settings.aisKey && !settings.aisRelay){
+  if(!settings.aisKey && !aisRelayUrlRaw()){
     st.textContent = 'Setup needed — tap Setup help';
   } else if(aisMixedContent){
-    st.textContent = (count ? count+' cached · ' : '')+'Need secure (wss) relay — Setup help';
+    st.textContent = (count ? count+' cached · ' : '')+'Need workers.dev relay — Setup help';
   } else if(aisDirectBlocked && !aisUsesRelay()){
-    st.textContent = (count ? count+' cached · ' : '')+'Browser blocked — tap Setup help';
+    st.textContent = (count ? count+' cached · ' : '')+'Need cloud relay — tap Setup help';
+  } else if(settings.aisKey && !aisUsesRelay() && location.protocol === 'https:'){
+    st.textContent = (count ? count+' cached · ' : '')+'Add Worker relay URL — Setup help';
   } else if(ws !== 'open'){
     st.textContent = count
       ? count+' cached vessels · reconnecting…'
@@ -12549,8 +12563,8 @@ function sendAisSubscription(){
   const d = AIS_BBOX_DEG;
   const bb = [[lat - d, lon - d], [lat + d, lon + d]];
   const sub = { BoundingBoxes: [bb] };
-  /* Relay injects the API key server-side; only send key for direct (usually blocked) */
-  if(!aisUsesRelay()){
+  /* Cloud Worker + local relay accept client key; server secret is optional fallback */
+  if(settings.aisKey){
     sub.APIKey = settings.aisKey;
     sub.Apikey = settings.aisKey;
   }
@@ -12593,9 +12607,15 @@ function reconnectAis(){
   aisStats = { rx:0, lastRx: prevLastRx, lastErr:'', subSent:false };
   aisStatusHint = '';
 
-  if(!settings.aisKey && !settings.aisRelay){
+  if(!settings.aisKey && !aisRelayUrlRaw()){
     aisDirectBlocked = false;
     aisMixedContent = false;
+    updateAisStatus();
+    return;
+  }
+
+  /* Relay with Worker secret can omit phone key; direct aisstream always needs a key */
+  if(!aisUsesRelay() && !settings.aisKey){
     updateAisStatus();
     return;
   }
@@ -12608,9 +12628,17 @@ function reconnectAis(){
     return;
   }
 
+  /* On HTTPS Pages, never attempt direct aisstream (gateway blocks browsers). */
+  if(!aisUsesRelay() && location.protocol === 'https:'){
+    aisDirectBlocked = true;
+    aisStatusHint = 'deploy cloud relay';
+    updateAisStatus();
+    return;
+  }
+
   /* Direct aisstream.io from the browser is blocked at their gateway (1006). */
   if(!aisUsesRelay() && aisDirectBlocked){
-    aisStatusHint = 'browser blocked — use relay';
+    aisStatusHint = 'browser blocked — deploy cloud relay';
     updateAisStatus();
     return;
   }
@@ -14598,8 +14626,8 @@ function boot(){
   loadAisCache();
   updateAisStatus();
 
-  if(!settings.aisKey && !settings.aisRelay){
-    setBanner('AIS on phone needs a short one-time setup — open the <strong>AIS</strong> tab and tap <strong>Setup help</strong> (or ⚙ Settings).','');
+  if(!settings.aisKey && !aisRelayUrlRaw()){
+    setBanner('AIS needs a <strong>one-time</strong> free Cloudflare Worker (not a Pi). Open the <strong>AIS</strong> tab → <strong>Setup help</strong>.','');
   } else setTimeout(()=> reconnectAis(), 1200);
 
   $('ovLinks').innerHTML =

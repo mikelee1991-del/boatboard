@@ -1,34 +1,27 @@
 #!/usr/bin/env node
 /**
- * BoatBoard AIS relay — run on a laptop/Raspberry Pi.
- * AISStream blocks direct browser WebSockets (close 1006). This proxy holds the
- * API key server-side and forwards AIS to your phone/tablet.
+ * BoatBoard AIS relay — optional local Node proxy (laptop / Pi / Fly.io).
  *
- * Setup (once):
- *   npm install
+ * Preferred for phones without keeping a PC on: deploy ais-relay-worker/
+ * (Cloudflare Worker) once — see that folder's README.
  *
- * Run (LAN / plain HTTP pages only):
+ * Local LAN / plain HTTP:
  *   node ais-relay.mjs YOUR_AISSTREAM_API_KEY
- *   → Settings → AIS relay URL: ws://YOUR_LAN_IP:8765
+ *   → Settings → ws://YOUR_LAN_IP:8765
  *
- * GitHub Pages / HTTPS mobile (required — browsers block ws:// mixed content):
- *   1. node ais-relay.mjs YOUR_AISSTREAM_API_KEY
- *   2. cloudflared tunnel --url http://localhost:8765
- *   3. Paste the printed https://….trycloudflare.com URL as wss://….trycloudflare.com
- *      (BoatBoard also accepts the https:// form and rewrites it to wss://)
+ * Pass-through (client sends key): omit argv key / leave AISSTREAM_API_KEY unset.
  *
- * Env: PORT=8765 AISSTREAM_API_KEY=…
+ * Env: PORT=8765 AISSTREAM_API_KEY=… (optional if clients send APIKey)
  */
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 
 const PORT = Number(process.env.PORT || 8765);
-const API_KEY = process.env.AISSTREAM_API_KEY || process.argv[2];
+const API_KEY = process.env.AISSTREAM_API_KEY || process.argv[2] || '';
 const UPSTREAM = 'wss://stream.aisstream.io/v0/stream';
 
 if (!API_KEY) {
-  console.error('Usage: node ais-relay.mjs YOUR_AISSTREAM_API_KEY');
-  process.exit(1);
+  console.log('[relay] No server API key — clients must send APIKey in the subscription JSON');
 }
 
 const server = http.createServer((_req, res) => {
@@ -36,7 +29,7 @@ const server = http.createServer((_req, res) => {
     'Content-Type': 'text/plain',
     'Access-Control-Allow-Origin': '*'
   });
-  res.end('BoatBoard AIS relay OK\nUse wss:// via cloudflared for HTTPS / mobile.\n');
+  res.end('BoatBoard AIS relay OK\nPrefer Cloudflare Worker (ais-relay-worker/) for phones.\n');
 });
 
 const wss = new WebSocketServer({ server });
@@ -51,8 +44,11 @@ wss.on('connection', (client, req) => {
 
   function injectKey(raw){
     const sub = JSON.parse(raw.toString());
-    sub.APIKey = API_KEY;
-    sub.Apikey = API_KEY;
+    const clientKey = sub.APIKey || sub.Apikey || sub.apiKey || '';
+    const key = API_KEY || clientKey;
+    if (!key) throw new Error('Missing AISStream API key (server env or client subscription)');
+    sub.APIKey = key;
+    sub.Apikey = key;
     return JSON.stringify(sub);
   }
 
@@ -104,6 +100,5 @@ wss.on('connection', (client, req) => {
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`BoatBoard AIS relay listening on ws://0.0.0.0:${PORT}`);
-  console.log('HTTPS / phone: cloudflared tunnel --url http://localhost:' + PORT);
-  console.log('Then set Settings → AIS relay to the wss:// (or https://) tunnel URL');
+  console.log('Phones / GitHub Pages: deploy ais-relay-worker/ (Cloudflare) instead of leaving this process online.');
 });
