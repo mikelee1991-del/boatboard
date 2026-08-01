@@ -717,6 +717,13 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         </div>
         <div class="sec">Selected site — detail</div>
         <div class="card" id="diveHero"><div class="skel">Open this tab to load dive conditions…</div></div>
+        <div class="sec">Dive score — next 72 hours</div>
+        <div class="card tide-chart-card">
+          <h3>Dive conditions over time <span id="diveScoreChartNow" class="tide-now-h">—</span></h3>
+          <div id="diveScoreChart" class="tide-chart" role="img" aria-label="Dive score forecast over time"></div>
+          <div class="tide-chart-meta" id="diveScoreChartMeta"></div>
+          <p id="diveScoreChartNote" class="tide-rate-note"></p>
+        </div>
         <div id="diveTrends"></div>
         <div class="sec">5-day outlook — 7 AM · noon · 5 PM</div>
         <div class="card"><div id="diveOutlook" class="dive-outlook"><div class="skel">Outlook loads with site data…</div></div></div>
@@ -842,6 +849,13 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
             <div class="seafloor-status">Loads ocean chart and kelp beds when you open Plan…</div>
           </div>
           <div class="seafloor-meta" id="fishPlanSeafloorMeta"></div>
+        </div>
+        <div class="sec">Bite index — next 72 hours</div>
+        <div class="card tide-chart-card">
+          <h3>Bite index over time <span id="biteChartNow" class="tide-now-h">—</span></h3>
+          <div id="biteChart" class="tide-chart" role="img" aria-label="Bite index forecast over time"></div>
+          <div class="tide-chart-meta" id="biteChartMeta"></div>
+          <p id="biteChartNote" class="tide-rate-note"></p>
         </div>
         <div class="sec">Best windows — when to fish</div>
         <div class="card" id="fishWindows"><div class="skel">—</div></div>
@@ -1262,6 +1276,8 @@ const KING_HARBOR_BBOX = { latMin: 33.832, latMax: 33.856, lonMin: -118.407, lon
 const TIDE_STATION = '9410738';
 const TIDE_CHART_BACK_HR = 18;   /* chart x-axis: hours before now */
 const TIDE_CHART_FWD_HR = 72;    /* chart x-axis: hours after now */
+window.TIDE_CHART_BACK_HR = TIDE_CHART_BACK_HR;
+window.TIDE_CHART_FWD_HR = TIDE_CHART_FWD_HR;
 const SWELL_E_CHART_BACK_HR = 6; /* short lookback so NOW marker has context */
 const SWELL_E_CHART_FWD_HR = 96; /* upcoming swell energy window */
 const M2FT = 3.28084;
@@ -1277,6 +1293,7 @@ const CHART = {
   sunrise: '#ffd966', sunset: '#b89ad4', night: 'rgba(12,18,28,0.42)',
   swell: ['#3dff9a', '#6eb5ff', '#c77dff', '#ffd966']
 };
+window.CHART = CHART;
 const WX_C = {
   air: CHART.feel, feel: '#b89ad4', wind: CHART.wind, gust: CHART.fair,
   rain: CHART.rainHi, rainHi: CHART.rainHi, rainLo: CHART.rainLo, uv: CHART.uv,
@@ -1285,6 +1302,7 @@ const WX_C = {
   day: 'rgba(24,34,48,0.42)', night: 'rgba(4,8,14,0.72)',
   sunMarker: '#91a0b0', sunrise: '#91a0b0', sunset: '#91a0b0'
 };
+window.WX_C = WX_C;
 
 const REFRESH_MARINE = 3 * 60e3;
 const REFRESH_NWS = 10 * 60e3;
@@ -1340,6 +1358,7 @@ function relBowSide(rel){
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const fmtTime = d => { const h=d.getHours()%12||12,m=String(d.getMinutes()).padStart(2,'0'); return h+':'+m+(d.getHours()<12?'a':'p'); };
 const fmtDayTime = d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+' '+fmtTime(d);
+window.fmtDayTime = fmtDayTime;
 function parseTideTime(s){ return new Date(String(s).replace(' ','T')); }
 const fmtAge = sec => sec < 60 ? sec+'s' : sec < 3600 ? Math.round(sec/60)+'m' : (sec/3600).toFixed(1)+'h';
 
@@ -1446,6 +1465,15 @@ function diveInitOpts(){
     localEastM
   };
 }
+let _forecastChartsPromise = null;
+function ensureForecastCharts(){
+  if(window.BoatForecastCharts) return Promise.resolve(window.BoatForecastCharts);
+  if(_forecastChartsPromise) return _forecastChartsPromise;
+  _forecastChartsPromise = loadScript('forecast-charts.js').then(()=> window.BoatForecastCharts)
+    .catch(e=>{ _forecastChartsPromise = null; throw e; });
+  return _forecastChartsPromise;
+}
+window.ensureForecastCharts = ensureForecastCharts;
 function ensureDiveEngine(){
   if(window.BoatDive) return Promise.resolve(window.BoatDive);
   if(_diveEnginePromise) return _diveEnginePromise;
@@ -1453,6 +1481,7 @@ function ensureDiveEngine(){
     .then(()=> loadScript('dive-briefings-data.js'))
     .then(()=> loadScript('dive-site-intel.js'))
     .then(()=> loadScript('briefing-synth.js'))
+    .then(()=> ensureForecastCharts())
     .then(()=> loadScript('dive-engine.js'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
@@ -2782,7 +2811,7 @@ function onGps(posObj){
   }
   if(moved && window.BoatDive && BoatDive.invalidatePlanMap) BoatDive.invalidatePlanMap();
   if(moved && (activeTab()==='dive' || activeTab()==='fishing')) scheduleSeafloorRefresh();
-  if(activeTab()==='ais') updateAisBbox();
+  if(activeTab()==='ais' || activeTab()==='underway') updateAisBbox();
   if(window.BoatDive && moved) BoatDive.onGps({ lat: bp.lat, lon: bp.lon });
 }
 
@@ -4743,6 +4772,7 @@ function wxChartDayNightBands(svg, daily, xOf, yTop, yBottom, tMin, tMax){
   }
   return svg;
 }
+window.wxChartDayNightBands = wxChartDayNightBands;
 
 function wxChartNightBands(svg, daily, xOf, yTop, yBottom, tMin, tMax){
   return wxChartDayNightBands(svg, daily, xOf, yTop, yBottom, tMin, tMax);
@@ -4758,6 +4788,7 @@ function wxChartSunMarkers(svg, daily, xOf, yTop, yBottom, tMin, tMax){
   }
   return svg;
 }
+window.wxChartSunMarkers = wxChartSunMarkers;
 
 function wxChartNowMarker(svg, now, tMin, tMax, xOf, yTop, yBottom, yDot){
   if(now >= tMin && now <= tMax){
@@ -5118,6 +5149,7 @@ function tideSunDailyForRange(tMin, tMax){
   }
   return days.length ? { time: days, sunrise: sunrises, sunset: sunsets } : null;
 }
+window.tideSunDailyForRange = tideSunDailyForRange;
 
 function solarSunTimes(lat, lon, date){
   const dayMs = 86400000, rad = Math.PI / 180;
@@ -8816,6 +8848,110 @@ function fishBiteScore(ctx){
   return { score: clamp(Math.round(s), 5, 98), notes };
 }
 
+/** Hourly bite-index series using the same fishBiteScore model (tide chart window). */
+function biteIndexSeries(opts){
+  opts = opts || {};
+  const backHr = opts.backHr != null ? opts.backHr : TIDE_CHART_BACK_HR;
+  const fwdHr = opts.fwdHr != null ? opts.fwdHr : TIDE_CHART_FWD_HR;
+  const stepHr = opts.stepHr != null ? opts.stepHr : 1;
+  const now = opts.nowMs != null ? opts.nowMs : Date.now();
+  const { lat, lon } = boatPos();
+  const tMin = now - backHr * HR;
+  const tMax = now + fwdHr * HR;
+  const pts = [];
+  let usedMarine = 0, usedWx = 0, usedTide = 0, n = 0;
+  for(let t = tMin; t <= tMax + 1; t += stepHr * HR){
+    const at = new Date(t);
+    const solAt = solunarPeriods(lat, lon, at);
+    const solSt = solunarStatus(solAt, at);
+    const tide = tideStateAt(t);
+    const mc = marineSnapshotAt(at);
+    const wc = wxSnapshotAt(at);
+    if(mc) usedMarine++;
+    if(wc) usedWx++;
+    if(tide) usedTide++;
+    n++;
+    const sstF = mc?.sea_surface_temperature != null ? mc.sea_surface_temperature * 9/5 + 32 : null;
+    const wind = wc?.wind_speed_10m != null ? wc.wind_speed_10m : null;
+    const seas = mc?.wave_height != null ? mc.wave_height * M2FT : null;
+    const ctx = {
+      lat, lon, hour: at.getHours(),
+      sol: solSt, tide,
+      sstF, wind, seas,
+      moonIllum: solAt.illum,
+      planWhen: t
+    };
+    pts.push({ t, v: fishBiteScore(ctx).score });
+  }
+  return {
+    pts, tMin, tMax,
+    coverage: {
+      marine: n ? usedMarine / n : 0,
+      wx: n ? usedWx / n : 0,
+      tide: n ? usedTide / n : 0,
+      n
+    }
+  };
+}
+
+function biteIndexHonestyNote(cov){
+  const parts = [
+    'Y-axis: Bite index 0–100 (same model as “Bite index” glance — solunar, tide phase/slack, wind, seas, SST, time of day).',
+    'Window matches the tide plot (−'+TIDE_CHART_BACK_HR+' h / +'+TIDE_CHART_FWD_HR+' h), sampled hourly.'
+  ];
+  if(cov){
+    if(cov.marine < 0.85 || cov.wx < 0.85){
+      parts.push('Some hours lack Open-Meteo wind/seas/SST — those slots score without the missing factor (not a fake sine wave).');
+    } else {
+      parts.push('Wind, seas, and SST are Open-Meteo hourly forecasts; tides from NOAA; solunar computed locally.');
+    }
+  }
+  return parts.join(' ');
+}
+
+function renderBiteIndexChart(){
+  const host = $('biteChart');
+  if(!host) return;
+  const paint = (api)=>{
+    if(!api || !api.renderScoreChart){
+      host.innerHTML = '<div class="skel">Chart module failed to load</div>';
+      return;
+    }
+    const series = biteIndexSeries();
+    const daily = typeof tideSunDailyForRange === 'function'
+      ? tideSunDailyForRange(series.tMin, series.tMax)
+      : null;
+    api.renderScoreChart({
+      host,
+      nowEl: $('biteChartNow'),
+      metaEl: $('biteChartMeta'),
+      noteEl: $('biteChartNote'),
+      pts: series.pts,
+      tMin: series.tMin,
+      tMax: series.tMax,
+      yLabel: 'Bite /100',
+      stroke: 'var(--accent)',
+      fillId: 'biteIndexFill',
+      scoreColor: fishScoreColor,
+      goodAt: 75,
+      fairAt: 55,
+      daily,
+      dayNightBands: typeof wxChartDayNightBands === 'function' ? wxChartDayNightBands : null,
+      sunMarkers: typeof wxChartSunMarkers === 'function' ? wxChartSunMarkers : null,
+      note: biteIndexHonestyNote(series.coverage),
+      CHART, WX_C, HR, clamp, f0, f1, esc, fmtDayTime
+    });
+  };
+  if(window.BoatForecastCharts){
+    paint(window.BoatForecastCharts);
+    return;
+  }
+  host.innerHTML = '<div class="skel">Loading bite forecast…</div>';
+  ensureForecastCharts().then(paint).catch(()=>{
+    host.innerHTML = '<div class="skel">Bite chart unavailable</div>';
+  });
+}
+
 function scoreFishSpot(spot, ctx){
   let s = 50;
   const distNm = haversineM(ctx.lat, ctx.lon, spot.lat, spot.lon) / NM;
@@ -10008,6 +10144,9 @@ function renderFishing(){
 
     renderFishComfortSynth(synthRanked, sw);
     renderFishTimeline(ranked, sol, ctx);
+    if(activeTab() === 'fishing' && activeSubtab('fishing') === 'plan'){
+      setTimeout(()=>{ try{ renderBiteIndexChart(); }catch(e){ console.error('renderBiteIndexChart', e); } }, 40);
+    }
     if(activeSubtab('fishing') === 'plan'){
       renderFishMap(synthRanked, allPinRanked, sol, tide, ctx);
       lastFishPlanRanked = synthRanked;
@@ -11747,7 +11886,7 @@ function uwAisStatusText(){
   if(aisMixedContent) return 'Need workers.dev relay · '+count+' cached';
   if(aisDirectBlocked && !aisUsesRelay()) return 'Need cloud relay · '+count+' cached';
   if(ws !== 'open') return (count ? count+' cached · reconnecting' : 'AIS reconnecting');
-  if(aisStats.rx === 0) return 'AIS subscribed · waiting for data';
+  if(aisStats.rx === 0) return 'AIS subscribed · waiting'+(aisStats.bboxLabel ? ' near '+aisStats.bboxLabel.split(' ')[0] : '');
   const inView = nearbyAisContacts(uwRadarView.rangeNm).length;
   return inView+' in '+f1(uwRadarView.rangeNm)+' nm'+(stale ? ' · '+stale+' stale (>3m)' : '');
 }
@@ -12006,7 +12145,8 @@ const AIS_STATIONARY_DOT_PX = 14;
 const AIS_STATIONARY_DOT_R = AIS_STATIONARY_DOT_PX / 2;
 const AIS_DR_TRI_HALF = 11;
 const AIS_FUTURE_DOT_R = 2;
-let aisStats = { rx:0, lastRx:0, lastErr:'', subSent:false };
+let aisStats = { rx:0, lastRx:0, lastErr:'', subSent:false, subAt:0, bboxLabel:'' };
+let aisWaitTimer = null;
 
 function normAisSog(sog){
   const s = +sog;
@@ -12341,6 +12481,7 @@ async function handleAisFrame(raw){
   aisStats.lastRx = Date.now();
   aisStats.lastErr = '';
   aisNeedsKey = false;
+  clearAisWaitWatchdog();
   updateAisMarkers();
   if(aisStats.rx === 1 || aisStats.rx % 10 === 0) saveAisCache();
 }
@@ -12469,7 +12610,13 @@ function updateAisStatus(){
       ? count+' cached vessels · reconnecting…'
       : (aisStatusHint || 'Connecting to AIS…');
   } else if(!aisStats.subSent) st.textContent = 'Connected — sending subscription…';
-  else if(aisStats.rx === 0) st.textContent = 'Subscribed — waiting for AIS…';
+  else if(aisStats.rx === 0){
+    const waited = aisStats.subAt ? Math.round((now - aisStats.subAt)/1000) : 0;
+    st.textContent = 'Subscribed — waiting for ships'+
+      (waited ? ' ('+waited+'s)' : '')+
+      (aisStats.bboxLabel ? ' near '+aisStats.bboxLabel : '')+
+      (aisStats.lastErr ? ' · '+aisStats.lastErr.slice(0,48) : '');
+  }
   else st.textContent = count+' vessels · '+aisStats.rx+' msgs · '+(dr?dr+' DR · ':'')+(stale?stale+' stale (>3m) · ':'')+(aisStats.lastRx ? fmtAge(Math.round((now-aisStats.lastRx)/1000))+' ago' : '');
   updateAisHelpPanel(false);
 }
@@ -12584,34 +12731,72 @@ function aisWsUrl(){
   return 'wss://stream.aisstream.io/v0/stream';
 }
 
+function aisSubscribeCenter(){
+  const slip = slipPos();
+  const bp = boatPos();
+  /* Prefer live GPS when fresh; otherwise King Harbor so mobile cold-start still covers LA traffic */
+  const gpsFresh = pos.ts && (Date.now() - pos.ts) < 180000 && isFinite(pos.lat) && isFinite(pos.lon);
+  if(useDeviceGpsActive() && gpsFresh){
+    /* If GPS is clearly inland >25 nm from slip, still include harbor (phone at home inland) */
+    const fromSlipNm = haversineM(bp.lat, bp.lon, slip.lat, slip.lon) / NM;
+    if(fromSlipNm > 25) return { lat: slip.lat, lon: slip.lon, note: 'slip (GPS far inland)' };
+    return { lat: bp.lat, lon: bp.lon, note: boatPosSource() };
+  }
+  return { lat: slip.lat, lon: slip.lon, note: 'slip' };
+}
+
+function clearAisWaitWatchdog(){
+  if(aisWaitTimer){ clearTimeout(aisWaitTimer); aisWaitTimer = null; }
+}
+function armAisWaitWatchdog(){
+  clearAisWaitWatchdog();
+  aisWaitTimer = setTimeout(()=>{
+    aisWaitTimer = null;
+    if(!aisWs || aisWs.readyState !== WebSocket.OPEN) return;
+    if(aisStats.rx > 0) return;
+    /* No frames after subscribe — likely dead upstream (mobile race) or empty bbox; force new handshake */
+    aisStats.lastErr = 'no AIS frames — reconnecting';
+    updateAisStatus();
+    try{ aisWs.close(); }catch(e){}
+  }, 8000);
+}
+
 function sendAisSubscription(){
   if(!aisWs || aisWs.readyState !== 1) return;
-  const bp = boatPos();
-  const lat = bp.lat, lon = bp.lon;
+  const center = aisSubscribeCenter();
+  const lat = center.lat, lon = center.lon;
   const d = AIS_BBOX_DEG;
   const bb = [[lat - d, lon - d], [lat + d, lon + d]];
-  const sub = { BoundingBoxes: [bb] };
-  /* Cloud Worker + local relay accept client key; server secret is optional fallback */
+  const sub = {
+    BoundingBoxes: [bb],
+    FilterMessageTypes: ['PositionReport', 'StandardClassBPositionReport', 'ExtendedClassBPositionReport']
+  };
   if(settings.aisKey){
     sub.APIKey = settings.aisKey;
     sub.Apikey = settings.aisKey;
   }
   aisWs.send(JSON.stringify(sub));
   aisStats.subSent = true;
+  aisStats.subAt = Date.now();
+  aisStats.bboxLabel = fmtCoord(lat)+','+fmtCoord(lon)+' ±'+d+'° ('+center.note+')';
   aisStats.lastErr = '';
   lastBbox = lat.toFixed(2)+','+lon.toFixed(2);
+  armAisWaitWatchdog();
+  updateAisStatus();
 }
 
 let lastBbox = '';
 function updateAisBbox(){
   if(!aisWs || aisWs.readyState !== 1) return;
-  const key = boatPos().lat.toFixed(2)+','+boatPos().lon.toFixed(2);
+  const center = aisSubscribeCenter();
+  const key = center.lat.toFixed(2)+','+center.lon.toFixed(2);
   if(key === lastBbox) return;
   sendAisSubscription();
 }
 
 function closeAisSocket(silent){
   clearAisConnectTimer();
+  clearAisWaitWatchdog();
   if(!aisWs) return;
   try{
     aisWs.onopen = aisWs.onmessage = aisWs.onerror = aisWs.onclose = null;
@@ -12632,7 +12817,7 @@ function reconnectAis(){
   closeAisSocket(true);
   /* Preserve vessel cache + lastRx across reconnects — only reset stream counters */
   const prevLastRx = aisStats.lastRx;
-  aisStats = { rx:0, lastRx: prevLastRx, lastErr:'', subSent:false };
+  aisStats = { rx:0, lastRx: prevLastRx, lastErr:'', subSent:false, subAt:0, bboxLabel:'' };
   aisStatusHint = '';
 
   if(!settings.aisKey && !aisRelayUrlRaw()){
@@ -14627,6 +14812,7 @@ function boot(){
     if(activeTab()==='underway') renderUnderwayTab();
   }, 30000);
   timers.aisTick = setInterval(()=>{
+    if(aisStats.subSent && aisStats.rx === 0) updateAisStatus();
     if(!Object.keys(aisVessels).length) return;
     if(mapInited) updateAisMarkers();
     else {
