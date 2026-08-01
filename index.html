@@ -2140,34 +2140,34 @@ const CHL_INFO_TIMEOUT_MS = 30000;
 const CHL_GRIDDAP_TIMEOUT_MS = 25000;
 const CHL_META_CACHE_KEY = 'boatCache:chlMetaEnd';
 const CHL_META_CACHE_MAX_AGE = 7 * 24 * HR;
-/* Temperature / SST — CoastWatch ERDDAP WMS (legacy erdGHssta* retired).
+/* Temperature / SST — CoastWatch ERDDAP (legacy erdGHssta* + erdMWsstd*_LonPM180 retired).
    Use coastwatch.pfeg host directly (upwell.* 302-redirects; img tags ok, but meta fetch needs JSONP).
-   3-day coverage lags 1-day/MUR — requesting TIME after time_coverage_end returns a tiny blank PNG. */
+   West US MODIS 1/3-day no longer expose WMS — overlay via griddap .transparentPng (lon 0–360°E).
+   MUR still uses WMS. 3-day coverage lags 1-day/MUR — TIME after time_coverage_end → blank PNG. */
 const SST_SOURCES = {
   day1: {
     id:'day1', label:'1-day MODIS West US', resolution:'~1.25 km', lagDays:3,
-    wmsUrl:'https://coastwatch.pfeg.noaa.gov/erddap/wms/erdMWsstd1day_LonPM180/request',
-    wmsVersion:'1.3.0', layer:'erdMWsstd1day_LonPM180:sst', crs:'EPSG:4326',
-    bboxOrder:'latlon', timeMode:'iso', timeHour:'12', hasElevation:true, maxDim:512, debounceMs:220,
+    overlayMode:'transparentPng', lon0360:true, lonMin:205, lonMax:255,
+    timeMode:'iso', timeHour:'12', hasElevation:true, maxDim:512, debounceMs:280,
     cssClass:'sst-src-day1', gridRes:0.0125,
-    griddap:'https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdMWsstd1day_LonPM180.json',
+    griddap:'https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdMWsstd1day.json',
     griddapVar:'sst', units:'C', colorMinC:0, colorMaxC:32,
-    info:'https://coastwatch.pfeg.noaa.gov/erddap/info/erdMWsstd1day_LonPM180/index.json',
-    link:'https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdMWsstd1day_LonPM180.html'
+    info:'https://coastwatch.pfeg.noaa.gov/erddap/info/erdMWsstd1day/index.json',
+    link:'https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdMWsstd1day.html'
   },
   day3: {
     id:'day3', label:'3-day MODIS West US', resolution:'~1.25 km composite', lagDays:6,
-    wmsUrl:'https://coastwatch.pfeg.noaa.gov/erddap/wms/erdMWsstd3day_LonPM180/request',
-    wmsVersion:'1.3.0', layer:'erdMWsstd3day_LonPM180:sst', crs:'EPSG:4326',
-    bboxOrder:'latlon', timeMode:'iso', timeHour:'12', hasElevation:true, maxDim:512, debounceMs:220,
+    overlayMode:'transparentPng', lon0360:true, lonMin:205, lonMax:255,
+    timeMode:'iso', timeHour:'12', hasElevation:true, maxDim:512, debounceMs:280,
     cssClass:'sst-src-day3', gridRes:0.0125,
-    griddap:'https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdMWsstd3day_LonPM180.json',
+    griddap:'https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdMWsstd3day.json',
     griddapVar:'sst', units:'C', colorMinC:0, colorMaxC:32,
-    info:'https://coastwatch.pfeg.noaa.gov/erddap/info/erdMWsstd3day_LonPM180/index.json',
-    link:'https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdMWsstd3day_LonPM180.html'
+    info:'https://coastwatch.pfeg.noaa.gov/erddap/info/erdMWsstd3day/index.json',
+    link:'https://coastwatch.pfeg.noaa.gov/erddap/griddap/erdMWsstd3day.html'
   },
   mur: {
     id:'mur', label:'MUR (JPL)', resolution:'0.01° (~1 km)', lagDays:2,
+    overlayMode:'wms',
     wmsUrl:'https://coastwatch.pfeg.noaa.gov/erddap/wms/jplMURSST41/request',
     wmsVersion:'1.3.0', layer:'jplMURSST41:analysed_sst', crs:'EPSG:4326',
     bboxOrder:'latlon', timeMode:'iso', timeHour:'09', hasElevation:false, maxDim:512, debounceMs:280,
@@ -2184,7 +2184,7 @@ const SST_DATE_COUNT = 10;
 const SST_FALLBACK_LAG_DAYS = 6;
 const SST_INFO_TIMEOUT_MS = 30000;
 const SST_GRIDDAP_TIMEOUT_MS = 25000;
-const SST_META_CACHE_KEY = 'boatCache:sstMetaBySource:v2';
+const SST_META_CACHE_KEY = 'boatCache:sstMetaBySource:v3';
 const SST_META_CACHE_MAX_AGE = 7 * 24 * HR;
 const SST_PALETTE_GRAD = 'linear-gradient(90deg,#0b1d6b,#1a6fd4,#2ec6b0,#d4e020,#e87810,#c01010)';
 /** Absolute CoastWatch palette bounds (°C) — clamp only; not the default map scale. */
@@ -12684,8 +12684,46 @@ function sstFormatWmsTime(time, src){
   return raw.slice(0, 10) + 'T' + hour + ':00:00Z';
 }
 
+/** West US MODIS grids are lon 0–360°E (205–255); map/Leaflet use ±180. */
+function sstToDatasetLon(lon, src){
+  if(!src?.lon0360) return lon;
+  let x = +lon;
+  if(!isFinite(x)) return lon;
+  if(x < 0) x += 360;
+  return x;
+}
+
+/** ERDDAP .transparentPng overlay — used when WMS is unavailable (MODIS West US). */
+function sstTransparentPngUrl(bounds, size, time, src){
+  src = src || sstGetSource();
+  const s = bounds.getSouth(), n = bounds.getNorth();
+  let w = sstToDatasetLon(bounds.getWest(), src);
+  let e = sstToDatasetLon(bounds.getEast(), src);
+  if(src.lonMin != null) w = Math.max(w, src.lonMin);
+  if(src.lonMax != null) e = Math.min(e, src.lonMax);
+  if(!(n > s) || !(e > w)) return '';
+  const wmsTime = sstFormatWmsTime(time || sstSelectedTime, src);
+  const cap = src.maxDim || 512;
+  const dimW = Math.min(Math.max(Math.round(size.x || cap), 256), cap);
+  const dimH = Math.min(Math.max(Math.round(size.y || cap), 256), cap);
+  const scale = sstGetActiveScale();
+  const varName = src.griddapVar || 'sst';
+  const base = String(src.griddap || '').replace(/\.json$/i, '') + '.transparentPng';
+  if(!base.startsWith('http')) return '';
+  let q = varName + '[(' + wmsTime + ')]';
+  if(src.hasElevation) q += '[(0.0)]';
+  q += '[(' + s + '):(' + n + ')][(' + w + '):(' + e + ')]';
+  q += '&.draw=surface&.vars=longitude|latitude|' + varName;
+  q += '&.colorBar=Rainbow2|C|Linear|' + scale.minC.toFixed(2) + '|' + scale.maxC.toFixed(2) + '|';
+  q += '&.size=' + dimW + '|' + dimH;
+  return base + '?' + q;
+}
+
 function sstWmsGetMapUrl(bounds, size, time, src){
   src = src || sstGetSource();
+  if(src.overlayMode === 'transparentPng' || !src.wmsUrl){
+    return sstTransparentPngUrl(bounds, size, time, src);
+  }
   const s = bounds.getSouth(), w = bounds.getWest(), n = bounds.getNorth(), e = bounds.getEast();
   const wmsTime = sstFormatWmsTime(time || sstSelectedTime, src);
   const cap = src.maxDim || 512;
@@ -12757,7 +12795,7 @@ function getSstWmsOverlayClass(){
     }
     const b = this._map.getBounds();
     const url = sstWmsGetMapUrl(b, sz, this._time, this._source);
-    if(url === this._lastUrl) return;
+    if(!url || url === this._lastUrl) return;
     this._lastUrl = url;
     this._overlay.setBounds(b);
     this._overlay.setOpacity(this._opacity);
@@ -12999,7 +13037,7 @@ function paintSstLegend(range){
         '. WMS COLORSCALERANGE matches legend. Blended = 3-day + MUR.';
     } else if(range?.corsBlocked){
       note.textContent = 'SoCal default '+spanTxt+
-        ' (view sample blocked — try http server if file://). Blended = 3-day + MUR.';
+        ' (view sample blocked by network/CORS — overlay still colors the map). Blended = 3-day + MUR.';
     } else if(range?.empty){
       note.textContent = 'SoCal default '+spanTxt+
         ' (sparse/clouded sample). Blended = 3-day + MUR.';
@@ -13045,6 +13083,11 @@ async function fetchSstViewRange(time, srcId){
       Date.now() - (sstScaleCache.at || 0) < SST_SCALE_CACHE_MS){
     return sstScaleCache.range;
   }
+  w = sstToDatasetLon(w, src);
+  e = sstToDatasetLon(e, src);
+  if(src.lonMin != null) w = Math.max(w, src.lonMin);
+  if(src.lonMax != null) e = Math.min(e, src.lonMax);
+  if(!(e > w)) return { empty: true };
   // Keep request light — stride to ~5×5 cells
   const res = src.gridRes || 0.0125;
   const latStride = Math.max(1, Math.round((n - s) / res / 5));
@@ -13158,9 +13201,10 @@ async function fetchSstPoint(time, lat, lon, srcId){
   const src = SST_SOURCES[srcId || 'day1'];
   if(!src?.griddap || !src.griddapVar) return null;
   const wmsTime = sstFormatWmsTime(time, src);
+  const lonQ = sstToDatasetLon(lon, src);
   let q = src.griddap + '?' + src.griddapVar + '[(' + encodeURIComponent(wmsTime) + ')]';
   if(src.hasElevation) q += '[(0.0)]';
-  q += '[(' + lat + ')][(' + lon + ')]';
+  q += '[(' + lat + ')][(' + lonQ + ')]';
   try{
     const j = await fetchSstGriddapJson(q);
     // ERDDAP row layout: time, [altitude,] lat, lon, value — value is last cell
@@ -13236,15 +13280,17 @@ function sstIntelHtml(time, src, samples, datesFallback){
   } else if(src.id === 'blend') {
     html += 'Dual overlay: 3-day MODIS fills cloud gaps; MUR adds 1 km analysis detail. Where both show a warm filament, the break is more trustworthy.</p>';
   } else if(datesFallback) {
-    html += 'Map overlay active — point samples unavailable from a local file (browser CORS). Read SST color on the map; zone cards show guidance only.</p>';
+    html += 'Map overlay active — product dates estimated (metadata timed out). Point samples may be sparse; read SST color on the map.</p>';
+  } else if(location.protocol === 'file:') {
+    html += 'Map overlay active — zone point samples often blocked from a local file (browser CORS). Read SST color on the map; zone cards show guidance only.</p>';
   } else {
-    html += 'Point samples masked or unavailable — use map colors for guidance. Open-Meteo point SST on Fish/Overview is separate.</p>';
+    html += 'Point samples masked or unavailable (cloud/coast or ERDDAP). Overlay still shows map colors. Open-Meteo point SST on Fish/Overview is separate.</p>';
   }
   html += '<div class="sst-marine-h">How to use this map</div>';
   html += '<p class="sst-marine-item"><strong>Temp breaks:</strong> Sharp color changes = fronts. Troll / jig the warm side of a cool edge for yt · bonito · tuna.</p>';
   html += '<p class="sst-marine-item"><strong>From King Harbor:</strong> Compare SM Bay vs Catalina Channel — run toward warmer offshore filaments when inshore is cold and green.</p>';
   html += '<p class="sst-marine-item"><strong>Products:</strong> 1-day = freshest MODIS (cloud gaps). 3-day = smoother composite. MUR = gap-filled analysis (~1 day lag). Blended stacks 3-day + MUR.</p>';
-  html += '<p class="sst-marine-item"><strong>Units:</strong> Legend °F ticks match the WMS COLORSCALERANGE (view-sampled when griddap JSONP works; else SoCal ~55–72°F). Fish/Overview scoring still uses Open-Meteo point SST.</p>';
+  html += '<p class="sst-marine-item"><strong>Units:</strong> Legend °F ticks match the overlay color scale (view-sampled when griddap JSONP works; else SoCal ~55–72°F). Fish/Overview scoring still uses Open-Meteo point SST.</p>';
   if(src.id === 'blend') html += '<p class="sst-marine-item"><strong>Blended view:</strong> 3-day base shows broad patterns; MUR detail confirms persistent breaks vs one-day noise.</p>';
   const zones = samples.map(({ zone, valC, valF }) => {
     const lv = sstLevelF(valF);
