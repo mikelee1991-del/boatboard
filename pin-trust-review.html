@@ -133,6 +133,22 @@ aside {
   padding: 6px 10px; font-size: 10px; color: var(--ink2); line-height: 1.6;
 }
 .map-legend span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.map-legend .lg-diamond {
+  width: 7px; height: 7px; border-radius: 1px; transform: rotate(45deg);
+  background: #8b95a5; margin-right: 6px; margin-left: 1px;
+}
+.map-legend .lg-sq {
+  width: 7px; height: 7px; border-radius: 1px; background: #8b95a5;
+}
+/* Context underlay: dive diamonds (fish use canvas circleMarkers) */
+.ctx-marker { background: transparent !important; border: none !important; }
+.ctx-dive-diamond {
+  width: 7px; height: 7px;
+  background: rgba(140, 150, 165, 0.55);
+  border: 1px solid rgba(100, 110, 125, 0.75);
+  transform: rotate(45deg);
+  box-sizing: border-box;
+}
 @media (max-width: 860px) {
   .layout { grid-template-columns: 1fr; grid-template-rows: 32vh 1fr; height: auto; min-height: calc(100vh - var(--hdr, 70px)); }
   aside { max-height: 32vh; border-right: none; border-bottom: 1px solid var(--line); }
@@ -171,10 +187,12 @@ aside {
   <div class="map-wrap">
     <div id="map"></div>
     <div class="map-legend" id="mapLegend" hidden>
-      <div><span style="background:#ff6b4a"></span>Focus</div>
+      <div><span style="background:#ff6b4a"></span>Focus (review candidate)</div>
       <div><span style="background:#ffc857"></span>Nearby candidate</div>
       <div><span style="background:#7dd3fc"></span>Nearby live pin</div>
       <div><span style="background:#c4b5fd"></span>In group selection</div>
+      <div><span class="lg-sq" style="border-radius:50%;background:#8b95a5"></span>All fish (context)</div>
+      <div><span class="lg-diamond"></span>All dive (context)</div>
     </div>
     <div class="panel" id="panel">
       <div class="hint">Select a candidate from the list.</div>
@@ -257,7 +275,7 @@ aside {
   function syncHdr() { document.documentElement.style.setProperty('--hdr', hdr.offsetHeight + 'px'); }
   syncHdr(); window.addEventListener('resize', syncHdr);
 
-  var map = L.map('map', { zoomControl: true }).setView([DATA.home.lat, DATA.home.lon], 10);
+  var map = L.map('map', { zoomControl: true, preferCanvas: true }).setView([DATA.home.lat, DATA.home.lon], 10);
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
     maxZoom: 19,
     attribution: 'Esri / Maxar imagery'
@@ -269,6 +287,45 @@ aside {
   L.circleMarker([DATA.home.lat, DATA.home.lon], {
     radius: 5, color: '#6eb5ff', fillColor: '#6eb5ff', fillOpacity: 1, weight: 2
   }).bindPopup(DATA.home.name).addTo(map);
+
+  /* Gray context underlay: every live fish (circle) + dive (diamond). Non-interactive. */
+  var contextLayer = L.layerGroup().addTo(map);
+  var ctxRenderer = L.canvas({ padding: 0.5 });
+  var ctxDiveIcon = L.divIcon({
+    className: 'ctx-marker',
+    html: '<div class="ctx-dive-diamond"></div>',
+    iconSize: [7, 7],
+    iconAnchor: [3, 3]
+  });
+  function buildContextLayer() {
+    contextLayer.clearLayers();
+    var live = DATA.livePins || [];
+    for (var i = 0; i < live.length; i++) {
+      var p = live[i];
+      if (!p || p.lat == null || p.lon == null) continue;
+      if (p.kind === 'dive') {
+        L.marker([p.lat, p.lon], {
+          icon: ctxDiveIcon,
+          interactive: false,
+          keyboard: false,
+          zIndexOffset: -200
+        }).addTo(contextLayer);
+      } else {
+        L.circleMarker([p.lat, p.lon], {
+          radius: 3.5,
+          color: 'rgba(100,110,125,0.75)',
+          fillColor: 'rgba(140,150,165,0.55)',
+          fillOpacity: 1,
+          weight: 1,
+          opacity: 1,
+          renderer: ctxRenderer,
+          interactive: false,
+          bubblingMouseEvents: false
+        }).addTo(contextLayer);
+      }
+    }
+  }
+  buildContextLayer();
 
   var pinLayer = L.layerGroup().addTo(map);
   var activeId = null;
