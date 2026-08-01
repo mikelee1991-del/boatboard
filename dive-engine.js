@@ -2053,7 +2053,7 @@
     const pos = defaultPos();
     diveMap = L.map(host, { zoomControl: true, attributionControl: false, minZoom: 7, maxZoom: 19 })
       .setView([pos.lat, pos.lon], 14);
-    if (planMapBaseLayerFn) planMapBaseLayerFn(diveMap);
+    if (planMapBaseLayerFn) await Promise.resolve(planMapBaseLayerFn(diveMap, { splitBlueTopo: true }));
     else {
       diveMap.getContainer().classList.add('ocean-map-dark');
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -2196,6 +2196,7 @@
           '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff6644;vertical-align:middle;margin-right:3px"></i> Poor</span>' +
           '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid #ff5c5c;vertical-align:middle;margin-right:3px;box-sizing:border-box"></i>Elevated bacteria ≤' + nearM + ' m</span>' +
           '<span># = top ' + Math.min(DIVE_MAP_MAX_MARKERS, lastRanked.length) + ' spots · ' + plotted + ' pins · ~' + DIVE_MAP_FIT_NM + ' nm (' + localGroups + ' spots / ' + localN + ' pins)</span>' +
+          '<span>Basemap: imagery (land) · BlueTopo (water)</span>' +
           mpaLeg;
       });
     };

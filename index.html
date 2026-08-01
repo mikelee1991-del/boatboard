@@ -226,7 +226,10 @@ svg text{font-family:var(--font-mono)}
 #map,#swellMap{background:var(--bg)!important}
 .leaflet-container.ocean-map-dark{background:var(--bg)!important}
 .leaflet-container.ocean-map-dark .leaflet-tile-pane{filter:brightness(.9) contrast(1.06)}
+.leaflet-container.bt-split-basemap .leaflet-tile-pane{filter:brightness(.94) contrast(1.04) saturate(1.02)}
+.leaflet-container.bt-split-basemap .leaflet-blueTopoPane{filter:brightness(.96) contrast(1.08) saturate(1.05)}
 .leaflet-container.ocean-map-dark::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,10,16,.03),rgba(8,16,28,.07));pointer-events:none;z-index:350}
+.leaflet-container.bt-split-basemap.ocean-map-dark::after{z-index:250}
 #chlMap.leaflet-container.ocean-map-dark::after,#sstMap.leaflet-container.ocean-map-dark::after{display:none}
 #chlMap.leaflet-container.ocean-map-dark .leaflet-map-pane,#sstMap.leaflet-container.ocean-map-dark .leaflet-map-pane{z-index:1}
 #chlMap.leaflet-container.ocean-map-dark .leaflet-overlay-pane,#sstMap.leaflet-container.ocean-map-dark .leaflet-overlay-pane{z-index:450}
@@ -1123,6 +1126,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <span style="margin-left:6px"><i style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--ink2);vertical-align:middle;margin-right:3px"></i>last AIS report (small)</span>
           <span style="margin-left:6px">▸ dashed course (4, 8, 12 min at speed)</span>
           <span id="aisLanesLegend" class="legend-toggle" style="margin-left:6px" title="Click to toggle shipping lanes"><i class="lane-swatch"></i>shipping lanes</span>
+          <span style="margin-left:6px">Basemap: imagery (land) · BlueTopo (water)</span>
         </div>
       </div>
       <div id="mapWrap">
@@ -1458,7 +1462,14 @@ function diveInitOpts(){
     getTides: () => tides,
     loadLeaflet,
     openPlanCalendar: (initial, cb) => PlanCalendar.open(initial, cb),
-    planMapBaseLayer,
+    planMapBaseLayer: async (m, o) => {
+      const opts = Object.assign({ splitBlueTopo: true }, o || {});
+      if(opts.splitBlueTopo){
+        try{ await ensureBlueTopoSplitLib(); await loadCoastOverlayLite(); }
+        catch(e){ console.warn('BlueTopo split basemap', e); opts.splitBlueTopo = false; }
+      }
+      return planMapBaseLayer(m, opts);
+    },
     addCoastOverlay,
     isOnLand,
     metersEastOfShoreline,
@@ -1830,12 +1841,31 @@ const OCEAN_TILE_FALLBACK = 'https://server.arcgisonline.com/ArcGIS/rest/service
 const OCEAN_ATTR_PRIMARY = 'Imagery © Esri — Maxar, Earthstar Geographics, USDA FSA, USGS, AeroGRID, IGN, GIS User Community';
 const OCEAN_ATTR_FALLBACK = 'Tiles © Esri';
 
+let _blueTopoSplitPromise = null;
+function ensureBlueTopoSplitLib(){
+  if(window.BlueTopoSplit) return Promise.resolve(window.BlueTopoSplit);
+  if(_blueTopoSplitPromise) return _blueTopoSplitPromise;
+  _blueTopoSplitPromise = loadScript('bluetopo/split-basemap.js').then(()=>{
+    if(!window.BlueTopoSplit) throw new Error('BlueTopoSplit missing');
+    return window.BlueTopoSplit;
+  }).catch(e=>{ _blueTopoSplitPromise = null; throw e; });
+  return _blueTopoSplitPromise;
+}
+
 function planMapBaseLayer(map, opts){
   opts = opts || {};
   const maxZoom = opts.maxZoom != null ? opts.maxZoom : 16;
   map.getContainer().classList.add('ocean-map-dark');
   if(!map.attributionControl){
     L.control.attribution({ prefix:false, position:'bottomright' }).addTo(map);
+  }
+  /* AIS / fish ranked / dive ranked: imagery on land, BlueTopo on water. */
+  if(opts.splitBlueTopo && window.BlueTopoSplit){
+    return window.BlueTopoSplit.attach(map, {
+      maxZoom,
+      coast: window.COAST_OVERLAY_LITE || null,
+      kingHarborLand: typeof KING_HARBOR_LAND !== 'undefined' ? KING_HARBOR_LAND : null
+    });
   }
   const primary = L.tileLayer(OCEAN_TILE_PRIMARY, {
     maxZoom, minZoom:3, attribution:OCEAN_ATTR_PRIMARY
@@ -9300,6 +9330,7 @@ async function ensureFishMap(){
   try{
     await loadLeaflet();
     await loadCoastOverlayLite();
+    try{ await ensureBlueTopoSplitLib(); }catch(e){ console.warn('BlueTopo split', e); }
   }catch(e){ return false; }
   if(!window.L) return false;
   const host = $('fishMap');
@@ -9313,7 +9344,7 @@ async function ensureFishMap(){
   try{
     fishMap = L.map(host, { zoomControl:true, attributionControl:false, minZoom:7, maxZoom:19 })
       .setView([lat, lon], FISH_MAP_DEFAULT_ZOOM);
-    planMapBaseLayer(fishMap);
+    planMapBaseLayer(fishMap, { splitBlueTopo: true });
     addCoastOverlay(L.layerGroup().addTo(fishMap));
     ensureMpaLayerGroup(fishMap);
     fishSpotLayer = L.layerGroup().addTo(fishMap);
@@ -9506,6 +9537,7 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     '<span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ink3);vertical-align:middle;margin-right:3px"></i> Structure / bottom</span>'+
     '<span><i style="display:inline-block;width:8px;height:8px;transform:rotate(45deg);background:var(--ink3);vertical-align:middle;margin:0 4px 0 2px"></i> Surface / troll</span>'+
     '<span># = top '+Math.min(FISH_MAP_MAX_MARKERS, ranked.length)+' spots · '+plotted+' pins · ~'+FISH_MAP_FIT_NM+' nm ('+localGroups+' spots / '+localPins.length+' pins)</span>'+
+    '<span>Basemap: imagery (land) · BlueTopo (water)</span>'+
     MPA_LEGEND_HTML;
 }
 
@@ -13007,13 +13039,14 @@ async function initMap(){
     await loadLeaflet();
     await loadCoastOverlayLite();
     await loadScript('shipping-lanes-geo.js');
+    try{ await ensureBlueTopoSplitLib(); }catch(e){ console.warn('BlueTopo split', e); }
   }catch(e){
     setBanner('Map library failed to load — check network.','err');
     return;
   }
   mapInited = true;
   map = L.map('map', { zoomControl:true, attributionControl:true }).setView([boatPos().lat, boatPos().lon], 14);
-  planMapBaseLayer(map);
+  planMapBaseLayer(map, { splitBlueTopo: true });
   addCoastOverlay(L.layerGroup().addTo(map));
   initShippingLanesOverlay(map);
   aisLayer = L.layerGroup().addTo(map);

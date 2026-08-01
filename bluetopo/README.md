@@ -1,8 +1,16 @@
-# BlueTopo for BoatBoard On site
+# BlueTopo for BoatBoard
 
-Self-host (or stream) **real NOAA BlueTopo** seafloor relief for Fish + Dive **On site**. Depths are never invented — only NOAA NBS BlueTopo (and NCEI DEM underlay where BlueTopo cells are not delivered yet).
+Self-host (or stream) **real NOAA BlueTopo** seafloor relief. Depths are never invented — only NOAA NBS BlueTopo (and NCEI DEM underlay on On site where BlueTopo cells are not delivered yet).
 
-## Architecture
+## Split basemap (AIS · fish ranked · dive ranked)
+
+`split-basemap.js` stacks **Esri World Imagery** under a **masked BlueTopo** WMTS pane. The mask paints land from OSM coast lines in `coast-overlay-lite.js` (landward extrude + island polygons + King Harbor land). Water keeps BlueTopo; land keeps satellite imagery.
+
+Wire-up: `planMapBaseLayer(map, { splitBlueTopo: true })` after `ensureBlueTopoSplitLib()`.
+
+**Limits:** Mask follows the ~100 ft visual coast overlay (not survey-grade). A few harbor/peninsula edges can mis-clip by a pixel or two. BlueTopo is still sparse near King Harbor (transparent → imagery shows on water there too). Not for navigation.
+
+## On site architecture
 
 ```
 Phone (GH Pages BoatBoard)

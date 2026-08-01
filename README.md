@@ -53,7 +53,7 @@ Notes:
 | `dive-briefings-data.js` | Pre-dive briefing prose |
 | `dive-site-intel.js` | Extra dive intel helpers |
 | `seafloor-render.js` | On-site Leaflet chart + BlueTopo / NCEI DEM + kelp |
-| `bluetopo/` | BlueTopo AOIs, Docker→PMTiles pipeline, R2 Worker |
+| `bluetopo/` | BlueTopo AOIs, Docker→PMTiles pipeline, R2 Worker, split basemap |
 | `coast-overlay-lite.js` | Map shoreline (visual) |
 | `pin-feature-groups-data.js` | Feature-group metadata for fish/dive ranking |
 | `shipping-lanes-geo.js` | Shipping-lane overlay data (lazy) |

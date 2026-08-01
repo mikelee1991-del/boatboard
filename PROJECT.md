@@ -234,6 +234,7 @@ Full enforceable rules: `.cursor/rules/water-pin-coords.mdc`.
 
 - **Library**: Leaflet 1.9.4 (CDN, lazy-loaded via `loadLeaflet()`)
 - **Base tiles**: Esri **World Imagery** (satellite); auto-fallback to World Topo after tile errors
+- **AIS / fish ranked / dive ranked**: **split basemap** — imagery on land, NOAA BlueTopo hillshade on water (`bluetopo/split-basemap.js`), shoreline mask from `coast-overlay-lite.js` (landward extrude + islands). Not Google Maps tiles (no API key); Esri imagery is the land layer.
 - **Theme**: `.ocean-map-dark` — dark background, slight brightness/contrast filter, gradient overlay
 - **Coast overlay**: Port Royal slip pin (yellow); breakwater/channel dashed lines **removed** from map overlay (GPS logic retains harbor polygons)
 - **Maps using base layer**: dive plan, fish plan, fish MPA, surf, swell, AIS, SST, plankton
@@ -261,7 +262,7 @@ Full enforceable rules: `.cursor/rules/water-pin-coords.mdc`.
 | MPAs | CDFW ArcGIS MarineProtectedAreas_WebMer (SCSR) | 90-day cache |
 | AIS | AISStream via Cloudflare Worker (`ais-relay-worker/`) or local `ais-relay.mjs` | live |
 | Coastline / shadow | `coast-overlay-lite.js` (OSM) + runtime `OBSTACLES` | static |
-| Bathymetry | BlueTopo (nowCOAST WMTS / optional PMTiles) + NCEI DEM · ENC/Ocean toggles · OpenSeaMap · CDFW kelp | on tab open |
+| Bathymetry | BlueTopo (nowCOAST WMTS / optional PMTiles) + NCEI DEM on On site; AIS/fish/dive ranked use split imagery+BlueTopo | on tab open |
 | SST / chlorophyll | CoastWatch ERDDAP WMS (+ JSONP where needed) | tab/cache |
 | Cruise swell map | Windy embed (waves) | live iframe |
 | Underway radar imagery | Esri World Imagery tiles (same URL as plan maps) | cached per view |
