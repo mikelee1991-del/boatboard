@@ -582,6 +582,8 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .seafloor-map.leaflet-container.seafloor-leaflet .leaflet-tile-pane{filter:brightness(.92) contrast(1.05) saturate(.92)}
 .seafloor-map.leaflet-container.seafloor-enc{background:#b7cfe0!important}
 .seafloor-map.leaflet-container.seafloor-enc .leaflet-tile-pane{filter:none}
+.seafloor-map.leaflet-container.seafloor-dem{background:#0b2a33!important}
+.seafloor-map.leaflet-container.seafloor-dem .leaflet-tile-pane{filter:brightness(.95) contrast(1.08) saturate(1.05)}
 .seafloor-status{font-family:var(--mono);font-size:12px;color:var(--ink3);padding:24px 16px;text-align:center;line-height:1.5}
 .seafloor-status.err{color:var(--poor)}
 .seafloor-legend{display:flex;flex-wrap:wrap;gap:6px 10px;padding:8px 8px 6px;font-size:10px;color:var(--ink2);font-family:var(--mono);justify-content:center;border-top:1px solid var(--line2);background:rgba(0,0,0,.18);flex:0 0 auto}
@@ -9762,6 +9764,7 @@ function refreshFishPlanSeafloor(ranked){
       habitat: top ? ('Top pick · ' + (top.habitat || top.depth || '')) : '',
       nearby: seafloorNearbyFromFish(focusLat, focusLon, nearNm, top?.lat, top?.lon),
       radiusNm,
+      preferDem: false,
       preferEnc: false,
       metaEl: 'fishPlanSeafloorMeta'
     });
@@ -9773,7 +9776,7 @@ function refreshFishSeafloor(row, ctx){
   ensureSeafloorRender().then(SR=>{
     if(!SR) return;
     const bp = boatPos();
-    /* Local structure: 1300 ft fit (~0.21 nm); pins within ~0.32 nm; NOAA ENC detail. */
+    /* Local structure: 1300 ft fit; NCEI DEM relief (real hillshade); ENC available in layers. */
     const radiusNm = SR.ONSITE_FIT_NM != null ? SR.ONSITE_FIT_NM : (1300 / 6076.12);
     const nearNm = SR.ONSITE_NEAR_NM != null ? SR.ONSITE_NEAR_NM : 0.32;
     SR.update('fishSeafloorRender', {
@@ -9785,7 +9788,8 @@ function refreshFishSeafloor(row, ctx){
       habitat: row.spot.habitat || '',
       nearby: seafloorNearbyFromFish(row.spot.lat, row.spot.lon, nearNm, row.spot.lat, row.spot.lon),
       radiusNm,
-      preferEnc: true,
+      preferDem: true,
+      preferEnc: false,
       metaEl: 'fishSeafloorMeta'
     });
   }).catch(()=>{});
@@ -14235,7 +14239,7 @@ function switchSubtab(section, name){
         const nearby = (BD.DIVE_SITES || []).filter(s => s && haversineM(bp.lat, bp.lon, s.lat, s.lon) / 1852 <= nearNm)
           .slice(0, 24).map(s => ({ lat: s.lat, lon: s.lon, name: s.name, depth: s.depth, kind: 'reef' }));
         SeafloorRender.update('diveSeafloorRender', {
-          centerLat: bp.lat, centerLon: bp.lon, radiusNm, nearby, preferEnc: true, metaEl: 'diveSeafloorMeta'
+          centerLat: bp.lat, centerLon: bp.lon, radiusNm, nearby, preferDem: true, preferEnc: false, metaEl: 'diveSeafloorMeta'
         });
       }
     }).catch(e=>console.error(e));

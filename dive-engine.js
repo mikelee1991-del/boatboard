@@ -1861,7 +1861,7 @@
       const p = getPos ? getPos() : null;
       const lat = p?.lat ?? site.lat;
       const lon = p?.lon ?? site.lon;
-      /* Local structure: 1300 ft fit (~0.21 nm); nearby pins ~0.32 nm; NOAA ENC detail. */
+      /* Local structure: 1300 ft fit; NCEI DEM relief; ENC available in layers. */
       const radiusNm = SR.ONSITE_FIT_NM != null ? SR.ONSITE_FIT_NM : (1300 / 6076.12);
       const nearNm = SR.ONSITE_NEAR_NM != null ? SR.ONSITE_NEAR_NM : 0.32;
       const markKey = site.lat.toFixed(5) + ',' + site.lon.toFixed(5);
@@ -1884,7 +1884,8 @@
         habitat: site.depth != null ? 'Site depth ~' + site.depth + ' ft' : '',
         nearby: nearby.slice(0, 24),
         radiusNm,
-        preferEnc: true,
+        preferDem: true,
+        preferEnc: false,
         metaEl: 'diveSeafloorMeta'
       });
     };

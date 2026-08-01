@@ -19,7 +19,7 @@ BoatBoard consolidates Southern California marine forecasts, GPS position, AIS t
 | `dive-engine.js` | Dive site library (**358 sites**), scoring (ported from DiveCast), Plan/On site rendering, dive maps, briefing UI |
 | `dive-briefings-data.js` | Pre-dive briefing content — `window.__BOAT_DIVE_BRIEFINGS__` keyed by site id |
 | `dive-site-intel.js` | Extra dive intel helpers |
-| `seafloor-render.js` | On-site Leaflet chart (NOAA ENC + Esri Ocean + kelp) |
+| `seafloor-render.js` | On-site Leaflet chart (NCEI DEM + ENC + Ocean + kelp) |
 | `coast-geo.js` | Audit-only high-res coastline (CScript pin tools). May contain phantom chords — not used by maps |
 | `coast-overlay-lite.js` | **Map display** shoreline (~100 ft, ~100 NM of slip). Loaded by dashboard |
 | `build-coast-overlay-lite.ps1` / `.js` | Rebuild overlay from OSM (`coast-osm.json`). **Do not** rebuild overlay from `coast-geo.js` |
@@ -240,11 +240,12 @@ Full enforceable rules: `.cursor/rules/water-pin-coords.mdc`.
 - **Underway tab**: Esri tiles sampled into circular canvas (not Leaflet)
 
 ### Seafloor (On site — dive & fish)
-`SeafloorRender` in `seafloor-render.js` (Leaflet, lazy-loaded with the On site / Plan seafloor hosts):
-- **On site basemap**: NOAA ENC Online WMS (Maritime Chart Service — soundings + depth contours; layers 10,2,4,1). Toggle Ocean chart / Satellite via layers control. ENC CORS-friendly on GH Pages; not for navigation.
-- **Plan basemap**: Esri World Ocean Base + Ocean Reference (regional). Fallback: Esri World Imagery. OpenSeaMap seamarks on both.
-- **Overlay**: CDFW kelp bed polygons (`biosds3135_fpu`); nearby FISH_SPOTS / DIVE_SITES pins (verbatim coords)
-- **Fit**: On site `ONSITE_FIT_FT = 1300` (~0.21 nm) around the mark; nearby pins `ONSITE_NEAR_NM = 0.32`. Fish Plan `PLAN_FIT_NM = 2.5` (no ENC by default — fewer WMS tile requests).
+`SeafloorRender` in `seafloor-render.js` (Leaflet, lazy-loaded):
+- **On site default**: NOAA NCEI `DEM_global_mosaic_hillshade` ColorHillshade via ImageServer `exportImage` tiles (real bathy/topo relief; CORS `*`). Layers also include NOAA ENC Online WMS, Esri Ocean Base, Satellite.
+- **Plan default**: Esri Ocean Base (no DEM/ENC by default — fewer heavy requests).
+- **Overlays**: OpenSeaMap seamarks; CDFW kelp; nearby spot pins (verbatim coords).
+- **Fit**: On site `ONSITE_FIT_FT = 1300` (~0.21 nm); Plan `PLAN_FIT_NM = 2.5`.
+- **Honest limits**: CUDEM tile mosaic empty at SoCal test AOIs; BlueTopo still download-only for plotter-grade local grids. Flat shelf spots can look bland in DEM (little relief). Not for navigation.
 
 ## Data sources
 
@@ -258,7 +259,7 @@ Full enforceable rules: `.cursor/rules/water-pin-coords.mdc`.
 | MPAs | CDFW ArcGIS MarineProtectedAreas_WebMer (SCSR) | 90-day cache |
 | AIS | AISStream WebSocket (direct or `ais-relay.mjs`) | live |
 | Coastline / shadow | `coast-overlay-lite.js` (OSM) + runtime `OBSTACLES` | static |
-| Bathymetry | NOAA ENC WMS (On site) · Esri Ocean Base (Plan) · OpenSeaMap · CDFW kelp | on tab open |
+| Bathymetry | NCEI DEM hillshade (On site) · ENC/Ocean toggles · OpenSeaMap · CDFW kelp | on tab open |
 | SST / chlorophyll | CoastWatch ERDDAP WMS (+ JSONP where needed) | tab/cache |
 | Cruise swell map | Windy embed (waves) | live iframe |
 | Underway radar imagery | Esri World Imagery tiles (same URL as plan maps) | cached per view |
