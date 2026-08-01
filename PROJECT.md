@@ -241,10 +241,10 @@ Full enforceable rules: `.cursor/rules/water-pin-coords.mdc`.
 
 ### Seafloor (On site — dive & fish)
 `SeafloorRender` in `seafloor-render.js` (Leaflet, lazy-loaded with the On site / Plan seafloor hosts):
-- **Basemap**: Esri World Ocean Base + Ocean Reference (bathymetric tint / isolines; GEBCO–NOAA–Esri). Fallback: Esri World Imagery on repeated tile errors. Toggle Satellite via layers control.
+- **Basemap**: Esri World Ocean Base + Ocean Reference (bathymetric tint / isolines; GEBCO–NOAA–Esri). Fallback: Esri World Imagery on repeated tile errors. Toggle Satellite via layers control. Ocean tiles `maxNativeZoom` 16, map `maxZoom` 19 (upscale on pinch-in).
 - **Overlay**: OpenSeaMap seamarks; CDFW kelp bed polygons (`biosds3135_fpu`)
 - **Pins**: selected mark + nearby FISH_SPOTS / DIVE_SITES (verbatim coords) classified as reef / kelp / rock
-- Pinch-zoom; ~2–2.5 nm fit. Not for navigation.
+- **Fit**: On site `ONSITE_FIT_FT = 1800` (~0.30 nm) around the mark; nearby pins `ONSITE_NEAR_NM = 0.40`. Fish Plan stays wider (`PLAN_FIT_NM = 2.5`). Not for navigation.
 
 ## Data sources
 

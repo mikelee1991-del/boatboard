@@ -1840,10 +1840,13 @@
     if (!site) return;
     const run = () => {
       if (!window.SeafloorRender) return;
+      const SR = window.SeafloorRender;
       const p = getPos ? getPos() : null;
       const lat = p?.lat ?? site.lat;
       const lon = p?.lon ?? site.lon;
-      const radiusNm = 2.2;
+      /* Local structure: 1800 ft fit (~0.30 nm); nearby pins ~0.40 nm. */
+      const radiusNm = SR.ONSITE_FIT_NM != null ? SR.ONSITE_FIT_NM : (1800 / 6076.12);
+      const nearNm = SR.ONSITE_NEAR_NM != null ? SR.ONSITE_NEAR_NM : 0.40;
       const markKey = site.lat.toFixed(5) + ',' + site.lon.toFixed(5);
       const nearby = [];
       for (let i = 0; i < DIVE_SITES.length; i++) {
@@ -1851,18 +1854,18 @@
         if (!s || s.lat == null || s.lon == null) continue;
         if (s.lat.toFixed(5) + ',' + s.lon.toFixed(5) === markKey) continue;
         const dist = haversineNm(site.lat, site.lon, s.lat, s.lon);
-        if (dist > radiusNm) continue;
+        if (dist > nearNm) continue;
         nearby.push({ lat: s.lat, lon: s.lon, name: s.name, depth: s.depth });
       }
       nearby.sort((a, b) => haversineNm(site.lat, site.lon, a.lat, a.lon) - haversineNm(site.lat, site.lon, b.lat, b.lon));
-      window.SeafloorRender.update('diveSeafloorRender', {
+      SR.update('diveSeafloorRender', {
         centerLat: lat,
         centerLon: lon,
         markLat: site.lat,
         markLon: site.lon,
         markLabel: site.name,
         habitat: site.depth != null ? 'Site depth ~' + site.depth + ' ft' : '',
-        nearby: nearby.slice(0, 48),
+        nearby: nearby.slice(0, 24),
         radiusNm,
         metaEl: 'diveSeafloorMeta'
       });

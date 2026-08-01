@@ -1294,6 +1294,7 @@ function ensureSeafloorRender(){
 function seafloorNearbyFromFish(centerLat, centerLon, radiusNm, excludeLat, excludeLon){
   const out = [];
   const exKey = excludeLat != null ? excludeLat.toFixed(5)+','+excludeLon.toFixed(5) : '';
+  const limit = radiusNm <= 0.5 ? 24 : 48;
   for(const sp of FISH_SPOTS){
     if(!sp || sp.lat == null || sp.lon == null) continue;
     const key = sp.lat.toFixed(5)+','+sp.lon.toFixed(5);
@@ -1303,7 +1304,7 @@ function seafloorNearbyFromFish(centerLat, centerLon, radiusNm, excludeLat, excl
     out.push({ lat: sp.lat, lon: sp.lon, name: sp.name, habitat: sp.habitat, depth: sp.depth });
   }
   out.sort((a,b)=> haversineM(centerLat,centerLon,a.lat,a.lon) - haversineM(centerLat,centerLon,b.lat,b.lon));
-  return out.slice(0, 48);
+  return out.slice(0, limit);
 }
 let _diveEnginePromise = null;
 function diveInitOpts(){
@@ -9583,7 +9584,8 @@ function refreshFishPlanSeafloor(ranked){
     if(!SR) return;
     const bp = boatPos();
     const top = ranked?.[0]?.spot;
-    const radiusNm = 2.5;
+    const radiusNm = SR.PLAN_FIT_NM != null ? SR.PLAN_FIT_NM : 2.5;
+    const nearNm = SR.PLAN_NEAR_NM != null ? SR.PLAN_NEAR_NM : 1.0;
     const focusLat = top?.lat ?? bp.lat;
     const focusLon = top?.lon ?? bp.lon;
     SR.update('fishPlanSeafloorRender', {
@@ -9593,7 +9595,7 @@ function refreshFishPlanSeafloor(ranked){
       markLon: top?.lon,
       markLabel: top ? fishGroupListName(top) : undefined,
       habitat: top ? ('Top pick · ' + (top.habitat || top.depth || '')) : '',
-      nearby: seafloorNearbyFromFish(focusLat, focusLon, radiusNm, top?.lat, top?.lon),
+      nearby: seafloorNearbyFromFish(focusLat, focusLon, nearNm, top?.lat, top?.lon),
       radiusNm,
       metaEl: 'fishPlanSeafloorMeta'
     });
@@ -9605,7 +9607,9 @@ function refreshFishSeafloor(row, ctx){
   ensureSeafloorRender().then(SR=>{
     if(!SR) return;
     const bp = boatPos();
-    const radiusNm = 2.5;
+    /* Local structure scale: 1800 ft fit (~0.30 nm); pins within ~0.40 nm. */
+    const radiusNm = SR.ONSITE_FIT_NM != null ? SR.ONSITE_FIT_NM : (1800 / 6076.12);
+    const nearNm = SR.ONSITE_NEAR_NM != null ? SR.ONSITE_NEAR_NM : 0.40;
     SR.update('fishSeafloorRender', {
       centerLat: bp.lat,
       centerLon: bp.lon,
@@ -9613,7 +9617,7 @@ function refreshFishSeafloor(row, ctx){
       markLon: row.spot.lon,
       markLabel: fishGroupListName(row.spot),
       habitat: row.spot.habitat || '',
-      nearby: seafloorNearbyFromFish(row.spot.lat, row.spot.lon, radiusNm, row.spot.lat, row.spot.lon),
+      nearby: seafloorNearbyFromFish(row.spot.lat, row.spot.lon, nearNm, row.spot.lat, row.spot.lon),
       radiusNm,
       metaEl: 'fishSeafloorMeta'
     });
@@ -13616,9 +13620,11 @@ function switchSubtab(section, name){
       if(site && BD.refreshDiveSeafloor) BD.refreshDiveSeafloor(site);
       else {
         const bp = boatPos();
-        const radiusNm = 2.2;
-        const nearby = (BD.DIVE_SITES || []).filter(s => s && haversineM(bp.lat, bp.lon, s.lat, s.lon) / 1852 <= radiusNm)
-          .slice(0, 48).map(s => ({ lat: s.lat, lon: s.lon, name: s.name, depth: s.depth, kind: 'reef' }));
+        const SR = window.SeafloorRender;
+        const radiusNm = SR?.ONSITE_FIT_NM != null ? SR.ONSITE_FIT_NM : (1800 / 6076.12);
+        const nearNm = SR?.ONSITE_NEAR_NM != null ? SR.ONSITE_NEAR_NM : 0.40;
+        const nearby = (BD.DIVE_SITES || []).filter(s => s && haversineM(bp.lat, bp.lon, s.lat, s.lon) / 1852 <= nearNm)
+          .slice(0, 24).map(s => ({ lat: s.lat, lon: s.lon, name: s.name, depth: s.depth, kind: 'reef' }));
         SeafloorRender.update('diveSeafloorRender', {
           centerLat: bp.lat, centerLon: bp.lon, radiusNm, nearby, metaEl: 'diveSeafloorMeta'
         });

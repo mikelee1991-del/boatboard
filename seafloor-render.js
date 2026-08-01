@@ -14,12 +14,23 @@
  * Tradeoffs: Ocean Base is the best practical free contour-style chart for
  * static GH Pages (CORS-friendly XYZ). It is coarser than a plotter ENC and
  * not for navigation. NOAA ENC tile endpoints were not reliably available.
- * Open Waters Terrarium DEM is for MapLibre hillshade, not a drop-in Leaflet
- * image layer — we no longer sample it into a fixed SVG grid (that was janky).
+ * Fit defaults (caller may override radiusNm):
+ *   On site — ONSITE_FIT_FT = 1800 ft (~0.30 nm) around the selected mark;
+ *   nearby pins within ONSITE_NEAR_NM = 0.40 nm (~2430 ft).
+ *   Fish Plan — PLAN_FIT_NM = 2.5 nm (wider vessel context).
  */
 
 (function (global) {
   const D2R = Math.PI / 180;
+  const FT_PER_NM = 6076.12;
+  /** On site default fit radius — local structure scale (hundreds–low thousands of feet). */
+  const ONSITE_FIT_FT = 1800;                 // ~549 m
+  const ONSITE_FIT_NM = ONSITE_FIT_FT / FT_PER_NM; // ~0.296 nm
+  /** Nearby reef/kelp/rock pins on On site (slightly wider than fit). */
+  const ONSITE_NEAR_NM = 0.40;                // ~2430 ft
+  /** Fish Plan seafloor — wider context around the vessel. */
+  const PLAN_FIT_NM = 2.5;
+  const PLAN_NEAR_NM = 1.0;                   // ~6076 ft
   const KELP_QUERY = 'https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds3135_fpu/FeatureServer/0/query';
   const FETCH_MS = 20000;
   const KELP_CACHE_MS = 10 * 60 * 1000;
@@ -199,13 +210,16 @@
   }
 
   function addBaseLayers(map) {
+    /* Ocean Base native tiles stop at z16; allow upscale so pinch-in stays useful locally. */
     const ocean = L.tileLayer(OCEAN_BASE, {
-      maxZoom: 16,
+      maxNativeZoom: 16,
+      maxZoom: 19,
       minZoom: 3,
       attribution: OCEAN_ATTR
     });
     const oceanRef = L.tileLayer(OCEAN_REF, {
-      maxZoom: 16,
+      maxNativeZoom: 16,
+      maxZoom: 19,
       minZoom: 3,
       attribution: OCEAN_REF_ATTR,
       opacity: 0.95
@@ -330,16 +344,21 @@
   }
 
   function fitView(map, opts) {
-    const bb = bboxFromCenter(opts.centerLat, opts.centerLon, opts.radiusNm || 2.5);
+    const radiusNm = opts.radiusNm != null ? opts.radiusNm : ONSITE_FIT_NM;
+    /* Fit around the mark (structure), not boat+mark — boat at the slip would yank zoom to multi-NM. */
+    const focusLat = opts.markLat != null ? opts.markLat : opts.centerLat;
+    const focusLon = opts.markLon != null ? opts.markLon : opts.centerLon;
+    const bb = bboxFromCenter(focusLat, focusLon, radiusNm);
     const bounds = L.latLngBounds(
       [bb.latMin, bb.lonMin],
       [bb.latMax, bb.lonMax]
     );
-    if (opts.markLat != null && opts.markLon != null) {
-      bounds.extend([opts.markLat, opts.markLon]);
+    if (opts.centerLat != null && opts.centerLon != null &&
+        (opts.markLat == null || haversineNm(focusLat, focusLon, opts.centerLat, opts.centerLon) <= radiusNm * 1.2)) {
+      bounds.extend([opts.centerLat, opts.centerLon]);
     }
-    map.fitBounds(bounds.pad(0.08), { maxZoom: 15, animate: false });
-    if (map.getZoom() < 11) map.setZoom(11, { animate: false });
+    const fitMax = opts.fitMaxZoom != null ? opts.fitMaxZoom : (radiusNm <= 0.5 ? 17 : 15);
+    map.fitBounds(bounds.pad(0.06), { maxZoom: fitMax, animate: false });
   }
 
   async function ensureLeaflet() {
@@ -380,7 +399,7 @@
           zoomControl: true,
           attributionControl: false,
           minZoom: 8,
-          maxZoom: 18,
+          maxZoom: 19,
           scrollWheelZoom: true,
           tapTolerance: 18
         });
@@ -392,10 +411,10 @@
 
       hosts.set(host, st);
 
-      const radiusNm = opts.radiusNm || 2.5;
+      const radiusNm = opts.radiusNm != null ? opts.radiusNm : ONSITE_FIT_NM;
       const kelpLat = opts.markLat != null ? opts.markLat : opts.centerLat;
       const kelpLon = opts.markLon != null ? opts.markLon : opts.centerLon;
-      const kelpP = fetchKelp(kelpLat, kelpLon, radiusNm * 1852 * 1.05).catch(e => {
+      const kelpP = fetchKelp(kelpLat, kelpLon, Math.max(radiusNm, ONSITE_NEAR_NM) * 1852 * 1.05).catch(e => {
         console.warn('kelp fetch', e);
         return [];
       });
@@ -409,11 +428,15 @@
       if (hosts.get(host)?.reqId !== reqId) return;
       const kelpCount = paintKelp(st, kelp);
 
+      const radiusFt = Math.round(radiusNm * FT_PER_NM);
+      const spanLbl = radiusNm <= 0.5
+        ? '~' + radiusFt + ' ft (' + f1(radiusNm) + ' nm)'
+        : '~' + f1(radiusNm) + ' nm';
       const baseMeta =
         'Esri Ocean Base + OpenSeaMap · pinch-zoom · ' +
         nearCount + ' nearby pin' + (nearCount === 1 ? '' : 's') +
         ' · ' + kelpCount + ' kelp bed' + (kelpCount === 1 ? '' : 's') +
-        ' · ~' + f1(radiusNm) + ' nm' +
+        ' · ' + spanLbl +
         (opts.habitat ? ' · <span class="seafloor-habitat">' + esc(opts.habitat) + '</span>' : '') +
         ' · <span class="seafloor-note">Chart depths are approximate — verify on a plotter before anchoring. Not for navigation.</span>';
       if (metaEl) metaEl.innerHTML = baseMeta;
@@ -442,5 +465,15 @@
     }
   }
 
-  global.SeafloorRender = { init, update, refreshVisible };
+  global.SeafloorRender = {
+    init,
+    update,
+    refreshVisible,
+    FT_PER_NM,
+    ONSITE_FIT_FT,
+    ONSITE_FIT_NM,
+    ONSITE_NEAR_NM,
+    PLAN_FIT_NM,
+    PLAN_NEAR_NM
+  };
 })(window);
