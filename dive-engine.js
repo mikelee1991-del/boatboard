@@ -1672,7 +1672,11 @@
     if (!box || !site) return;
     const intel = siteIntel(site);
     const hd = recommendHeadings(site, m);
+    const mpos = siteMapPos(site);
+    const bactHit = window.BoatFib?.nearestElevated?.(mpos.lat, mpos.lon);
+    const bactNote = window.BoatFib?.nearNoteHtml?.(bactHit) || '';
     let html = '<div class="card dive-intel-card"><h3>Site intel — ' + esc(site.name) + '</h3>';
+    if (bactNote) html += bactNote;
 
     html += '<div class="dive-intel-grid">' +
       '<div><span>Entry heading</span><b>' + f0(hd.entry) + '° ' + compass(hd.entry) + '</b></div>' +
@@ -1767,13 +1771,18 @@
       box.innerHTML = '<p class="dive-briefing-placeholder">Select a dive site from the dropdown above to load the pre-dive briefing.</p>';
       return;
     }
+    const mpos = siteMapPos(site);
+    const bactHit = window.BoatFib?.nearestElevated?.(mpos.lat, mpos.lon);
+    const bactNote = window.BoatFib?.nearNoteHtml?.(bactHit) || '';
     const blocks = siteBriefing(site);
     if (!blocks || !blocks.length) {
-      box.innerHTML = '<p class="dive-briefing-placeholder">No briefing on file for <strong>' + esc(site.name) + '</strong> yet — check entry notes below and local dive reports before entering the water.</p>';
+      box.innerHTML = (bactNote || '') +
+        '<p class="dive-briefing-placeholder">No briefing on file for <strong>' + esc(site.name) + '</strong> yet — check entry notes below and local dive reports before entering the water.</p>';
       return;
     }
     box.innerHTML =
       '<h3>Pre-dive briefing — ' + esc(site.name) + '</h3>' +
+      (bactNote || '') +
       '<div class="dive-briefing-prose">' +
       blocks.map(briefingBlockHtml).join('') +
       '</div>';
@@ -1966,17 +1975,28 @@
     return !!(tab && plan);
   }
 
-  function diveMapMarkerHtml(rank, score, mode) {
+  function diveMapMarkerHtml(rank, score, mode, bactNear) {
     const col = diveScoreColor(score);
+    const ring = bactNear ? '2px solid #ff5c5c' : '2px solid #fff';
+    const glow = bactNear ? '0 0 8px rgba(255,92,92,.7)' : '0 0 8px rgba(0,0,0,.85)';
+    const bang = bactNear
+      ? '<span style="position:absolute;right:-4px;top:-5px;width:11px;height:11px;border-radius:50%;background:#ff5c5c;color:#060a10;font:bold 8px/11px ui-monospace,monospace;text-align:center;box-shadow:0 0 3px #000">!</span>'
+      : '';
     if (mode === 'dot') {
-      return '<div style="width:10px;height:10px;border-radius:50%;background:' + col + ';border:1.5px solid #fff;opacity:0.8;box-shadow:0 0 4px rgba(0,0,0,.7)"></div>';
+      return '<div style="position:relative;width:10px;height:10px">' +
+        '<div style="width:10px;height:10px;border-radius:50%;background:' + col + ';border:' + (bactNear ? '1.5px solid #ff5c5c' : '1.5px solid #fff') + ';opacity:0.8;box-shadow:' + (bactNear ? '0 0 5px rgba(255,92,92,.7)' : '0 0 4px rgba(0,0,0,.7)') + '"></div>' +
+        bang + '</div>';
     }
     if (mode === 'secondary') {
-      return '<div style="width:14px;height:14px;border-radius:50%;background:' + col + ';border:2px solid #fff;opacity:0.85;box-shadow:0 0 6px rgba(0,0,0,.8)"></div>';
+      return '<div style="position:relative;width:14px;height:14px">' +
+        '<div style="width:14px;height:14px;border-radius:50%;background:' + col + ';border:' + ring + ';opacity:0.85;box-shadow:' + glow + '"></div>' +
+        bang + '</div>';
     }
     const sz = rank <= 6 ? 28 : 24;
     const fs = rank <= 6 ? 12 : 10;
-    return '<div style="width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;background:' + col + ';border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono,ui-monospace,monospace);font-size:' + fs + 'px;font-weight:700;color:#060a10;box-shadow:0 0 8px rgba(0,0,0,.85)">' + rank + '</div>';
+    return '<div style="position:relative;width:' + sz + 'px;height:' + sz + 'px">' +
+      '<div style="width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;background:' + col + ';border:' + ring + ';display:flex;align-items:center;justify-content:center;font-family:var(--font-mono,ui-monospace,monospace);font-size:' + fs + 'px;font-weight:700;color:#060a10;box-shadow:' + glow + '">' + rank + '</div>' +
+      bang + '</div>';
   }
 
   function applyDiveMapView(bounds, lat, lon) {
@@ -2020,15 +2040,17 @@
           const mpos = siteMapPos(site);
           if (dist <= DIVE_MAP_FIT_NM) fitBounds.extend([mpos.lat, mpos.lon]);
           plotted++;
-          const sz = rank <= 6 ? 28 : 24;
+          const hit = window.BoatFib?.nearestElevated?.(mpos.lat, mpos.lon);
+          const bactNear = !!hit;
+          const sz = (rank <= 6 ? 28 : 24) + (bactNear ? 2 : 0);
           const icon = L.divIcon({
             className: '',
-            html: diveMapMarkerHtml(rank, R.composite, 'numbered'),
+            html: diveMapMarkerHtml(rank, R.composite, 'numbered', bactNear),
             iconSize: [sz, sz], iconAnchor: [sz / 2, sz / 2]
           });
           const label = groupListName(site);
           L.marker([mpos.lat, mpos.lon], { icon, zIndexOffset: 500 - i })
-            .bindPopup('<b>#' + rank + ' ' + esc(label) + '</b><br><span style="font-family:var(--font-mono,monospace);font-size:12px;font-weight:500">' + fmtSiteCoordsDepth(site) + '</span><br>' + R.composite + '/100 · ' + R.stars.toFixed(1) + '\u2605<br>' + esc(R.verdict) + '<br>' + f1(dist) + ' nm' + (site.featureGroupSize > 1 ? '<br><span style="opacity:.85">Best module: ' + esc(site.name) + '</span>' : ''))
+            .bindPopup('<b>#' + rank + ' ' + esc(label) + '</b><br><span style="font-family:var(--font-mono,monospace);font-size:12px;font-weight:500">' + fmtSiteCoordsDepth(site) + '</span><br>' + R.composite + '/100 · ' + R.stars.toFixed(1) + '\u2605<br>' + esc(R.verdict) + '<br>' + f1(dist) + ' nm' + (site.featureGroupSize > 1 ? '<br><span style="opacity:.85">Best module: ' + esc(site.name) + '</span>' : '') + (bactNear ? '<br><span style="color:#ff5c5c">Elevated bacteria nearby</span>' : ''))
             .addTo(diveSpotLayer);
         });
 
@@ -2036,14 +2058,17 @@
           const mpos = siteMapPos(site);
           if (dist <= DIVE_MAP_FIT_NM) fitBounds.extend([mpos.lat, mpos.lon]);
           plotted++;
-          const dotSz = dist > DIVE_MAP_LOCAL_NM ? 10 : 14;
+          const hit = window.BoatFib?.nearestElevated?.(mpos.lat, mpos.lon);
+          const bactNear = !!hit;
+          const mode = dist > DIVE_MAP_LOCAL_NM ? 'dot' : 'secondary';
+          const dotSz = (mode === 'dot' ? 10 : 14) + (bactNear ? 2 : 0);
           const icon = L.divIcon({
             className: '',
-            html: diveMapMarkerHtml(0, R.composite, dist > DIVE_MAP_LOCAL_NM ? 'dot' : 'secondary'),
+            html: diveMapMarkerHtml(0, R.composite, mode, bactNear),
             iconSize: [dotSz, dotSz], iconAnchor: [dotSz / 2, dotSz / 2]
           });
           L.marker([mpos.lat, mpos.lon], { icon, zIndexOffset: 50 })
-            .bindPopup('<b>' + esc(site.name) + '</b><br><span style="font-family:var(--font-mono,monospace);font-size:12px;font-weight:500">' + fmtSiteCoordsDepth(site) + '</span><br>' + R.composite + '/100 · ' + R.stars.toFixed(1) + '\u2605<br>' + esc(R.verdict) + '<br>' + f1(dist) + ' nm' + (site.cdfgAppendix ? '<br>CDFG appendix' : ''))
+            .bindPopup('<b>' + esc(site.name) + '</b><br><span style="font-family:var(--font-mono,monospace);font-size:12px;font-weight:500">' + fmtSiteCoordsDepth(site) + '</span><br>' + R.composite + '/100 · ' + R.stars.toFixed(1) + '\u2605<br>' + esc(R.verdict) + '<br>' + f1(dist) + ' nm' + (site.cdfgAppendix ? '<br>CDFG appendix' : '') + (bactNear ? '<br><span style="color:#ff5c5c">Elevated bacteria nearby</span>' : ''))
             .addTo(diveSpotLayer);
         });
 
@@ -2055,11 +2080,13 @@
         const localGroups = new Set(
           lastAllRanked.filter(r => r.dist <= DIVE_MAP_FIT_NM).map(r => r.site.featureGroup || r.site.id)
         ).size;
+        const nearM = window.BoatFib?.NEAR_M || 500;
         if (leg) leg.innerHTML =
           '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#3dff9a;vertical-align:middle;margin-right:3px"></i> Great</span>' +
           '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#3dd6f5;vertical-align:middle;margin-right:3px"></i> Good</span>' +
           '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffb020;vertical-align:middle;margin-right:3px"></i> Fair</span>' +
           '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff6644;vertical-align:middle;margin-right:3px"></i> Poor</span>' +
+          '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid #ff5c5c;vertical-align:middle;margin-right:3px;box-sizing:border-box"></i>Elevated bacteria ≤' + nearM + ' m</span>' +
           '<span># = top ' + Math.min(DIVE_MAP_MAX_MARKERS, lastRanked.length) + ' spots · ' + plotted + ' pins · ~' + DIVE_MAP_FIT_NM + ' nm (' + localGroups + ' spots / ' + localN + ' pins)</span>' +
           mpaLeg;
       });
@@ -2072,6 +2099,18 @@
     const pos = defaultPos();
     if (lastRanked.length) renderDivePlanMap(lastRanked, lastAllRanked, pos.lat, pos.lon);
     else ensureDivePlanMap();
+  }
+
+  /** Called when shared BeachWatch FIB cache updates (Cruise/Surf/Dive share one fetch). */
+  function onFibData() {
+    const pos = defaultPos();
+    if (lastRanked.length && divePlanVisible()) {
+      renderDivePlanMap(lastRanked, lastAllRanked, pos.lat, pos.lon);
+    }
+    if (current) {
+      renderDiveBriefing(current);
+      if (lastM) renderSiteIntel(current, lastM);
+    }
   }
 
   function syncRecommendations(marine, wx, tides) {
@@ -2254,6 +2293,7 @@
         if (!row || !row.dataset.siteId) return;
         current = siteById(row.dataset.siteId);
         renderSiteSelect();
+        renderDiveBriefing(current);
         loadAll(current);
         syncRecommendations(getMarine && getMarine(), getWx && getWx(), getTides && getTides());
       });
@@ -2329,6 +2369,7 @@
     rankSitesAt,
     invalidatePlanMap,
     ensurePlanMap: invalidatePlanMap,
+    onFibData,
     nearestSites,
     parseSeries,
     snapshotAt,
