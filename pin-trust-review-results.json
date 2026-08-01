@@ -1,13 +1,13 @@
 {
   "type": "pin-trust-review-results",
-  "exportedAt": "2026-08-01T06:36:58.929Z",
-  "dataGenerated": "2026-07-29T06:25:56Z",
+  "exportedAt": "2026-08-01T20:33:15.917Z",
+  "dataGenerated": "2026-08-01T17:06:41Z",
   "summary": {
-    "yes": 799,
+    "yes": 821,
     "no": 8,
     "unsure": 5,
-    "pending": 0,
-    "total": 812
+    "pending": 13,
+    "total": 847
   },
   "results": [
     {
@@ -41,38 +41,6 @@
       "verdict": "no",
       "note": "pin is on land",
       "reviewedAt": "2026-07-28T06:16:50.845Z"
-    },
-    {
-      "id": "pv_ptvicentepinnacles",
-      "kind": "dive",
-      "name": "Pt Vicente pinnacles — Palos Verdes",
-      "lat": 33.7388,
-      "lon": -118.4149167,
-      "priority": "high",
-      "trustClass": "single-gps",
-      "currentlyDisplayed": false,
-      "source": "diver.net — Rancho Palos Verdes Dive Site; Pt. Vicente",
-      "sourceUrl": "http://diver.net/bbs/posts003/91346.shtml",
-      "reason": "Single numeric GPS (diver.net). CDN Wash Rock describes area without GPS; no second independent published GPS.",
-      "verdict": "yes",
-      "note": "",
-      "reviewedAt": "2026-08-01T06:33:09.451Z"
-    },
-    {
-      "id": "pv_pvr_5c",
-      "kind": "fish",
-      "name": "PVR Restoration Reef — Module 5C",
-      "lat": 33.72048,
-      "lon": -118.34491,
-      "priority": "high",
-      "trustClass": "appendix-like-single",
-      "currentlyDisplayed": false,
-      "source": "Frontiers in Marine Science 2022 — PVR as-built Table 1 Module 5C",
-      "sourceUrl": "https://www.frontiersin.org/journals/marine-science/articles/10.3389/fmars.2022.1010303/full",
-      "reason": "Frontiers as-built GPS is authoritative but Bloodydecks/Year-4 reports reprint the same VRG table — not independent. Confirm modules on imagery before live promote.",
-      "verdict": "yes",
-      "note": "",
-      "reviewedAt": "2026-08-01T06:33:26.390Z"
     },
     {
       "id": "dive_ut_14milebank_51",
@@ -121,6 +89,70 @@
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "dive_thirtysixfathompinnacle",
+      "kind": "dive",
+      "name": "36 Fathom Pinnacle",
+      "lat": 33.7918,
+      "lon": -118.4903,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:28:17.050Z"
+    },
+    {
+      "id": "dive_thirtysevenfathomspot",
+      "kind": "dive",
+      "name": "37 Fathom Spot",
+      "lat": 33.7967,
+      "lon": -118.4558,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:28:22.310Z"
+    },
+    {
+      "id": "dive_fortyfathomcurve",
+      "kind": "dive",
+      "name": "40 Fathom Curve",
+      "lat": 33.7808,
+      "lon": -118.4667,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:28:27.575Z"
+    },
+    {
+      "id": "dive_fortysevenfathomridge",
+      "kind": "dive",
+      "name": "47 Fathom Ridge",
+      "lat": 33.7878,
+      "lon": -118.4903,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:28:33.419Z"
     },
     {
       "id": "dive_ut_9milebankn_128",
@@ -459,6 +491,54 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
+      "id": "dive_ci_rockfish_1",
+      "kind": "dive",
+      "name": "CI - Rockfish #1",
+      "lat": 33.4667,
+      "lon": -118.6193,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:28:44.539Z"
+    },
+    {
+      "id": "dive_ci_rockfish_2",
+      "kind": "dive",
+      "name": "CI - Rockfish #2",
+      "lat": 33.4647,
+      "lon": -118.6195,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:28:58.215Z"
+    },
+    {
+      "id": "dive_ci_rockfish_3",
+      "kind": "dive",
+      "name": "CI - Rockfish #3",
+      "lat": 33.464,
+      "lon": -118.6138,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:29:33.198Z"
+    },
+    {
       "id": "dive_ut_clusterpointreef_174",
       "kind": "dive",
       "name": "Cluster Point Reef",
@@ -505,6 +585,22 @@
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "dive_danahardbottom",
+      "kind": "dive",
+      "name": "Dana Hard Bottom",
+      "lat": 33.445,
+      "lon": -117.6833,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:29:42.402Z"
     },
     {
       "id": "dive_ut_delmarkelp_184",
@@ -633,6 +729,22 @@
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "dive_cat_eaglerock_west",
+      "kind": "dive",
+      "name": "Eagle Rock — Catalina West End",
+      "lat": 33.4722222,
+      "lon": -118.6055556,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:29:54.452Z"
     },
     {
       "id": "dive_ut_eaglesnest_196",
@@ -827,6 +939,22 @@
       "reviewedAt": "2026-07-28T15:01:42.062Z"
     },
     {
+      "id": "dive_golfballreef",
+      "kind": "dive",
+      "name": "Golf Ball Reef — Haggerty's / Bluff Cove",
+      "lat": 33.80825,
+      "lon": -118.4094833,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:29:59.543Z"
+    },
+    {
       "id": "pv_halfwayreef",
       "kind": "dive",
       "name": "Halfway Reef — PV (Christmas Tree–Honeymoon)",
@@ -873,6 +1001,38 @@
       "verdict": "yes",
       "note": "",
       "reviewedAt": "2026-07-28T15:01:47.034Z"
+    },
+    {
+      "id": "dive_hawthornereef",
+      "kind": "dive",
+      "name": "Hawthorne Reef (Barberpole) — PV",
+      "lat": 33.7469,
+      "lon": -118.4205667,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:30:10.648Z"
+    },
+    {
+      "id": "dive_hermosahardbottom",
+      "kind": "dive",
+      "name": "Hermosa Hard Bottom",
+      "lat": 33.8682,
+      "lon": -118.4205,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:30:18.451Z"
     },
     {
       "id": "dive_ut_hiddenreef_232",
@@ -1001,6 +1161,22 @@
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "dive_insidesouthbankpinnacle",
+      "kind": "dive",
+      "name": "Inside South Bank Pinnacle 26 Fathom",
+      "lat": 33.8812,
+      "lon": -118.5355,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:32:36.120Z"
     },
     {
       "id": "dive_ut_insideswbank33fathoms_248",
@@ -1275,6 +1451,22 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
+      "id": "dive_manhattanhardbottom",
+      "kind": "dive",
+      "name": "Manhattan Hard Bottom",
+      "lat": 33.88,
+      "lon": -118.4333,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:30:33.850Z"
+    },
+    {
       "id": "dive_ut_marinelandreef80ft_283",
       "kind": "dive",
       "name": "Marineland Reef 80ft",
@@ -1289,6 +1481,22 @@
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "dive_merrysreef",
+      "kind": "dive",
+      "name": "Merry's Reef — Honeymoon Cove offshore",
+      "lat": 33.7641,
+      "lon": -118.4268667,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:30:40.531Z"
     },
     {
       "id": "dive_ut_middlekelphardbottom_538",
@@ -1595,6 +1803,22 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
+      "id": "dive_oc_pinnacles",
+      "kind": "dive",
+      "name": "Pinnacles",
+      "lat": 33.53,
+      "lon": -117.7808,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:31:02.400Z"
+    },
+    {
       "id": "dive_ut_pointlajolla_316",
       "kind": "dive",
       "name": "Point La Jolla",
@@ -1643,6 +1867,22 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
+      "id": "dive_pv_portuguesekelp_usc",
+      "kind": "dive",
+      "name": "Portuguese Kelp — Palos Verdes (USC waypoint)",
+      "lat": 33.7215,
+      "lon": -118.3578333,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "kelp",
+      "reviewedAt": "2026-08-01T20:31:24.455Z"
+    },
+    {
       "id": "pv_portuguesepoint",
       "kind": "dive",
       "name": "Portuguese Point high spot — PV",
@@ -1675,6 +1915,38 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
+      "id": "pv_ptvicentepinnacles",
+      "kind": "dive",
+      "name": "Pt Vicente pinnacles — Palos Verdes",
+      "lat": 33.7388,
+      "lon": -118.4149167,
+      "priority": "high",
+      "trustClass": "single-gps",
+      "currentlyDisplayed": false,
+      "source": "diver.net — Rancho Palos Verdes Dive Site; Pt. Vicente",
+      "sourceUrl": "http://diver.net/bbs/posts003/91346.shtml",
+      "reason": "Single numeric GPS (diver.net). CDN Wash Rock describes area without GPS; no second independent published GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T06:33:09.451Z"
+    },
+    {
+      "id": "dive_pv_ptfermin_usc",
+      "kind": "dive",
+      "name": "Pt. Fermin Kelp — San Pedro (USC waypoint)",
+      "lat": 33.7018333,
+      "lon": -118.2995,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "kelp",
+      "reviewedAt": "2026-08-01T20:32:00.009Z"
+    },
+    {
       "id": "dive_ut_purseseinerock_327",
       "kind": "dive",
       "name": "Purse Seine Rock",
@@ -1689,6 +1961,38 @@
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "dive_pv_pvr_2a",
+      "kind": "dive",
+      "name": "PVR Restoration Reef — Module 2A",
+      "lat": 33.72311,
+      "lon": -118.34993,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:32:18.343Z"
+    },
+    {
+      "id": "dive_pv_pvr_5c",
+      "kind": "dive",
+      "name": "PVR Restoration Reef — Module 5C",
+      "lat": 33.72048,
+      "lon": -118.34491,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:32:24.683Z"
     },
     {
       "id": "dive_ut_pyramidcove_328",
@@ -1963,6 +2267,22 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
+      "id": "dive_sculpinhardbottom",
+      "kind": "dive",
+      "name": "Sculpin Hardbottom Area",
+      "lat": 33.8858,
+      "lon": -118.525,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:32:29.680Z"
+    },
+    {
       "id": "dive_ut_seabassrock75ft_352",
       "kind": "dive",
       "name": "Seabass Rock 75ft",
@@ -1995,11 +2315,11 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "dive_ut_sealrocks_348",
+      "id": "dive_ut_sealrocks_349",
       "kind": "dive",
       "name": "Seal Rocks",
-      "lat": 33.3062,
-      "lon": -118.3057,
+      "lat": 33.4047,
+      "lon": -117.6177,
       "priority": "high",
       "trustClass": "dive-unflagged",
       "currentlyDisplayed": true,
@@ -2011,11 +2331,11 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "dive_ut_sealrocks_349",
+      "id": "dive_ut_sealrocks_348",
       "kind": "dive",
       "name": "Seal Rocks",
-      "lat": 33.4047,
-      "lon": -117.6177,
+      "lat": 33.3062,
+      "lon": -118.3057,
       "priority": "high",
       "trustClass": "dive-unflagged",
       "currentlyDisplayed": true,
@@ -2587,6 +2907,22 @@
       "reviewedAt": "2026-07-28T15:06:21.326Z"
     },
     {
+      "id": "dive_cat_yellowtailpoint",
+      "kind": "dive",
+      "name": "Yellowtail Point — Catalina (frontside)",
+      "lat": 33.4333333,
+      "lon": -118.4486111,
+      "priority": "high",
+      "trustClass": "dive-unflagged",
+      "currentlyDisplayed": true,
+      "source": "dive-engine.js (check verified-water-pins.json)",
+      "sourceUrl": "",
+      "reason": "Dive site on map without cdfgAppendix flag — confirm water GPS.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T20:32:33.968Z"
+    },
+    {
       "id": "pv_oceantrails_usc",
       "kind": "fish",
       "name": "Ocean Trails Reserve — Palos Verdes (USC waypoint)",
@@ -2617,6 +2953,22 @@
       "verdict": "yes",
       "note": "",
       "reviewedAt": "2026-07-29T06:17:49.136Z"
+    },
+    {
+      "id": "pv_pvr_5c",
+      "kind": "fish",
+      "name": "PVR Restoration Reef — Module 5C",
+      "lat": 33.72048,
+      "lon": -118.34491,
+      "priority": "high",
+      "trustClass": "appendix-like-single",
+      "currentlyDisplayed": false,
+      "source": "Frontiers in Marine Science 2022 — PVR as-built Table 1 Module 5C",
+      "sourceUrl": "https://www.frontiersin.org/journals/marine-science/articles/10.3389/fmars.2022.1010303/full",
+      "reason": "Frontiers as-built GPS is authoritative but Bloodydecks/Year-4 reports reprint the same VRG table — not independent. Confirm modules on imagery before live promote.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-01T06:33:26.390Z"
     },
     {
       "id": "pv_ptfermin_usc",
@@ -6955,22 +7307,6 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "dive_ver_carlsbad",
-      "kind": "dive",
-      "name": "Carlsbad Artificial Reef (module 8 / published center)",
-      "lat": 33.0833333,
-      "lon": -117.3191667,
-      "priority": "low",
-      "trustClass": "dive-verified",
-      "currentlyDisplayed": true,
-      "source": "verified-water-pins.json (multi-source)",
-      "sourceUrl": "",
-      "reason": "Multi-source verified dive site (not CDFG appendix). Optional spot-check against satellite + sources in verified-water-pins.json.",
-      "verdict": "yes",
-      "note": "",
-      "reviewedAt": "2026-07-28T04:24:33.441Z"
-    },
-    {
       "id": "fish_ver_carlsbadartificialreefmo",
       "kind": "fish",
       "name": "Carlsbad Artificial Reef (module 8 / published center)",
@@ -6985,6 +7321,22 @@
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "dive_ver_carlsbad",
+      "kind": "dive",
+      "name": "Carlsbad Artificial Reef (module 8 / published center)",
+      "lat": 33.0833333,
+      "lon": -117.3191667,
+      "priority": "low",
+      "trustClass": "dive-verified",
+      "currentlyDisplayed": true,
+      "source": "verified-water-pins.json (multi-source)",
+      "sourceUrl": "",
+      "reason": "Multi-source verified dive site (not CDFG appendix). Optional spot-check against satellite + sources in verified-water-pins.json.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-07-28T04:24:33.441Z"
     },
     {
       "id": "dive_ver_cdfg_carlsbad_ar_1",
@@ -8539,22 +8891,6 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "fish_ver_indianrockemeraldbaycata",
-      "kind": "fish",
-      "name": "Indian Rock — Emerald Bay / Catalina",
-      "lat": 33.467997,
-      "lon": -118.526799,
-      "priority": "low",
-      "trustClass": "verified",
-      "currentlyDisplayed": true,
-      "source": "verified-water-pins.json (multi-source)",
-      "sourceUrl": "",
-      "reason": "Multi-source verified — default trusted.",
-      "verdict": "yes",
-      "note": "Auto-yes: verified-water-pins.json multi-source trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z"
-    },
-    {
       "id": "dive_ver_indianrock",
       "kind": "dive",
       "name": "Indian Rock — Emerald Bay / Catalina",
@@ -8566,6 +8902,22 @@
       "source": "verified-water-pins.json (multi-source)",
       "sourceUrl": "",
       "reason": "Multi-source verified dive site (not CDFG appendix). Optional spot-check against satellite + sources in verified-water-pins.json.",
+      "verdict": "yes",
+      "note": "Auto-yes: verified-water-pins.json multi-source trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "fish_ver_indianrockemeraldbaycata",
+      "kind": "fish",
+      "name": "Indian Rock — Emerald Bay / Catalina",
+      "lat": 33.467997,
+      "lon": -118.526799,
+      "priority": "low",
+      "trustClass": "verified",
+      "currentlyDisplayed": true,
+      "source": "verified-water-pins.json (multi-source)",
+      "sourceUrl": "",
+      "reason": "Multi-source verified — default trusted.",
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
@@ -8779,22 +9131,6 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "fish_ver_isthmushighspot",
-      "kind": "fish",
-      "name": "Isthmus High Spot",
-      "lat": 33.455,
-      "lon": -118.4902,
-      "priority": "low",
-      "trustClass": "verified",
-      "currentlyDisplayed": true,
-      "source": "verified-water-pins.json (multi-source)",
-      "sourceUrl": "",
-      "reason": "Multi-source verified — default trusted.",
-      "verdict": "yes",
-      "note": "Auto-yes: verified-water-pins.json multi-source trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z"
-    },
-    {
       "id": "dive_ver_ut_isthmushighspot_261",
       "kind": "dive",
       "name": "Isthmus High Spot",
@@ -8806,6 +9142,22 @@
       "source": "verified-water-pins.json (multi-source)",
       "sourceUrl": "",
       "reason": "Multi-source verified dive site (not CDFG appendix). Optional spot-check against satellite + sources in verified-water-pins.json.",
+      "verdict": "yes",
+      "note": "Auto-yes: verified-water-pins.json multi-source trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "fish_ver_isthmushighspot",
+      "kind": "fish",
+      "name": "Isthmus High Spot",
+      "lat": 33.455,
+      "lon": -118.4902,
+      "priority": "low",
+      "trustClass": "verified",
+      "currentlyDisplayed": true,
+      "source": "verified-water-pins.json (multi-source)",
+      "sourceUrl": "",
+      "reason": "Multi-source verified — default trusted.",
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
@@ -9067,22 +9419,6 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "fish_ver_malibuartificialreefa",
-      "kind": "fish",
-      "name": "Malibu Artificial Reef A",
-      "lat": 34.0302778,
-      "lon": -118.6505556,
-      "priority": "low",
-      "trustClass": "verified",
-      "currentlyDisplayed": true,
-      "source": "verified-water-pins.json (multi-source)",
-      "sourceUrl": "",
-      "reason": "Multi-source verified — default trusted.",
-      "verdict": "yes",
-      "note": "Auto-yes: verified-water-pins.json multi-source trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z"
-    },
-    {
       "id": "dive_ver_malibureef",
       "kind": "dive",
       "name": "Malibu Artificial Reef A",
@@ -9099,11 +9435,43 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
+      "id": "fish_ver_malibuartificialreefa",
+      "kind": "fish",
+      "name": "Malibu Artificial Reef A",
+      "lat": 34.0302778,
+      "lon": -118.6505556,
+      "priority": "low",
+      "trustClass": "verified",
+      "currentlyDisplayed": true,
+      "source": "verified-water-pins.json (multi-source)",
+      "sourceUrl": "",
+      "reason": "Multi-source verified — default trusted.",
+      "verdict": "yes",
+      "note": "Auto-yes: verified-water-pins.json multi-source trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
       "id": "dive_ver_cdfg_malibu_ar_b",
       "kind": "dive",
       "name": "Malibu Artificial Reef B",
       "lat": 34.0302778,
       "lon": -118.6513889,
+      "priority": "low",
+      "trustClass": "cdfg",
+      "currentlyDisplayed": true,
+      "source": "CDFG Artificial Reef Appendix",
+      "sourceUrl": "",
+      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
+      "verdict": "yes",
+      "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "dive_ver_mdreyreef",
+      "kind": "dive",
+      "name": "Marina del Rey Artificial Reef (Center)",
+      "lat": 33.9683333,
+      "lon": -118.4863889,
       "priority": "low",
       "trustClass": "cdfg",
       "currentlyDisplayed": true,
@@ -9128,22 +9496,6 @@
       "reason": "Multi-source verified — default trusted.",
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z"
-    },
-    {
-      "id": "dive_ver_mdreyreef",
-      "kind": "dive",
-      "name": "Marina del Rey Artificial Reef (Center)",
-      "lat": 33.9683333,
-      "lon": -118.4863889,
-      "priority": "low",
-      "trustClass": "cdfg",
-      "currentlyDisplayed": true,
-      "source": "CDFG Artificial Reef Appendix",
-      "sourceUrl": "",
-      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
-      "verdict": "yes",
-      "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
@@ -9627,22 +9979,6 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "dive_ver_newportreef",
-      "kind": "dive",
-      "name": "Newport Beach Artificial Reef (Center)",
-      "lat": 33.6036111,
-      "lon": -117.9636111,
-      "priority": "low",
-      "trustClass": "cdfg",
-      "currentlyDisplayed": true,
-      "source": "CDFG Artificial Reef Appendix",
-      "sourceUrl": "",
-      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
-      "verdict": "yes",
-      "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z"
-    },
-    {
       "id": "fish_ver_newportbeachartificialre",
       "kind": "fish",
       "name": "Newport Beach Artificial Reef (Center)",
@@ -9656,6 +9992,22 @@
       "reason": "Multi-source verified — default trusted.",
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "dive_ver_newportreef",
+      "kind": "dive",
+      "name": "Newport Beach Artificial Reef (Center)",
+      "lat": 33.6036111,
+      "lon": -117.9636111,
+      "priority": "low",
+      "trustClass": "cdfg",
+      "currentlyDisplayed": true,
+      "source": "CDFG Artificial Reef Appendix",
+      "sourceUrl": "",
+      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
+      "verdict": "yes",
+      "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
@@ -10411,22 +10763,6 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "dive_ver_pacificbeach",
-      "kind": "dive",
-      "name": "Pacific Beach Artificial Reef Center",
-      "lat": 32.7930556,
-      "lon": -117.2763889,
-      "priority": "low",
-      "trustClass": "cdfg",
-      "currentlyDisplayed": true,
-      "source": "CDFG Artificial Reef Appendix",
-      "sourceUrl": "",
-      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
-      "verdict": "yes",
-      "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z"
-    },
-    {
       "id": "fish_ver_pacificbeachartificialre",
       "kind": "fish",
       "name": "Pacific Beach Artificial Reef Center",
@@ -10440,6 +10776,22 @@
       "reason": "Multi-source verified — default trusted.",
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "dive_ver_pacificbeach",
+      "kind": "dive",
+      "name": "Pacific Beach Artificial Reef Center",
+      "lat": 32.7930556,
+      "lon": -117.2763889,
+      "priority": "low",
+      "trustClass": "cdfg",
+      "currentlyDisplayed": true,
+      "source": "CDFG Artificial Reef Appendix",
+      "sourceUrl": "",
+      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
+      "verdict": "yes",
+      "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
@@ -11147,6 +11499,22 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
+      "id": "dive_ver_smareefa",
+      "kind": "dive",
+      "name": "Santa Monica Artificial Reef A",
+      "lat": 34.0094444,
+      "lon": -118.5297222,
+      "priority": "low",
+      "trustClass": "cdfg",
+      "currentlyDisplayed": true,
+      "source": "CDFG Artificial Reef Appendix",
+      "sourceUrl": "",
+      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
+      "verdict": "yes",
+      "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
       "id": "dive_ver_cdfg_santamonicaartificialreefa_31",
       "kind": "dive",
       "name": "Santa Monica Artificial Reef A",
@@ -11176,22 +11544,6 @@
       "reason": "Multi-source verified — default trusted.",
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z"
-    },
-    {
-      "id": "dive_ver_smareefa",
-      "kind": "dive",
-      "name": "Santa Monica Artificial Reef A",
-      "lat": 34.0094444,
-      "lon": -118.5297222,
-      "priority": "low",
-      "trustClass": "cdfg",
-      "currentlyDisplayed": true,
-      "source": "CDFG Artificial Reef Appendix",
-      "sourceUrl": "",
-      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
-      "verdict": "yes",
-      "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
@@ -11259,22 +11611,6 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "dive_ver_smbayreef",
-      "kind": "dive",
-      "name": "Santa Monica Bay Artificial Reef (Center)",
-      "lat": 34.0130556,
-      "lon": -118.5425,
-      "priority": "low",
-      "trustClass": "cdfg",
-      "currentlyDisplayed": true,
-      "source": "CDFG Artificial Reef Appendix",
-      "sourceUrl": "",
-      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
-      "verdict": "yes",
-      "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z"
-    },
-    {
       "id": "fish_ver_santamonicabayartificial",
       "kind": "fish",
       "name": "Santa Monica Bay Artificial Reef (Center)",
@@ -11288,6 +11624,22 @@
       "reason": "Multi-source verified — default trusted.",
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "dive_ver_smbayreef",
+      "kind": "dive",
+      "name": "Santa Monica Bay Artificial Reef (Center)",
+      "lat": 34.0130556,
+      "lon": -118.5425,
+      "priority": "low",
+      "trustClass": "cdfg",
+      "currentlyDisplayed": true,
+      "source": "CDFG Artificial Reef Appendix",
+      "sourceUrl": "",
+      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
+      "verdict": "yes",
+      "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
@@ -11691,22 +12043,6 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "dive_ver_shiprock",
-      "kind": "dive",
-      "name": "Ship Rock — Catalina (Isthmus)",
-      "lat": 33.4631983,
-      "lon": -118.4916767,
-      "priority": "low",
-      "trustClass": "dive-verified",
-      "currentlyDisplayed": true,
-      "source": "verified-water-pins.json (multi-source)",
-      "sourceUrl": "",
-      "reason": "Multi-source verified dive site (not CDFG appendix). Optional spot-check against satellite + sources in verified-water-pins.json.",
-      "verdict": "yes",
-      "note": "Auto-yes: verified-water-pins.json multi-source trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z"
-    },
-    {
       "id": "fish_ver_shiprockcatalinaisthmus",
       "kind": "fish",
       "name": "Ship Rock — Catalina (Isthmus)",
@@ -11718,6 +12054,22 @@
       "source": "verified-water-pins.json (multi-source)",
       "sourceUrl": "",
       "reason": "Multi-source verified — default trusted.",
+      "verdict": "yes",
+      "note": "Auto-yes: verified-water-pins.json multi-source trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "dive_ver_shiprock",
+      "kind": "dive",
+      "name": "Ship Rock — Catalina (Isthmus)",
+      "lat": 33.4631983,
+      "lon": -118.4916767,
+      "priority": "low",
+      "trustClass": "dive-verified",
+      "currentlyDisplayed": true,
+      "source": "verified-water-pins.json (multi-source)",
+      "sourceUrl": "",
+      "reason": "Multi-source verified dive site (not CDFG appendix). Optional spot-check against satellite + sources in verified-water-pins.json.",
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
@@ -12283,22 +12635,6 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "dive_ver_topanga",
-      "kind": "dive",
-      "name": "Topanga Artificial Reef - Malibu",
-      "lat": 34.0272222,
-      "lon": -118.5325,
-      "priority": "low",
-      "trustClass": "dive-verified",
-      "currentlyDisplayed": true,
-      "source": "verified-water-pins.json (multi-source)",
-      "sourceUrl": "",
-      "reason": "Multi-source verified dive site (not CDFG appendix). Optional spot-check against satellite + sources in verified-water-pins.json.",
-      "verdict": "yes",
-      "note": "",
-      "reviewedAt": "2026-07-28T04:25:08.263Z"
-    },
-    {
       "id": "fish_ver_topangaartificialreefmal",
       "kind": "fish",
       "name": "Topanga Artificial Reef - Malibu",
@@ -12313,6 +12649,22 @@
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "dive_ver_topanga",
+      "kind": "dive",
+      "name": "Topanga Artificial Reef - Malibu",
+      "lat": 34.0272222,
+      "lon": -118.5325,
+      "priority": "low",
+      "trustClass": "dive-verified",
+      "currentlyDisplayed": true,
+      "source": "verified-water-pins.json (multi-source)",
+      "sourceUrl": "",
+      "reason": "Multi-source verified dive site (not CDFG appendix). Optional spot-check against satellite + sources in verified-water-pins.json.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-07-28T04:25:08.263Z"
     },
     {
       "id": "fish_kml_live_336",
