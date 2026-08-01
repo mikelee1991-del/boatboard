@@ -8,7 +8,7 @@ Single-page marine dashboard for a multipurpose fishing / diving / cruising boat
 **Hosted:** https://mikelee1991-del.github.io/boatboard/ (after GitHub Pages is enabled).
 
 1. Allow GPS, or turn **Use device GPS** off and use slip / manual lat-lon (Overview + Settings).
-2. AIS on phone: **one-time** free Cloudflare Worker (no always-on Pi) — see **[How to connect AIS on phone](#how-to-connect-ais-on-phone)**. GitHub Pages cannot host the relay.
+2. AIS: default cloud relay is baked in (`wss://boatboard-ais.aisrelay.workers.dev`). Paste your free [AISStream](https://aisstream.io) API key in Settings. See **[How to connect AIS on phone](#how-to-connect-ais-on-phone)**.
 3. Cruise / Windy needs network. On **https** hosting, Map Forecast (`windy-waves-embed.html`) locks wave height to **ft**.
 
 No build step. See **[CONTEXT.md](CONTEXT.md)**, **[PROJECT.md](PROJECT.md)**, and **`.cursor/rules/water-pin-coords.mdc`**.
@@ -17,25 +17,17 @@ No build step. See **[CONTEXT.md](CONTEXT.md)**, **[PROJECT.md](PROJECT.md)**, a
 
 **Why GitHub can’t host the relay:** GitHub Pages serves static files only — no persistent WebSocket server. Actions runners are ephemeral. AISStream also **blocks browser WebSockets** (close 1006).
 
-**Recommended: free Cloudflare Worker (one-time deploy, then leave it)**
+**Default for this repo:** `wss://boatboard-ais.aisrelay.workers.dev` (`AIS_HOSTED_RELAY_DEFAULT` in `index.html`). Phones/laptops inherit it when Settings → AIS relay URL is blank.
 
-1. Free [Cloudflare](https://dash.cloudflare.com/sign-up) account + free [AISStream](https://aisstream.io) API key.
-2. On any computer (once):
-   ```bash
-   cd ais-relay-worker
-   npx wrangler login
-   npx wrangler deploy
-   ```
-3. Copy `https://boatboard-ais.<you>.workers.dev`.
-4. Phone → BoatBoard **⚙ Settings** → paste **API key** + that **relay URL** → **Save**.
+1. Free [AISStream](https://aisstream.io) API key (GitHub login).
+2. Phone → BoatBoard **⚙ Settings** → paste **API key** → **Save** (leave relay blank to use the default).
+3. Optional: override relay URL in Settings if you run your own Worker.
 
-No Raspberry Pi, no laptop left on, no cloudflared. Details: [`ais-relay-worker/README.md`](ais-relay-worker/README.md).
-
-Optional: after deploy, set `AIS_HOSTED_RELAY_DEFAULT` in `index.html` to your `wss://….workers.dev` URL so devices inherit it from Pages (still keep the API key in Settings / Worker secret — never commit keys).
+No Raspberry Pi required. Advanced self-host: [`ais-relay-worker/README.md`](ais-relay-worker/README.md).
 
 **In-app:** AIS tab → **Setup help**.
 
-**Power-user / LAN:** `node ais-relay.mjs` while a machine is online (see `ais-relay.mjs`). HTTPS sites still need `wss://` (Worker or temporary cloudflared).
+**Power-user / LAN:** `node ais-relay.mjs` while a machine is online (see `ais-relay.mjs`).
 
 ## GitHub Pages deploy
 

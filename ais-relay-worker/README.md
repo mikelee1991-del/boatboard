@@ -16,7 +16,7 @@ npx wrangler deploy
 3. Wrangler prints a URL like `https://boatboard-ais.<you>.workers.dev`
 4. In BoatBoard **⚙ Settings**:
    - **AISStream API key** — paste your key (kept in phone localStorage only)
-   - **AIS relay URL** — paste that `https://….workers.dev` URL → **Save**
+   - **AIS relay URL** — leave blank if using this repo’s baked default `wss://boatboard-ais.aisrelay.workers.dev`, or paste your Worker URL to override
 
 BoatBoard rewrites `https://` → `wss://` automatically.
 
