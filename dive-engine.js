@@ -427,7 +427,17 @@
     { id: 'sculpinhardbottom', name: 'Sculpin Hardbottom Area', lat: 33.8858, lon: -118.525, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true },
     { id: 'insidesouthbankpinnacle', name: 'Inside South Bank Pinnacle 26 Fathom', lat: 33.8812, lon: -118.5355, face: 250, depth: 150, boat: true, kmlImported: true, userTrusted: true },
     /* —— Dual-source Catalina (CDN + Tackle Trader ≤0.2 NM; coords from dual-dive-sites-candidates) —— */
-    { id: 'johnsonsrocks', name: 'Johnson\'s Rocks — Catalina (West End)', lat: 33.4768833, lon: -118.5885667, face: 90, depth: 50, boat: true, regional: true, verified: true, userTrusted: true }
+    { id: 'johnsonsrocks', name: 'Johnson\'s Rocks — Catalina (West End)', lat: 33.4768833, lon: -118.5885667, face: 90, depth: 50, boat: true, regional: true, verified: true, userTrusted: true },
+    /* —— Pin-trust yes dive promotes (coords verbatim) —— */
+    { id: 'pv_ptvicentepinnacles', name: 'Pt Vicente pinnacles — Palos Verdes', lat: 33.7388, lon: -118.4149167, face: 250, depth: 50, boat: true, userTrusted: true },
+    /* —— Pin-trust yes / KML fish→dive (coords verbatim; Aug 2026 expansion) —— */
+    { id: 'pv_pvr_5c', name: 'PVR Restoration Reef — Module 5C', lat: 33.72048, lon: -118.34491, face: 220, depth: 50, boat: true, userTrusted: true },
+    { id: 'thirtysixfathompinnacle', name: '36 Fathom Pinnacle', lat: 33.7918, lon: -118.4903, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true },
+    { id: 'ci_rockfish_1', name: 'CI - Rockfish #1', lat: 33.4667, lon: -118.6193, face: 270, depth: 75, boat: true, regional: true, kmlImported: true, userTrusted: true },
+    { id: 'ci_rockfish_2', name: 'CI - Rockfish #2', lat: 33.4647, lon: -118.6195, face: 270, depth: 75, boat: true, regional: true, kmlImported: true, userTrusted: true },
+    { id: 'ci_rockfish_3', name: 'CI - Rockfish #3', lat: 33.464, lon: -118.6138, face: 270, depth: 75, boat: true, regional: true, kmlImported: true, userTrusted: true },
+    { id: 'oc_pinnacles', name: 'Pinnacles', lat: 33.53, lon: -117.7808, face: 200, depth: 75, boat: true, regional: true, kmlImported: true, userTrusted: true },
+    { id: 'danahardbottom', name: 'Dana Hard Bottom', lat: 33.445, lon: -117.6833, face: 200, depth: 75, boat: true, regional: true, kmlImported: true, userTrusted: true }
   ];
 
   /** Pre-dive briefing — loaded from dive-briefings-data.js (sectioned { h, body[] } per site). */
