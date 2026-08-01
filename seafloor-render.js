@@ -448,14 +448,65 @@
 
     const overlays = { 'Seamarks': seamarks };
     const layersControl = L.control.layers(bases, overlays, {
-      position: 'topright',
+      position: opts.layersPosition || 'topright',
       collapsed: true
     }).addTo(map);
 
     return {
       oceanGroup, imagery, seamarks, enc, dem: demSolo,
-      blueTopoGroup, layersControl, usingBlueTopo: !!(preferBlueTopo && blueTopoGroup)
+      blueTopoGroup, layersControl, usingBlueTopo: !!(preferBlueTopo && blueTopoGroup),
+      mode: preferBlueTopo && blueTopoGroup ? 'bt' : (preferDem ? 'dem' : (preferEnc ? 'enc' : 'ocean'))
     };
+  }
+
+  /**
+   * Attach the shared On site basemap stack to an existing Leaflet map
+   * (BlueTopo relief default over NCEI DEM, plus ENC / Ocean / Satellite toggles).
+   * Used by Fish/Dive On site and pin-trust-review — do not duplicate tile URLs elsewhere.
+   */
+  async function attachBasemap(map, opts) {
+    opts = opts || {};
+    const preferDem = opts.preferDem !== false;
+    const preferEnc = !preferDem && !!opts.preferEnc;
+    const btCfg = preferDem ? await loadBlueTopoConfig() : null;
+    let blueTopoLayer = null;
+    if (preferDem && btCfg) {
+      try {
+        blueTopoLayer = await makeBlueTopoOverlay(btCfg);
+      } catch (e) {
+        console.warn('BlueTopo layer', e);
+      }
+    }
+    const added = await addBaseLayers(map, {
+      preferDem,
+      preferEnc,
+      blueTopoLayer,
+      blueTopoLabel: (btCfg && btCfg.layerLabel) || 'BlueTopo relief',
+      layersPosition: opts.layersPosition || 'topright'
+    });
+    if (opts.includeSeamarks === false && added.seamarks && map.hasLayer(added.seamarks)) {
+      map.removeLayer(added.seamarks);
+    }
+    const mapEl = map.getContainer && map.getContainer();
+    if (mapEl) {
+      mapEl.classList.add('seafloor-leaflet');
+      mapEl.classList.toggle('seafloor-dem', added.mode === 'bt' || added.mode === 'dem');
+      mapEl.classList.toggle('seafloor-bt', added.mode === 'bt');
+      mapEl.classList.toggle('seafloor-enc', added.mode === 'enc');
+    }
+    return added;
+  }
+
+  /** Fit a local structure-scale box around lat/lon (On site / review). */
+  function fitLocalView(map, lat, lon, radiusNm, fitMaxZoom) {
+    fitView(map, {
+      centerLat: lat,
+      centerLon: lon,
+      markLat: lat,
+      markLon: lon,
+      radiusNm: radiusNm != null ? radiusNm : ONSITE_FIT_NM,
+      fitMaxZoom: fitMaxZoom != null ? fitMaxZoom : undefined
+    });
   }
 
   function paintMarkers(st, opts) {
@@ -704,6 +755,8 @@
     init,
     update,
     refreshVisible,
+    attachBasemap,
+    fitLocalView,
     FT_PER_NM,
     ONSITE_FIT_FT,
     ONSITE_FIT_NM,

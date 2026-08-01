@@ -66,7 +66,22 @@ aside {
 .badge.cand { background: rgba(255,200,87,.1); color: var(--amber); }
 .badge.off { background: rgba(255,107,74,.12); color: var(--bad); }
 .map-wrap { position: relative; min-height: 0; }
-#map { height: 100%; min-height: 360px; background: #000; }
+#map { height: 100%; min-height: 360px; background: #0b2a33; }
+#map.seafloor-leaflet { background: #0a1520 !important; }
+#map.seafloor-leaflet .leaflet-tile-pane { filter: brightness(.92) contrast(1.05) saturate(.92); }
+#map.seafloor-dem { background: #0b2a33 !important; }
+#map.seafloor-dem .leaflet-tile-pane { filter: brightness(.95) contrast(1.08) saturate(1.05); }
+#map.seafloor-enc { background: #b7cfe0 !important; }
+#map.seafloor-enc .leaflet-tile-pane { filter: none; }
+#map .leaflet-control-layers {
+  background: rgba(6, 10, 16, .9); color: var(--ink2);
+  border: 1px solid var(--line); border-radius: 8px;
+}
+#map .leaflet-control-layers-toggle { background-color: rgba(6, 10, 16, .9); }
+#map .leaflet-control-layers label { color: var(--ink2); font-size: 12px; }
+#map .leaflet-control-attribution {
+  background: rgba(8, 12, 18, .82); color: var(--ink3); font-size: 9px; max-width: 70%;
+}
 .panel {
   position: absolute; top: 10px; right: 10px; z-index: 900; width: min(400px, calc(100% - 20px));
   background: rgba(8,12,18,.94); border: 1px solid var(--line); border-radius: 10px;
@@ -150,10 +165,16 @@ aside {
   border-radius: 8px; font-size: 12px; display: none;
 }
 .map-legend {
-  position: absolute; left: 10px; bottom: 10px; z-index: 900;
+  position: absolute; left: 10px; bottom: 28px; z-index: 900;
   background: rgba(8,12,18,.9); border: 1px solid var(--line); border-radius: 8px;
   padding: 6px 10px; font-size: 10px; color: var(--ink2); line-height: 1.6;
+  max-width: min(260px, calc(100% - 20px));
 }
+.map-legend .lg-title {
+  font-size: 9px; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink3); margin-bottom: 2px;
+}
+.map-legend .lg-meta { color: var(--ink3); margin-top: 4px; font-family: var(--mono); font-size: 9px; }
 .map-legend span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
 .map-legend .lg-diamond {
   width: 7px; height: 7px; border-radius: 1px; transform: rotate(45deg);
@@ -161,6 +182,10 @@ aside {
 }
 .map-legend .lg-sq {
   width: 7px; height: 7px; border-radius: 1px; background: #8b95a5;
+}
+.map-legend .lg-ring {
+  width: 8px; height: 8px; border-radius: 50%; background: transparent;
+  border: 1.5px dashed rgba(125, 211, 252, .85); box-sizing: border-box;
 }
 /* Context underlay: dive diamonds (fish use canvas circleMarkers) */
 .ctx-marker { background: transparent !important; border: none !important; }
@@ -209,12 +234,15 @@ aside {
   <div class="map-wrap">
     <div id="map"></div>
     <div class="map-legend" id="mapLegend" hidden>
+      <div class="lg-title">Nearby context</div>
       <div><span style="background:#ff6b4a"></span>Focus (review candidate)</div>
       <div><span style="background:#ffc857"></span>Nearby candidate</div>
       <div><span style="background:#7dd3fc"></span>Nearby live pin</div>
       <div><span style="background:#c4b5fd"></span>In group selection</div>
+      <div><span class="lg-ring"></span>Nearby search radius</div>
       <div><span class="lg-sq" style="border-radius:50%;background:#8b95a5"></span>All fish (context)</div>
       <div><span class="lg-diamond"></span>All dive (context)</div>
+      <div class="lg-meta" id="mapLegendMeta">BlueTopo / NCEI DEM · local fit</div>
     </div>
     <div class="panel" id="panel">
       <div class="hint">Select a candidate from the list.</div>
@@ -226,6 +254,7 @@ aside {
 <script src="pin-trust-review-data.js"></script>
 <script src="pin-feature-groups-data.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="seafloor-render.js"></script>
 <script>
 (function () {
   'use strict';
@@ -237,11 +266,18 @@ aside {
 
   var STORAGE_KEY = 'pinTrustReviewResults_v1';
   var GROUPS_KEY = 'pinFeatureGroups_v1';
+  var SR = window.SeafloorRender || null;
+  /* Local review view — slightly wider than On site 1300 ft fit so nearby pins read clearly. */
+  var REVIEW_FIT_NM = (SR && SR.ONSITE_NEAR_NM != null) ? SR.ONSITE_NEAR_NM : 0.32; /* ~1944 ft */
+  var REVIEW_FIT_MAX_ZOOM = 17;
   var results = {};
   var featureGroups = [];
   var groupSel = {}; /* pinKey -> pin snapshot */
-  var nearbyRadiusNm = DATA.nearbyDefaultNm || 1.0;
+  /* Default 0.5 nm — enough for duplicates/clusters without bay clutter (On site near ≈ 0.32 nm). */
+  var nearbyRadiusNm = 0.5;
   var editingGroupId = null;
+  var basemapReady = false;
+  var basemapLabel = 'BlueTopo relief';
 
   function seedFromPrior() {
     var prior = DATA.priorResults || [];
@@ -308,14 +344,42 @@ aside {
   function syncHdr() { document.documentElement.style.setProperty('--hdr', hdr.offsetHeight + 'px'); }
   syncHdr(); window.addEventListener('resize', syncHdr);
 
-  var map = L.map('map', { zoomControl: true, preferCanvas: true }).setView([DATA.home.lat, DATA.home.lon], 10);
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 19,
-    attribution: 'Esri / Maxar imagery'
-  }).addTo(map);
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-    maxZoom: 19, opacity: 0.85
-  }).addTo(map);
+  var map = L.map('map', { zoomControl: true, preferCanvas: true, maxZoom: 19, minZoom: 8 })
+    .setView([DATA.home.lat, DATA.home.lon], 10);
+
+  function applyBasemapFallback() {
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: 'Esri / Maxar imagery — seafloor-render.js unavailable'
+    }).addTo(map);
+    basemapLabel = 'Satellite (fallback)';
+    basemapReady = true;
+  }
+
+  function initBasemap() {
+    if (!SR || typeof SR.attachBasemap !== 'function') {
+      applyBasemapFallback();
+      return Promise.resolve();
+    }
+    return SR.attachBasemap(map, {
+      preferDem: true,
+      layersPosition: 'topleft'
+    }).then(function (added) {
+      basemapReady = true;
+      if (added && added.usingBlueTopo) basemapLabel = 'BlueTopo + NCEI DEM';
+      else if (added && added.mode === 'dem') basemapLabel = 'NCEI DEM relief';
+      else if (added && added.mode === 'enc') basemapLabel = 'NOAA ENC';
+      else basemapLabel = 'Ocean / satellite stack';
+      var meta = document.getElementById('mapLegendMeta');
+      if (meta) {
+        meta.textContent = basemapLabel + ' · view ~' +
+          Math.round(REVIEW_FIT_NM * ((SR && SR.FT_PER_NM) || 6076)) + ' ft · layers ↖';
+      }
+    }).catch(function (err) {
+      console.warn('seafloor basemap', err);
+      applyBasemapFallback();
+    });
+  }
 
   L.circleMarker([DATA.home.lat, DATA.home.lon], {
     radius: 5, color: '#6eb5ff', fillColor: '#6eb5ff', fillOpacity: 1, weight: 2
@@ -779,6 +843,7 @@ aside {
       '<h3>Nearby (' + nearby.length + ')</h3>' +
       '<div class="near-tools">' +
       '<label>Radius <select id="nearRadius">' +
+      '<option value="0.32"' + (Math.abs(nearbyRadiusNm - 0.32) < 0.01 ? ' selected' : '') + '>0.32 nm (~onsite)</option>' +
       '<option value="0.5"' + (nearbyRadiusNm === 0.5 ? ' selected' : '') + '>0.5 nm</option>' +
       '<option value="1"' + (nearbyRadiusNm === 1 || nearbyRadiusNm === 1.0 ? ' selected' : '') + '>1.0 nm</option>' +
       '<option value="1.5"' + (nearbyRadiusNm === 1.5 ? ' selected' : '') + '>1.5 nm</option>' +
@@ -806,9 +871,13 @@ aside {
       '<details class="howto" open>' +
       '<summary>How to use — review, export &amp; apply</summary>' +
       '<ol>' +
-      '<li><strong>Purpose:</strong> Trust or reject published fish/dive coords on imagery. ' +
+      '<li><strong>Purpose:</strong> Trust or reject published fish/dive coords on bathymetry + imagery. ' +
       '<span class="warn">Never nudge or invent GPS</span> — Yes / No / Unsure only.</li>' +
-      '<li><strong>Review:</strong> Zoom imagery — pin in water (ok) vs land / pier / parking (reject). ' +
+      '<li><strong>Map:</strong> Same BlueTopo relief / NCEI DEM / ENC / Ocean / Satellite stack as Fish &amp; Dive ' +
+      '<em>On site</em> (layers control, top-left). View fits locally (~' +
+      Math.round(REVIEW_FIT_NM * ((SR && SR.FT_PER_NM) || 6076)) +
+      ' ft) so nearby pins and seafloor structure are readable — not bay-wide.</li>' +
+      '<li><strong>Review:</strong> Check pin vs relief / ENC / satellite — water ok vs land / pier / parking (reject). ' +
       '<strong>Yes</strong> = trust as-is · <strong>No</strong> = omit from live maps · ' +
       '<strong>Unsure</strong> = omit until re-reviewed. Optional note helps later.</li>' +
       '<li><strong>Keys:</strong> <code>Y</code> yes · <code>N</code> no · <code>U</code> unsure · ' +
@@ -933,25 +1002,53 @@ aside {
     document.getElementById('mapLegend').hidden = false;
     var nearby = findNearby(c);
     lastNearby = nearby;
-    var bounds = [[c.lat, c.lon]];
+    var meta = document.getElementById('mapLegendMeta');
+    if (meta) {
+      meta.textContent = basemapLabel + ' · ' + nearby.length + ' nearby ≤' + nearbyRadiusNm +
+        ' nm · view ~' + Math.round(REVIEW_FIT_NM * ((SR && SR.FT_PER_NM) || 6076)) + ' ft';
+    }
+
+    /* Search radius ring — helps judge cluster vs distinct marks at the selected nearby radius. */
+    var radiusM = nearbyRadiusNm * 1852;
+    L.circle([c.lat, c.lon], {
+      radius: radiusM,
+      color: '#7dd3fc',
+      weight: 1.5,
+      dashArray: '5 6',
+      fillColor: '#7dd3fc',
+      fillOpacity: 0.04,
+      interactive: false
+    }).addTo(pinLayer);
+
+    /* Tighter fit ring (On site–scale) so relief detail stays readable. */
+    L.circle([c.lat, c.lon], {
+      radius: REVIEW_FIT_NM * 1852,
+      color: 'rgba(255,107,74,.45)',
+      weight: 1,
+      dashArray: '2 4',
+      fill: false,
+      interactive: false
+    }).addTo(pinLayer);
 
     nearby.forEach(function (row) {
       var p = row.pin;
       var inSel = !!groupSel[p.key];
       var color = inSel ? '#c4b5fd' : (p.isCandidate ? '#ffc857' : '#7dd3fc');
+      var close = row.distNm <= REVIEW_FIT_NM;
       var m = L.circleMarker([p.lat, p.lon], {
-        radius: inSel ? 8 : 6,
+        radius: inSel ? 9 : (close ? 7 : 6),
         color: '#fff',
         fillColor: color,
-        fillOpacity: 0.9,
-        weight: 1.5
+        fillOpacity: 0.95,
+        weight: close ? 2 : 1.5,
+        zIndexOffset: close ? 400 : 200
       }).bindPopup(
         '<b>' + esc(p.name) + '</b><br>' +
-        row.distNm.toFixed(2) + ' nm · ' + p.kind + '<br>' +
+        row.distNm.toFixed(2) + ' nm · ' + p.kind +
+        (p.isCandidate ? ' · review candidate' : ' · live') + '<br>' +
         Number(p.lat).toFixed(6) + ', ' + Number(p.lon).toFixed(6)
       ).addTo(pinLayer);
       m.on('click', function () { toggleSelPin(p); });
-      bounds.push([p.lat, p.lon]);
     });
 
     Object.keys(groupSel).forEach(function (k) {
@@ -961,18 +1058,27 @@ aside {
       L.circleMarker([m.lat, m.lon], {
         radius: 7, color: '#fff', fillColor: '#c4b5fd', fillOpacity: 0.85, weight: 1.5
       }).bindPopup(esc(m.name) + ' (selected)').addTo(pinLayer);
-      bounds.push([m.lat, m.lon]);
     });
 
     L.circleMarker([c.lat, c.lon], {
-      radius: 10, color: '#fff', fillColor: '#ff6b4a', fillOpacity: 0.95, weight: 2
-    }).bindPopup(c.name).addTo(pinLayer);
+      radius: 11, color: '#fff', fillColor: '#ff6b4a', fillOpacity: 0.98, weight: 2.5
+    }).bindPopup('<b>' + esc(c.name) + '</b><br>Focus · ' + c.kind).addTo(pinLayer);
 
-    if (bounds.length > 1) {
-      try { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 }); }
-      catch (e) { map.setView([c.lat, c.lon], Math.max(map.getZoom(), 15)); }
+    /* Local fit: at least On site–near (~0.32 nm), expand to nearby radius up to ~0.55 nm
+     * so the search ring stays in view — never fit to 1–2 nm (bay-wide clutter). */
+    var fitNm = Math.max(REVIEW_FIT_NM, Math.min(nearbyRadiusNm, 0.55));
+    if (SR && typeof SR.fitLocalView === 'function') {
+      SR.fitLocalView(map, c.lat, c.lon, fitNm, REVIEW_FIT_MAX_ZOOM);
     } else {
-      map.setView([c.lat, c.lon], Math.max(map.getZoom(), 15));
+      var dLat = fitNm / 60;
+      var dLon = fitNm / Math.max(0.2, 60 * Math.cos(c.lat * Math.PI / 180));
+      try {
+        map.fitBounds([[c.lat - dLat, c.lon - dLon], [c.lat + dLat, c.lon + dLon]], {
+          padding: [28, 28], maxZoom: REVIEW_FIT_MAX_ZOOM, animate: false
+        });
+      } catch (e) {
+        map.setView([c.lat, c.lon], Math.max(map.getZoom(), 15));
+      }
     }
   }
 
@@ -1144,12 +1250,15 @@ aside {
   });
 
   renderList();
-  if (filtered.length) selectCand(filtered[0].id);
-  else if (DATA.candidates.length) {
-    document.getElementById('filterPri').value = 'all';
-    renderList();
+  initBasemap().then(function () {
     if (filtered.length) selectCand(filtered[0].id);
-  }
+    else if (DATA.candidates.length) {
+      document.getElementById('filterPri').value = 'all';
+      renderList();
+      if (filtered.length) selectCand(filtered[0].id);
+    }
+    setTimeout(function () { try { map.invalidateSize(true); } catch (e) { /* ignore */ } }, 80);
+  });
 })();
 </script>
 </body>
