@@ -1224,6 +1224,11 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
     </div>
     <p style="font-size:11px;color:var(--ink3);margin:-4px 0 10px">Used when Use device GPS is off and no manual location is set.</p>
     <p style="font-size:11px;color:var(--ink3);margin:-4px 0 10px">Coastline on maps comes from <span class="mono">coast-overlay-lite.js</span> (OSM, ~100&nbsp;ft, visual only — regenerate with <span class="mono">build-coast-overlay-lite.ps1</span>). High-accuracy <span class="mono">coast-geo.js</span> is for build-time spot audits only — not loaded in the dashboard. <a href="fish-coord-review.html" target="_blank" rel="noopener">Fish coord review ↗</a> · <a href="pin-trust-review.html" target="_blank" rel="noopener">Pin trust review ↗</a></p>
+    <div class="field" style="margin-top:4px">
+      <label for="btnHardRefresh">Hard refresh</label>
+      <p style="margin:0 0 8px;font-size:12px;color:var(--ink3);text-transform:none;letter-spacing:0;font-weight:400;line-height:1.45">Clears cached app files and reloads (keeps your settings).</p>
+      <button type="button" id="btnHardRefresh" style="width:100%;min-height:48px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);cursor:pointer;font-weight:600">Hard refresh</button>
+    </div>
     <div class="modalbtns">
       <button id="btnSetClose">Cancel</button>
       <button class="primary" id="btnSetSave">Save</button>
@@ -12681,6 +12686,41 @@ function showSettings(open){
   else { o.classList.remove('show'); o.hidden=true; }
 }
 
+/** Drop SW + Cache Storage + ephemeral app caches, then reload. Keeps boatSettings / keys / prefs. */
+async function hardRefreshApp(){
+  const btn = $('btnHardRefresh');
+  if(btn){ btn.disabled = true; btn.textContent = 'Refreshing…'; }
+  try{
+    if(navigator.serviceWorker){
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister().catch(()=>false)));
+    }
+  }catch(e){}
+  try{
+    if(typeof caches !== 'undefined' && caches.keys){
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k).catch(()=>false)));
+    }
+  }catch(e){}
+  try{
+    /* Ephemeral only — FIB / session map scratch. Never wipe boatSettings / AIS / pin-trust. */
+    if(typeof sessionStorage !== 'undefined') sessionStorage.clear();
+  }catch(e){}
+  try{
+    const drop = [];
+    for(let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if(!k) continue;
+      if(k.indexOf('boatCache:') === 0 || k === 'habCharmLast' || k === FIB_CACHE_KEY) drop.push(k);
+    }
+    drop.forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+  }catch(e){}
+  const url = new URL(location.href);
+  url.searchParams.set('_hr', String(Date.now()));
+  /* Prefer cache-busting navigation so mobile browsers skip stale HTML/JS */
+  location.replace(url.pathname + url.search + (url.hash || ''));
+}
+
 let leafletPromise = null;
 function loadLeaflet(){
   if(window.L) return Promise.resolve();
@@ -14387,6 +14427,7 @@ function bindUI(){
   $('btnSettings').addEventListener('click', ()=>showSettings(true));
   $('btnSetClose').addEventListener('click', ()=>showSettings(false));
   $('settingsOverlay').addEventListener('click', e=>{ if(e.target===$('settingsOverlay')) showSettings(false); });
+  $('btnHardRefresh')?.addEventListener('click', ()=>{ hardRefreshApp(); });
   $('btnAisHelp')?.addEventListener('click', ()=> showAisSetupHelp());
   $('btnAisOpenSettings')?.addEventListener('click', ()=>{
     aisHelpDismissed = false;
