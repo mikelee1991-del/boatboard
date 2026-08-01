@@ -2121,8 +2121,8 @@ let aisStatusHint = '';
 let shippingLanesLayer = null, shippingLanesVisible = store.get('aisShippingLanes') !== '0';
 let mapInited = false;
 let swellMap = null, swellMapInited = false, swellRayLayer = null, swellObstLayer = null, swellBuoyLayer = null, swellBoatMarker = null;
-const SWELL_MAP_DEFAULT_ZOOM = 11;
-const SWELL_MAP_LOCAL_NM = 28;
+const SWELL_MAP_DEFAULT_ZOOM = 11; // fallback before fitBounds
+const SWELL_MAP_FIT_NM = 25; // default auto-fit radius around boat (nmi)
 let fishMap = null, fishMapInited = false, fishSpotLayer = null, fishBoatMarker = null;
 let lastFishPlanAllRanked = null;
 let chlMap = null, chlMapInited = false, chlOverlayLayers = [], chlBoatMarker = null, chlZoneLayer = null;
@@ -10898,7 +10898,17 @@ function applySwellMapView(){
   const { lat, lon } = boatPos();
   const fit = () => {
     swellMap.invalidateSize(true);
-    swellMap.setView([lat, lon], SWELL_MAP_DEFAULT_ZOOM, { animate:false });
+    const r = SWELL_MAP_FIT_NM * NM;
+    const n = destPt(lat, lon, 0, r);
+    const s = destPt(lat, lon, 180, r);
+    const e = destPt(lat, lon, 90, r);
+    const w = destPt(lat, lon, 270, r);
+    const bounds = L.latLngBounds([[s.lat, w.lon], [n.lat, e.lon]]);
+    if(bounds.isValid()){
+      swellMap.fitBounds(bounds, { animate:false, maxZoom:14 });
+    } else {
+      swellMap.setView([lat, lon], SWELL_MAP_DEFAULT_ZOOM, { animate:false });
+    }
   };
   fit();
   setTimeout(fit, 100);
@@ -10919,7 +10929,7 @@ async function initSwellMap(){
   swellRayLayer = L.layerGroup().addTo(swellMap);
   swellBuoyLayer = L.layerGroup().addTo(swellMap);
   for(const ob of getObstacles()){
-    if(!obstacleNearBoat(lat, lon, ob, SWELL_MAP_LOCAL_NM)) continue;
+    if(!obstacleNearBoat(lat, lon, ob, SWELL_MAP_FIT_NM)) continue;
     const latlngs = ob.poly.map(p=>[p.lat, p.lng]);
     L.polygon(latlngs, { color:'#4a6070', weight:2, fillColor:'#121a24', fillOpacity:0.55 }).addTo(swellObstLayer)
       .bindTooltip(ob.name, { sticky:true });
