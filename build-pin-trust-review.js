@@ -316,6 +316,33 @@ for (var fi = 0; fi < fish.length; fi++) {
   });
 }
 
+/* 2b) userTrusted fish that are not KML / CDFG / verified — published DMS duals etc.
+ * Live-promoted without a review pass; list for optional imagery spot-check.
+ * Dedupes against KML rows; prior yes/no/unsure merge by name+coords in addCand. */
+for (var fui = 0; fui < fish.length; fui++) {
+  var uf = fish[fui];
+  if (!uf || !uf.userTrusted) continue;
+  if (uf.kmlImported || uf.cdfgAppendix || uf.verified) continue;
+  var distUf = shoreDistM(uf.lat, uf.lon);
+  var nmUf = haversineNm(SLIP.lat, SLIP.lon, uf.lat, uf.lon);
+  addCand({
+    id: 'fish_ut_' + fui,
+    kind: 'fish',
+    name: uf.name,
+    lat: uf.lat,
+    lon: uf.lon,
+    priority: 'medium',
+    reason: 'Live with userTrusted (published chart / DMS dual) — optional imagery spot-check. Not KML/CDFG/verified.',
+    source: 'FISH_SPOTS userTrusted (live promote)',
+    sourceUrl: '',
+    sourceDetail: 'Coords verbatim from live list. Mark no/unsure only to override display.',
+    trustClass: 'user-trusted-fish',
+    currentlyDisplayed: true,
+    shoreDistM: distUf,
+    nmFromSlip: Math.round(nmUf * 10) / 10
+  });
+}
+
 /* 3) Non-CDFG dive sites (multi-source verified but worth human eye) */
 for (var di = 0; di < dive.length; di++) {
   var d = dive[di];

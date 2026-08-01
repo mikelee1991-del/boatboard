@@ -248,6 +248,17 @@ aside {
     prior.forEach(function (r) {
       if (r && r.id && r.verdict && r.verdict !== 'pending') results[r.id] = r;
     });
+    /* Build also stamps priorVerdict on matched candidates — seed if priorResults missed an id */
+    (DATA.candidates || []).forEach(function (c) {
+      if (!c || !c.id || !c.priorVerdict || c.priorVerdict === 'pending') return;
+      if (results[c.id] && results[c.id].verdict) return;
+      results[c.id] = {
+        id: c.id, kind: c.kind, name: c.name, lat: c.lat, lon: c.lon,
+        priority: c.priority, trustClass: c.trustClass, currentlyDisplayed: c.currentlyDisplayed,
+        source: c.source, verdict: c.priorVerdict, note: c.priorNote || '',
+        reviewedAt: c.reviewedAt || ''
+      };
+    });
   }
   seedFromPrior();
 
@@ -409,12 +420,18 @@ aside {
     var priorNote = DATA.priorExportedAt
       ? ' · prior export ' + String(DATA.priorExportedAt).replace('T', ' ').replace(/\.\d+Z$/, 'Z')
       : '';
+    var liveNote = (q.fishTotal != null && q.diveTotal != null)
+      ? ' · live fish ' + q.fishTotal + ' / dive ' + q.diveTotal
+      : '';
+    var emptyHint = c.pending === 0
+      ? ' · <span title="Live map adds (userTrusted / KML / verified) do not auto-create unreviewed queue items. Rebuild candidates after new adds: cscript //Nologo build-pin-trust-review.js">queue empty — live adds ≠ new review items</span>'
+      : '';
     document.getElementById('stats').innerHTML =
       '<strong>' + q.high + '</strong> high · <strong>' + q.medium + '</strong> med · <strong>' + q.low + '</strong> low · ' +
       'reviewed <strong>' + (c.yes + c.no + c.unsure) + '</strong>/' + c.total +
       ' (yes ' + c.yes + ' · no ' + c.no + ' · unsure ' + c.unsure + ' · left ' + c.pending + ')' +
       ' · <strong>' + featureGroups.length + '</strong> feature groups' +
-      priorNote;
+      priorNote + liveNote + emptyHint;
   }
 
   function matchesFilter(c) {
@@ -803,6 +820,10 @@ aside {
       'stamps <code>userTrusted</code> on Yes (coords unchanged) and removes No/Unsure from live ' +
       '<code>FISH_SPOTS</code> / <code>DIVE_SITES</code>. Rebuild the queue when needed: ' +
       '<code>cscript //Nologo build-pin-trust-review.js</code>.</li>' +
+      '<li><strong>Live map ≠ review queue:</strong> Pins added straight to live lists ' +
+      '(KML / verified / CDFG / <code>userTrusted</code> from published DMS) do <em>not</em> appear as ' +
+      'unreviewed until you rebuild candidates. Rebuild merges prior yes/no/unsure by id/coords — ' +
+      'it does not wipe your decisions or re-queue no/unsure as pending.</li>' +
       '<li><strong>After apply:</strong> Commit updated lists + results; run water-pin audits. ' +
       'Still never nudge coords to silence audits.</li>' +
       '</ol>' +
@@ -978,7 +999,15 @@ aside {
       var c = filtered[(start + i) % filtered.length];
       if (verdictOf(c.id) === 'pending') { selectCand(c.id); return; }
     }
-    toast('No unreviewed items in this filter');
+    var allPending = 0;
+    DATA.candidates.forEach(function (c) {
+      if (verdictOf(c.id) === 'pending') allPending++;
+    });
+    if (allPending === 0) {
+      toast('Queue fully reviewed — live map pins are not auto-queued. Rebuild after new adds: cscript //Nologo build-pin-trust-review.js');
+    } else {
+      toast('No unreviewed items in this filter (' + allPending + ' pending outside filter)');
+    }
   }
 
   function buildExport() {
