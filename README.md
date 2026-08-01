@@ -8,7 +8,7 @@ Single-page marine dashboard for a multipurpose fishing / diving / cruising boat
 **Hosted:** https://mikelee1991-del.github.io/boatboard/ (after GitHub Pages is enabled).
 
 1. Allow GPS, or turn **Use device GPS** off and use slip / manual lat-lon (Overview + Settings).
-2. Optional: AISStream key in Settings; if the browser blocks WebSockets, run `node ais-relay.mjs YOUR_KEY`.
+2. AIS: AISStream **blocks browsers** (WebSocket 1006). Run `node ais-relay.mjs YOUR_KEY`, then for **HTTPS / phone** expose it with `cloudflared tunnel --url http://localhost:8765` and paste the **wss://** (or https://) URL in Settings → AIS relay. Plain `ws://192.168.x.x` only works on non-HTTPS pages.
 3. Cruise / Windy needs network. On **https** hosting, Map Forecast (`windy-waves-embed.html`) locks wave height to **ft**.
 
 No build step. See **[CONTEXT.md](CONTEXT.md)**, **[PROJECT.md](PROJECT.md)**, and **`.cursor/rules/water-pin-coords.mdc`**.

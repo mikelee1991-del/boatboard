@@ -1088,8 +1088,8 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
     <h2>Settings</h2>
     <p>Stored on this device only. Port Royal (King Harbor) is the home reference.</p>
     <div class="field"><label for="fAisKey">AISStream API key</label><input id="fAisKey" type="password" placeholder="Paste your aisstream.io key" autocomplete="off"></div>
-    <div class="field"><label for="fAisRelay">AIS relay URL (optional)</label><input id="fAisRelay" placeholder="ws://192.168.1.10:8765 — if direct browser fails" autocomplete="off"></div>
-    <p style="font-size:12px;color:var(--ink3);margin:-6px 0 10px">AISStream blocks many browsers. Run <span class="mono">node ais-relay.mjs YOUR_KEY</span> on a laptop/Pi on the boat network, then paste its WebSocket URL here.</p>
+    <div class="field"><label for="fAisRelay">AIS relay URL (required on phone / GitHub Pages)</label><input id="fAisRelay" placeholder="wss://your-tunnel.trycloudflare.com — not ws:// on HTTPS" autocomplete="off"></div>
+    <p style="font-size:12px;color:var(--ink3);margin:-6px 0 10px">AISStream blocks direct browser WebSockets (close 1006). On this HTTPS site, use a <strong>wss://</strong> relay — not <span class="mono">ws://</span> (mixed content). Run <span class="mono">node ais-relay.mjs YOUR_KEY</span>, then <span class="mono">cloudflared tunnel --url http://localhost:8765</span> and paste the <span class="mono">wss://…</span> URL here. LAN tablets on plain HTTP may use <span class="mono">ws://192.168.x.x:8765</span>.</p>
     <div class="field">
       <label class="gps-switch-row" for="togUseGpsSettings" style="margin-bottom:6px">
         <span style="font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-weight:600">Use device GPS</span>
@@ -2092,6 +2092,9 @@ let tideSeriesMemo = { key: '', stepMs: 0, pts: null, events: null };
 let aisVessels = {};
 let aisWs = null, aisConnected = false, map = null, boatMarker = null, aisLayer = null;
 let aisMarkers = {}, aisPinnedMmsi = null, aisRefreshing = false;
+let aisReconnectTimer = null, aisConnectTimer = null, aisBackoffMs = 2000;
+let aisDirectBlocked = false, aisMixedContent = false, aisReconnectAttempt = 0;
+let aisStatusHint = '';
 let shippingLanesLayer = null, shippingLanesVisible = store.get('aisShippingLanes') !== '0';
 let mapInited = false;
 let swellMap = null, swellMapInited = false, swellRayLayer = null, swellObstLayer = null, swellBuoyLayer = null, swellBoatMarker = null;
@@ -2324,7 +2327,17 @@ function saveSettings(){
     manualLat: settings.manualLat,
     manualLon: settings.manualLon
   });
-  if(settings.aisKey) reconnectAis();
+  if(settings.aisKey || settings.aisRelay){
+    aisDirectBlocked = false;
+    aisMixedContent = false;
+    aisBackoffMs = 2000;
+    aisReconnectAttempt = 0;
+    closeAisSocket(true);
+    reconnectAis();
+  } else {
+    closeAisSocket(true);
+    updateAisStatus();
+  }
 }
 
 function setBanner(msg, type){
@@ -11058,7 +11071,9 @@ function uwAisStatusText(){
   }
   const ws = aisWs ? ['connecting','open','closing','closed'][aisWs.readyState] : 'none';
   if(!settings.aisKey && !settings.aisRelay) return 'Add AIS key in Settings';
-  if(ws !== 'open') return 'AIS '+ws+' · '+count+' cached';
+  if(aisMixedContent) return 'Need wss:// relay · '+count+' cached';
+  if(aisDirectBlocked && !aisUsesRelay()) return 'Need relay · '+count+' cached';
+  if(ws !== 'open') return (count ? count+' cached · reconnecting' : 'AIS reconnecting');
   if(aisStats.rx === 0) return 'AIS subscribed · waiting for data';
   const inView = nearbyAisContacts(uwRadarView.rangeNm).length;
   return inView+' in '+f1(uwRadarView.rangeNm)+' nm'+(stale ? ' · '+stale+' stale (>3m)' : '');
@@ -11540,11 +11555,81 @@ function aisColor(age){
 
 function loadAisCache(){
   const c = store.json('boatCache:ais', {});
-  if(c.vessels) aisVessels = c.vessels;
+  if(!c || !c.vessels) return;
+  const now = Date.now();
+  const kept = {};
+  for(const id in c.vessels){
+    const v = c.vessels[id];
+    if(!v || v.lat == null || v.lon == null) continue;
+    /* Keep up to 6h so mobile can paint last-known tracks after a WS drop */
+    if(v.lastRx && (now - v.lastRx) > 6 * HR) continue;
+    kept[id] = v;
+  }
+  aisVessels = kept;
 }
 
 function saveAisCache(){
-  store.jset('boatCache:ais', { at:Date.now(), vessels:aisVessels });
+  try{
+    store.jset('boatCache:ais', { at:Date.now(), vessels:aisVessels });
+  }catch(e){ /* quota / private mode */ }
+}
+
+function aisLiveVesselCount(){
+  const now = Date.now();
+  let count = 0;
+  for(const id in aisVessels){
+    if(aisDisplayState(aisVessels[id], now).age <= 3600) count++;
+  }
+  return count;
+}
+
+function clearAisReconnectTimer(){
+  if(aisReconnectTimer){ clearTimeout(aisReconnectTimer); aisReconnectTimer = null; }
+}
+function clearAisConnectTimer(){
+  if(aisConnectTimer){ clearTimeout(aisConnectTimer); aisConnectTimer = null; }
+}
+function scheduleAisReconnect(delayMs){
+  clearAisReconnectTimer();
+  const wait = delayMs != null ? delayMs : aisBackoffMs;
+  aisReconnectTimer = setTimeout(()=>{
+    aisReconnectTimer = null;
+    reconnectAis();
+  }, wait);
+}
+function aisUsesRelay(){
+  return !!(settings.aisRelay && settings.aisRelay.trim());
+}
+function aisRelayUrlRaw(){
+  return settings.aisRelay ? settings.aisRelay.trim() : '';
+}
+function aisIsPrivateHost(host){
+  const h = String(host || '').toLowerCase().replace(/[\[\]]/g, '');
+  if(h === 'localhost' || h === '127.0.0.1' || h === '::1') return true;
+  if(/^192\.168\./.test(h) || /^10\./.test(h)) return true;
+  if(/^172\.(1[6-9]|2\d|3[0-1])\./.test(h)) return true;
+  return false;
+}
+/** Normalize relay / direct URL. Empty string = cannot connect from this page. */
+function aisNormalizeWsUrl(raw){
+  let url = String(raw || '').trim();
+  if(!url) return '';
+  if(/^https:\/\//i.test(url)) url = 'wss://' + url.slice(8);
+  else if(/^http:\/\//i.test(url)) url = 'ws://' + url.slice(7);
+  if(location.protocol === 'https:' && /^ws:\/\//i.test(url)){
+    try{
+      const u = new URL(url.replace(/^ws/i, 'http'));
+      /* LAN ws:// is mixed-content blocked on GitHub Pages / HTTPS mobile */
+      if(aisIsPrivateHost(u.hostname)) return '';
+      url = 'wss://' + url.slice(5);
+    }catch(e){ return ''; }
+  }
+  return url;
+}
+function aisMixedContentBlocked(){
+  const raw = aisRelayUrlRaw();
+  if(!raw || location.protocol !== 'https:') return false;
+  return !aisNormalizeWsUrl(raw) && /^wss?:\/\//i.test(raw.replace(/^https/i,'wss').replace(/^http/i,'ws'));
 }
 
 function mdOf(msg){
@@ -11576,7 +11661,7 @@ async function handleAisFrame(raw){
   aisStats.lastRx = Date.now();
   aisStats.lastErr = '';
   updateAisMarkers();
-  if(aisStats.rx % 20 === 0) saveAisCache();
+  if(aisStats.rx === 1 || aisStats.rx % 10 === 0) saveAisCache();
 }
 
 function aisBody(msg){
@@ -11654,12 +11739,19 @@ function updateAisStatus(){
     if(ds.drActive) dr++;
   }
   const ws = aisWs ? ['connecting','open','closing','closed'][aisWs.readyState] : 'none';
-  if(!settings.aisKey && !settings.aisRelay) st.textContent = 'Add AISStream key or relay URL in Settings';
-  else if(ws !== 'open') st.textContent = 'WebSocket '+ws+' · '+count+' cached vessels';
-  else if(!aisStats.subSent) st.textContent = 'Connected — sending subscription…';
-  else if(aisStats.rx === 0) st.textContent = 'Subscribed — waiting for AIS ('+ws+')…';
+  if(!settings.aisKey && !settings.aisRelay){
+    st.textContent = 'Add AISStream key + wss:// relay in Settings';
+  } else if(aisMixedContent){
+    st.textContent = (count ? count+' cached · ' : '')+'HTTPS page needs wss:// relay (not ws:// LAN)';
+  } else if(aisDirectBlocked && !aisUsesRelay()){
+    st.textContent = (count ? count+' cached · ' : '')+'AISStream blocks browsers — set wss:// relay in Settings';
+  } else if(ws !== 'open'){
+    st.textContent = count
+      ? count+' cached vessels · reconnecting…'
+      : (aisStatusHint || 'Connecting to AIS…');
+  } else if(!aisStats.subSent) st.textContent = 'Connected — sending subscription…';
+  else if(aisStats.rx === 0) st.textContent = 'Subscribed — waiting for AIS…';
   else st.textContent = count+' vessels · '+aisStats.rx+' msgs · '+(dr?dr+' DR · ':'')+(stale?stale+' stale (>3m) · ':'')+(aisStats.lastRx ? fmtAge(Math.round((now-aisStats.lastRx)/1000))+' ago' : '');
-  if(aisStats.lastErr) st.textContent += ' · err: '+aisStats.lastErr.slice(0,40);
 }
 
 const AIS_POPUP_OPTS = { autoClose: false, closeOnClick: false, maxWidth: 280 };
@@ -11763,7 +11855,12 @@ function updateAisMarkers(){
 }
 
 function aisWsUrl(){
-  if(settings.aisRelay && settings.aisRelay.trim()) return settings.aisRelay.trim();
+  if(aisUsesRelay()){
+    const url = aisNormalizeWsUrl(aisRelayUrlRaw());
+    aisMixedContent = !url && !!aisRelayUrlRaw() && location.protocol === 'https:';
+    return url;
+  }
+  aisMixedContent = false;
   return 'wss://stream.aisstream.io/v0/stream';
 }
 
@@ -11774,7 +11871,8 @@ function sendAisSubscription(){
   const d = AIS_BBOX_DEG;
   const bb = [[lat - d, lon - d], [lat + d, lon + d]];
   const sub = { BoundingBoxes: [bb] };
-  if(!settings.aisRelay){
+  /* Relay injects the API key server-side; only send key for direct (usually blocked) */
+  if(!aisUsesRelay()){
     sub.APIKey = settings.aisKey;
     sub.Apikey = settings.aisKey;
   }
@@ -11792,18 +11890,72 @@ function updateAisBbox(){
   sendAisSubscription();
 }
 
-function reconnectAis(){
-  if(aisWs && (aisWs.readyState === WebSocket.CONNECTING || aisWs.readyState === WebSocket.OPEN)) return;
-  if(aisWs){ try{aisWs.close();}catch(e){} aisWs=null; }
+function closeAisSocket(silent){
+  clearAisConnectTimer();
+  if(!aisWs) return;
+  try{
+    aisWs.onopen = aisWs.onmessage = aisWs.onerror = aisWs.onclose = null;
+    if(aisWs.readyState === WebSocket.CONNECTING || aisWs.readyState === WebSocket.OPEN){
+      aisWs.close();
+    }
+  }catch(e){}
+  aisWs = null;
   aisConnected = false;
-  aisStats = { rx:0, lastRx:0, lastErr:'', subSent:false };
-  if(!settings.aisKey && !settings.aisRelay){ updateAisStatus(); return; }
+  if(!silent) updateAisStatus();
+}
+
+function reconnectAis(){
+  clearAisReconnectTimer();
+  if(aisWs && aisWs.readyState === WebSocket.OPEN) return;
+  if(aisWs && aisWs.readyState === WebSocket.CONNECTING) return;
+
+  closeAisSocket(true);
+  /* Preserve vessel cache + lastRx across reconnects — only reset stream counters */
+  const prevLastRx = aisStats.lastRx;
+  aisStats = { rx:0, lastRx: prevLastRx, lastErr:'', subSent:false };
+  aisStatusHint = '';
+
+  if(!settings.aisKey && !settings.aisRelay){
+    aisDirectBlocked = false;
+    aisMixedContent = false;
+    updateAisStatus();
+    return;
+  }
+
+  const url = aisWsUrl();
+  if(aisMixedContent || !url){
+    aisMixedContent = true;
+    aisStatusHint = 'wss:// relay required on HTTPS';
+    updateAisStatus();
+    return;
+  }
+
+  /* Direct aisstream.io from the browser is blocked at their gateway (1006). */
+  if(!aisUsesRelay() && aisDirectBlocked){
+    aisStatusHint = 'browser blocked — use relay';
+    updateAisStatus();
+    return;
+  }
 
   try{
-    aisWs = new WebSocket(aisWsUrl());
+    aisReconnectAttempt++;
+    aisWs = new WebSocket(url);
     aisWs.binaryType = 'arraybuffer';
+    aisConnectTimer = setTimeout(()=>{
+      aisConnectTimer = null;
+      if(aisWs && aisWs.readyState === WebSocket.CONNECTING){
+        try{ aisWs.close(); }catch(e){}
+      }
+    }, 12000);
     aisWs.onopen = ()=>{
+      clearAisConnectTimer();
       aisConnected = true;
+      aisBackoffMs = 2000;
+      aisReconnectAttempt = 0;
+      aisDirectBlocked = false;
+      aisMixedContent = false;
+      aisStatusHint = '';
+      aisStats.lastErr = '';
       lastBbox = '';
       sendAisSubscription();
       updateAisMarkers();
@@ -11815,10 +11967,24 @@ function reconnectAis(){
       });
     };
     aisWs.onclose = (ev)=>{
+      clearAisConnectTimer();
       aisConnected = false;
-      aisStats.lastErr = 'closed '+(ev.code||'')+' '+(ev.reason||'');
+      const code = ev.code || 0;
+      aisStats.lastErr = 'closed '+code+(ev.reason ? ' '+ev.reason : '');
+      /* Direct AISStream: browser Origin is rejected → 1006; stop hammering. */
+      if(!aisUsesRelay() && (code === 1006 || code === 1008 || code === 4401 || code === 401)){
+        aisDirectBlocked = true;
+        aisStatusHint = 'AISStream blocks browsers';
+        saveAisCache();
+        updateAisStatus();
+        return;
+      }
+      aisBackoffMs = Math.min(60000, Math.round(aisBackoffMs * 1.7));
+      aisStatusHint = aisLiveVesselCount() ? '' : 'reconnecting…';
       updateAisStatus();
-      setTimeout(reconnectAis, 10000);
+      saveAisCache();
+      if(document.visibilityState === 'hidden') return;
+      scheduleAisReconnect(aisBackoffMs);
     };
     aisWs.onerror = ()=>{
       aisConnected = false;
@@ -11827,7 +11993,9 @@ function reconnectAis(){
     };
   }catch(e){
     aisStats.lastErr = e.message;
-    setBanner('AIS WebSocket failed: '+esc(e.message),'err');
+    aisStatusHint = e.message;
+    updateAisStatus();
+    scheduleAisReconnect(aisBackoffMs);
   }
 }
 
@@ -13535,9 +13703,7 @@ function bindUI(){
       updateGpsPill(); syncLocationUi(); refreshBoatMarkers();
     }
     scheduleGpsUiRefresh();
-    aisStats = { rx:0, lastRx:0, lastErr:'', subSent:false };
-    if(aisWs){ try{aisWs.close();}catch(e){} aisWs=null; }
-    reconnectAis();
+    /* saveSettings() already resets AIS connection */
   });
 }
 
@@ -13619,8 +13785,22 @@ function boot(){
     saveAisCache();
   }, 5000);
 
-  window.addEventListener('online', ()=>{ offline=false; refreshForecasts(true); reconnectAis(); });
-  window.addEventListener('offline', ()=>{ offline=true; setBanner('<strong>Offline.</strong> Showing cached forecasts & last AIS positions.',''); });
+  window.addEventListener('online', ()=>{
+    offline=false;
+    refreshForecasts(true);
+    aisBackoffMs = 2000;
+    if(aisDirectBlocked && !aisUsesRelay()) updateAisStatus();
+    else reconnectAis();
+  });
+  window.addEventListener('offline', ()=>{ offline=true; saveAisCache(); setBanner('<strong>Offline.</strong> Showing cached forecasts & last AIS positions.',''); });
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState === 'hidden'){ saveAisCache(); return; }
+    if(aisWs && aisWs.readyState === WebSocket.OPEN) return;
+    if(aisDirectBlocked && !aisUsesRelay()) return;
+    aisBackoffMs = Math.min(aisBackoffMs, 3000);
+    scheduleAisReconnect(500);
+  });
+  window.addEventListener('pagehide', ()=> saveAisCache());
 
   /* Restore last tab after Overview shell paints (avoids map/Windy work before first frame) */
   const lastTab = store.get('boatLastTab');
@@ -13633,9 +13813,12 @@ function boot(){
     });
   }
 
+  loadAisCache();
+  updateAisStatus();
+
   if(!settings.aisKey && !settings.aisRelay){
-    setBanner('Tap ⚙ Settings — add your <strong>AISStream API key</strong>, or run <span class="mono">node ais-relay.mjs</span> and paste the relay URL.','');
-  } else setTimeout(()=> reconnectAis(), 2500);
+    setBanner('Tap ⚙ Settings — add a <strong>wss:// AIS relay</strong> (AISStream blocks browsers). On HTTPS / phone use cloudflared, not ws:// LAN.','');
+  } else setTimeout(()=> reconnectAis(), 1200);
 
   $('ovLinks').innerHTML =
     linkHtml('https://cdip.ucsd.edu/m/forecast/model_grid/?wave_model=socal','CDIP SoCal','Nearshore swell grid')+
