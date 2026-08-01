@@ -114,6 +114,12 @@
     ci_rockfish_3: 'shiprock',
     oc_pinnacles: 'strandsoff',
     danahardbottom: 'strandsoff',
+    golfballreef: 'golfball',
+    merrysreef: 'merrysreef',
+    hawthornereef: 'hawthorne',
+    thirtysevenfathomspot: 'horseshoe',
+    fortyfathomcurve: 'horseshoe',
+    fortysevenfathomridge: 'horseshoe',
     cat_littlegeiger: 'goatharbor', cat_littlefarnsworth: 'farnsworth', cat_garibaldireef: 'casino',
     cat_doctorscove: 'goatharbor', cat_lulureef: 'birdrock', cat_nooksandcrannies: 'shiprock'
   };

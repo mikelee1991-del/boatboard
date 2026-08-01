@@ -437,7 +437,15 @@
     { id: 'ci_rockfish_2', name: 'CI - Rockfish #2', lat: 33.4647, lon: -118.6195, face: 270, depth: 75, boat: true, regional: true, kmlImported: true, userTrusted: true },
     { id: 'ci_rockfish_3', name: 'CI - Rockfish #3', lat: 33.464, lon: -118.6138, face: 270, depth: 75, boat: true, regional: true, kmlImported: true, userTrusted: true },
     { id: 'oc_pinnacles', name: 'Pinnacles', lat: 33.53, lon: -117.7808, face: 200, depth: 75, boat: true, regional: true, kmlImported: true, userTrusted: true },
-    { id: 'danahardbottom', name: 'Dana Hard Bottom', lat: 33.445, lon: -117.6833, face: 200, depth: 75, boat: true, regional: true, kmlImported: true, userTrusted: true }
+    { id: 'danahardbottom', name: 'Dana Hard Bottom', lat: 33.445, lon: -117.6833, face: 200, depth: 75, boat: true, regional: true, kmlImported: true, userTrusted: true },
+    /* —— Bluff Cove / Haggerty's / Honeymoon PV (diver.net published DMS verbatim — same Max Bottomtime table as Crane/Resort/Kevin) —— */
+    { id: 'golfballreef', name: 'Golf Ball Reef — Haggerty\'s / Bluff Cove', lat: 33.80825, lon: -118.4094833, face: 250, depth: 40, boat: true, userTrusted: true },
+    { id: 'merrysreef', name: 'Merry\'s Reef — Honeymoon Cove offshore', lat: 33.7641, lon: -118.4268667, face: 220, depth: 55, boat: true, userTrusted: true },
+    { id: 'hawthornereef', name: 'Hawthorne Reef (Barberpole) — PV', lat: 33.7469, lon: -118.4205667, face: 225, depth: 85, boat: true, userTrusted: true },
+    /* —— Local KML banks near PV / SMB (pin-trust yes; coords verbatim from FISH_SPOTS) —— */
+    { id: 'thirtysevenfathomspot', name: '37 Fathom Spot', lat: 33.7967, lon: -118.4558, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true },
+    { id: 'fortyfathomcurve', name: '40 Fathom Curve', lat: 33.7808, lon: -118.4667, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true },
+    { id: 'fortysevenfathomridge', name: '47 Fathom Ridge', lat: 33.7878, lon: -118.4903, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true }
   ];
 
   /** Pre-dive briefing — loaded from dive-briefings-data.js (sectioned { h, body[] } per site). */
