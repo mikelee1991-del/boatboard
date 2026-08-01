@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "name": "bluetopo-smoke-palosverdes",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Smoke AOI — Palos Verdes / San Pedro (delivered BlueTopo samples)",
+        "why": "King Harbor scheme tile is not delivered on S3 yet; PV has 2 m UTM 11 GeoTIFFs suitable for a small PMTiles smoke build."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-118.36, 33.68],
+            [-118.12, 33.68],
+            [-118.12, 33.80],
+            [-118.36, 33.80],
+            [-118.36, 33.68]
+          ]
+        ]
+      }
+    }
+  ]
+}

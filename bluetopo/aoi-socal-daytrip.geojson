@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "name": "bluetopo-socal-daytrip",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "SoCal day-trip AOI — King Harbor / PV / Catalina-ish",
+        "note": "Scheme covers this box; many cells (including King Harbor BH46G5B7) may still lack delivered GeoTIFFs. Fetch only downloads what NOAA has published."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-118.65, 33.25],
+            [-117.90, 33.25],
+            [-117.90, 34.10],
+            [-118.65, 34.10],
+            [-118.65, 33.25]
+          ]
+        ]
+      }
+    }
+  ]
+}

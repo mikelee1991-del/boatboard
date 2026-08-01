@@ -1,0 +1,50 @@
+# Build SoCal BlueTopo smoke PMTiles and attach to a GitHub Release (manual).
+name: bluetopo-tiles
+
+on:
+  workflow_dispatch:
+    inputs:
+      aoi:
+        description: 'AOI: smoke (Palos Verdes) or daytrip'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+          - smoke
+          - daytrip
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build PMTiles (Docker)
+        run: |
+          docker build -t boatboard-bluetopo bluetopo
+          mkdir -p bluetopo/out
+          docker run --rm -v "$PWD/bluetopo/out:/out" boatboard-bluetopo ${{ inputs.aoi }}
+          ls -lh bluetopo/out
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bluetopo-${{ inputs.aoi }}
+          path: bluetopo/out/*
+          if-no-files-found: error
+
+      - name: Publish GitHub Release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="bluetopo-${{ inputs.aoi }}-$(date -u +%Y%m%d)"
+          FILE=$(ls bluetopo/out/bluetopo-*.pmtiles | head -n1)
+          BASE=$(basename "$FILE")
+          gh release create "$TAG" "$FILE" bluetopo/out/MANIFEST-*.txt \
+            --title "BlueTopo $TAG" \
+            --notes "Self-hosted BlueTopo hillshade PMTiles for BoatBoard On site. Set bluetopo/config.json pmtilesUrl to the asset URL. Not for navigation."
+          echo "Release $TAG — asset $BASE"
+          echo "Suggested pmtilesUrl: https://github.com/${{ github.repository }}/releases/download/${TAG}/${BASE}"

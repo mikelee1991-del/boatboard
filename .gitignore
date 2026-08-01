@@ -32,3 +32,8 @@ temp-dashboard-script.js
 dist/
 Temp/
 *.bak
+
+# BlueTopo build outputs (host off-repo: R2 / GitHub Release)
+bluetopo/out/
+*.pmtiles
+ais-relay-worker/.wrangler/

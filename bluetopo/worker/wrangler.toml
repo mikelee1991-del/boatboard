@@ -1,0 +1,10 @@
+name = "boatboard-bluetopo-tiles"
+main = "src/worker.js"
+compatibility_date = "2024-11-01"
+workers_dev = true
+
+# Create bucket once:  npx wrangler r2 bucket create boatboard-bluetopo
+# Upload:              npx wrangler r2 object put boatboard-bluetopo/bluetopo-smoke-palosverdes.pmtiles --file=./out/bluetopo-smoke-palosverdes.pmtiles
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "boatboard-bluetopo"

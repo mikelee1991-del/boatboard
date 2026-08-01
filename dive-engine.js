@@ -1757,6 +1757,111 @@
       '<div class="dive-trends-row">' + sparks.join('') + '</div></div>';
   }
 
+  /** Hourly dive-score series for selected site (matches tide chart −18h / +72h). */
+  function diveScoreSeries(site, opts) {
+    opts = opts || {};
+    const backHr = opts.backHr != null ? opts.backHr : (typeof window.TIDE_CHART_BACK_HR === 'number' ? window.TIDE_CHART_BACK_HR : 18);
+    const fwdHr = opts.fwdHr != null ? opts.fwdHr : (typeof window.TIDE_CHART_FWD_HR === 'number' ? window.TIDE_CHART_FWD_HR : 72);
+    const stepHr = opts.stepHr != null ? opts.stepHr : 1;
+    const now = opts.nowMs != null ? opts.nowMs : Date.now();
+    const tMin = now - backHr * HR;
+    const tMax = now + fwdHr * HR;
+    const pts = [];
+    let used = 0, n = 0, missingTide = 0;
+    for (let t = tMin; t <= tMax + 1; t += stepHr * HR) {
+      n++;
+      const m = snapshotAt(site, t);
+      if (!m.ok.marine && !m.ok.wx) continue;
+      if (!m.ok.tides) missingTide++;
+      used++;
+      const R = scoreDive(site, m);
+      pts.push({ t, v: R.composite });
+    }
+    return {
+      pts, tMin, tMax,
+      coverage: { scored: used, slots: n, missingTide }
+    };
+  }
+
+  function diveScoreHonestyNote(site, cov) {
+    const parts = [
+      'Y-axis: Dive score 0–100 for ' + (site && site.name ? site.name : 'selected site') + ' (same composite as the site rating — surge, vis, wind, runoff, tide).',
+      'Window matches the tide plot (−18 h / +72 h), sampled hourly at this site’s facing/depth.'
+    ];
+    if (cov && cov.missingTide > 0) {
+      parts.push('Some hours score without the tide factor when NOAA predictions don’t cover that time.');
+    }
+    parts.push('Surge/vis/wind use Open-Meteo marine & weather forecasts — model estimate, not a cam or in-water reading.');
+    return parts.join(' ');
+  }
+
+  function renderDiveScoreChart(site) {
+    const host = $('diveScoreChart');
+    if (!host) return;
+    if (!site || !S) {
+      host.innerHTML = '<div class="skel">Select a site to load dive score forecast…</div>';
+      const nowEl = $('diveScoreChartNow');
+      if (nowEl) nowEl.textContent = '—';
+      return;
+    }
+    const api = window.BoatForecastCharts;
+    const paint = function (charts) {
+      if (!charts || !charts.renderScoreChart) {
+        host.innerHTML = '<div class="skel">Chart module failed to load</div>';
+        return;
+      }
+      const series = diveScoreSeries(site);
+      if (series.pts.length < 2) {
+        host.innerHTML = '<div class="skel">Need marine/weather data for dive score forecast</div>';
+        return;
+      }
+      const daily = (typeof window.tideSunDailyForRange === 'function')
+        ? window.tideSunDailyForRange(series.tMin, series.tMax)
+        : null;
+      charts.renderScoreChart({
+        host,
+        nowEl: $('diveScoreChartNow'),
+        metaEl: $('diveScoreChartMeta'),
+        noteEl: $('diveScoreChartNote'),
+        pts: series.pts,
+        tMin: series.tMin,
+        tMax: series.tMax,
+        yLabel: 'Dive /100',
+        stroke: 'var(--accent2)',
+        fillId: 'diveScoreFill',
+        scoreColor: diveScoreColor,
+        goodAt: 75,
+        fairAt: 50,
+        daily,
+        dayNightBands: typeof window.wxChartDayNightBands === 'function' ? window.wxChartDayNightBands : null,
+        sunMarkers: typeof window.wxChartSunMarkers === 'function' ? window.wxChartSunMarkers : null,
+        note: diveScoreHonestyNote(site, series.coverage),
+        CHART: window.CHART,
+        WX_C: window.WX_C,
+        HR: HR,
+        clamp: clamp,
+        f0: f0,
+        f1: f1,
+        esc: esc,
+        fmtDayTime: typeof window.fmtDayTime === 'function'
+          ? window.fmtDayTime
+          : function (d) { return fmtDay(d) + ' ' + fmtTime(d); }
+      });
+    };
+    if (api) {
+      paint(api);
+      return;
+    }
+    host.innerHTML = '<div class="skel">Loading dive forecast…</div>';
+    if (typeof window.ensureForecastCharts === 'function') {
+      window.ensureForecastCharts().then(paint).catch(function () {
+        host.innerHTML = '<div class="skel">Dive score chart unavailable</div>';
+      });
+    } else {
+      host.innerHTML = '<div class="skel">Dive score chart unavailable</div>';
+    }
+  }
+
   function briefingBlockHtml(block) {
     if (typeof block === 'string') return '<p>' + esc(block) + '</p>';
     if (!block || !block.h) return '';
@@ -1843,6 +1948,7 @@
       '</div>' +
       '<div class="sec">Bathymetry &amp; maps</div>' +
       linkHtml('https://www.google.com/maps/@' + site.lat + ',' + site.lon + ',14z/data=!5m1!1e4', 'Google Maps · depth layer', 'Satellite terrain near ' + esc(site.name)) +
+      linkHtml('https://nowcoast.noaa.gov/', 'NOAA BlueTopo (nowCOAST)', 'National Bathymetric Source — On site BlueTopo relief') +
       linkHtml('https://www.ncei.noaa.gov/maps/bathymetry/', 'NOAA NCEI bathymetry', 'Regional seafloor charts') +
       linkHtml('https://maps.google.com/?q=' + q, 'Open coordinates', 'Navigation & satellite view') +
       linkHtml('https://wildlife.ca.gov/Fishing/Ocean/Regulations/Fishing-Map', 'CDFW marine map', 'MPA & closure boundaries');
@@ -2178,6 +2284,9 @@
     renderHero(current, m, R);
     renderFactors(R.factors);
     renderTrends(current, when);
+    setTimeout(function () {
+      try { renderDiveScoreChart(current); } catch (e) { console.error('renderDiveScoreChart', e); }
+    }, 40);
     renderTideCurve(when);
     renderSiteGuide();
     renderSiteIntel(current, m);
@@ -2384,6 +2493,7 @@
     renderSiteGuide,
     renderSiteIntel,
     renderTrends,
+    renderDiveScoreChart,
     renderHabBanner,
     fetchHabAlert,
     recommendHeadings,

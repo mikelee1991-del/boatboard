@@ -3,21 +3,15 @@
  * On-site bathymetry chart (Fish + Dive + Fish Plan) — Leaflet.
  *
  * Tile sources (attribution on the map control):
- *   1. NOAA NCEI DEM ColorHillshade (ImageServer exportImage → Leaflet tiles)
- *      DEM_global_mosaic_hillshade — real shaded-relief bathy/topo (~few m cells).
- *      Default On site basemap when preferDem is set. CORS *.
- *   2. NOAA ENC Online WMS — chart soundings / schematic symbols (toggle).
- *   3. Esri World Ocean Base + Reference — regional tint (Plan default).
- *   4. OpenSeaMap seamarks · Esri World Imagery · CDFW kelp GeoJSON.
+ *   1. BlueTopo relief (default On site when preferDem) — real NOAA NBS BlueTopo
+ *      hillshade via nowCOAST WMTS, optionally self-hosted PMTiles (bluetopo/config.json).
+ *      Stacked over NCEI DEM; undelivered BlueTopo cells are transparent PNGs.
+ *   2. NOAA NCEI DEM ColorHillshade — coastal mosaic underlay / solo toggle.
+ *   3. NOAA ENC Online WMS — chart soundings / schematic symbols.
+ *   4. Esri World Ocean Base + Reference — regional tint (Plan default).
+ *   5. OpenSeaMap seamarks · Esri World Imagery · CDFW kelp GeoJSON.
  *
- * Investigated / not shipped as default:
- *   - CUDEM DEM_tiles_mosaic — empty at SoCal King Harbor / PV / Catalina test AOIs
- *   - nowCOAST blended bathy — 403
- *   - OpenSeaMap depth XYZ — empty tiles at test coords
- *   - OpenWaters Seascape — Terrarium DEM + MVT contours (needs MapLibre/VectorGrid;
- *     not a drop-in image basemap). Contours max z14.
- *   - NOS hydro / multibeam MapServers — survey footprints only, not depth imagery
- *   - BlueTopo/NBS — best meter-scale source, but GeoTIFF download / self-host tiles
+ * Self-host pipeline: bluetopo/README.md (Docker → PMTiles → R2 Worker).
  *
  * Fit: On site ONSITE_FIT_FT = 1300 ft (~0.21 nm); Plan PLAN_FIT_NM = 2.5.
  * Not for navigation.
@@ -53,6 +47,15 @@
   const NCEI_DEM_ATTR =
     'NOAA NCEI DEM ColorHillshade — coastal bathy/topo mosaic; not for navigation';
 
+  /* nowCOAST GeoServer GWC — real BlueTopo hillshade (REST = TileMatrix/TileRow/TileCol).
+   * Leaflet template uses {z}/{y}/{x}. Empty / undelivered cells are fully transparent PNG8. */
+  const BLUETOPO_WMTS =
+    'https://nowcoast.noaa.gov/geoserver/gwc/service/wmts/rest/bluetopo:hillshade/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8';
+  const BLUETOPO_ATTR =
+    'NOAA BlueTopo (NBS) © Office of Coast Survey — not for navigation';
+  const BLUETOPO_CONFIG_URL = 'bluetopo/config.json';
+  const PMTILES_CDN = 'https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js';
+
   const OCEAN_BASE =
     'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}';
   const OCEAN_REF =
@@ -71,6 +74,8 @@
   const kelpCache = new Map();
   let loadLeafletFn = null;
   let fetchJSON = null;
+  let blueTopoConfigP = null;
+  let pmtilesLibP = null;
 
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
   function f1(v) { return v == null || !isFinite(v) ? '—' : (Math.round(v * 10) / 10).toFixed(1); }
@@ -201,6 +206,7 @@
 
   function buildLegendHtml(mode) {
     const basemap =
+      mode === 'bt' ? '<span><i style="background:#5a8a78"></i>BlueTopo relief</span>' :
       mode === 'dem' ? '<span><i style="background:#1a6b7a"></i>NCEI DEM relief</span>' :
       mode === 'enc' ? '<span><i style="background:#9ec4dc"></i>NOAA ENC soundings</span>' :
       '<span><i style="background:#2a4a62"></i>Esri Ocean Base</span>';
@@ -214,6 +220,90 @@
       '<span><i style="background:#c4a574"></i>Rock</span>' +
       '<span><i style="background:rgba(35,175,85,.65)"></i>Kelp beds (CDFW)</span>' +
       '</div>';
+  }
+
+  function loadScriptOnce(src) {
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-seafloor-src="' + src + '"]');
+      if (existing) {
+        if (existing.getAttribute('data-loaded') === '1') resolve();
+        else existing.addEventListener('load', () => resolve(), { once: true });
+        return;
+      }
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.setAttribute('data-seafloor-src', src);
+      s.onload = () => { s.setAttribute('data-loaded', '1'); resolve(); };
+      s.onerror = () => reject(new Error('Failed to load ' + src));
+      document.head.appendChild(s);
+    });
+  }
+
+  function loadBlueTopoConfig() {
+    if (blueTopoConfigP) return blueTopoConfigP;
+    blueTopoConfigP = (async () => {
+      const fallback = {
+        pmtilesUrl: '',
+        wmtsEnabled: true,
+        layerLabel: 'BlueTopo relief'
+      };
+      try {
+        const url = (typeof global.BLUETOPO_CONFIG_URL === 'string' && global.BLUETOPO_CONFIG_URL) ||
+          BLUETOPO_CONFIG_URL;
+        const r = await fetch(url, { cache: 'no-cache' });
+        if (!r.ok) return fallback;
+        const j = await r.json();
+        return {
+          pmtilesUrl: typeof j.pmtilesUrl === 'string' ? j.pmtilesUrl.trim() : '',
+          wmtsEnabled: j.wmtsEnabled !== false,
+          layerLabel: typeof j.layerLabel === 'string' && j.layerLabel ? j.layerLabel : 'BlueTopo relief'
+        };
+      } catch (e) {
+        return fallback;
+      }
+    })();
+    return blueTopoConfigP;
+  }
+
+  async function ensurePmtilesLib() {
+    if (global.pmtiles?.PMTiles && global.pmtiles?.leafletRasterLayer) return global.pmtiles;
+    if (!pmtilesLibP) {
+      pmtilesLibP = loadScriptOnce(PMTILES_CDN).then(() => {
+        if (!global.pmtiles?.PMTiles || !global.pmtiles?.leafletRasterLayer) {
+          throw new Error('pmtiles.js loaded without leafletRasterLayer');
+        }
+        return global.pmtiles;
+      });
+    }
+    return pmtilesLibP;
+  }
+
+  /** Real BlueTopo hillshade: self-hosted PMTiles if configured, else nowCOAST WMTS. */
+  async function makeBlueTopoOverlay(cfg) {
+    if (cfg?.pmtilesUrl) {
+      try {
+        const P = await ensurePmtilesLib();
+        const tiles = new P.PMTiles(cfg.pmtilesUrl);
+        return P.leafletRasterLayer(tiles, {
+          maxZoom: 19,
+          maxNativeZoom: 16,
+          minZoom: 8,
+          attribution: BLUETOPO_ATTR + ' (PMTiles)',
+          opacity: 1
+        });
+      } catch (e) {
+        console.warn('BlueTopo PMTiles unavailable, trying WMTS', e);
+      }
+    }
+    if (cfg && cfg.wmtsEnabled === false) return null;
+    return L.tileLayer(BLUETOPO_WMTS, {
+      maxZoom: 19,
+      maxNativeZoom: 18,
+      minZoom: 8,
+      attribution: BLUETOPO_ATTR,
+      opacity: 1
+    });
   }
 
   function ensureShell(host, mode) {
@@ -255,9 +345,10 @@
     });
   }
 
-  function addBaseLayers(map, opts) {
+  async function addBaseLayers(map, opts) {
     const preferDem = !!opts.preferDem;
     const preferEnc = !preferDem && !!opts.preferEnc;
+    const preferBlueTopo = preferDem && !!opts.blueTopoLayer;
     /* Ocean Base native tiles stop at z16; allow upscale so pinch-in stays useful locally. */
     const ocean = L.tileLayer(OCEAN_BASE, {
       maxNativeZoom: 16,
@@ -284,8 +375,9 @@
       attribution: SEAMARK_ATTR,
       opacity: 0.9
     });
-    const dem = makeNceiDemLayer();
-    /* ENC WMS: one GetMap per Leaflet tile — fine at On site zoom (few tiles). */
+    /* Separate DEM instances — Leaflet cannot share one layer across two base entries. */
+    const demSolo = makeNceiDemLayer();
+    const demUnderBt = makeNceiDemLayer();
     const enc = L.tileLayer.wms(ENC_WMS, {
       layers: ENC_LAYERS,
       format: 'image/png',
@@ -298,19 +390,32 @@
       uppercase: true
     });
 
+    let blueTopoGroup = null;
+    const btLabel = opts.blueTopoLabel || 'BlueTopo relief';
+    if (opts.blueTopoLayer) {
+      blueTopoGroup = L.layerGroup([demUnderBt, opts.blueTopoLayer]);
+    }
+
+    function anyDetailBase() {
+      return (blueTopoGroup && map.hasLayer(blueTopoGroup)) ||
+        map.hasLayer(demSolo) || map.hasLayer(enc) ||
+        map.hasLayer(oceanGroup) || map.hasLayer(imagery);
+    }
+
     function ensureFallback(removeLayer) {
       if (map.hasLayer(removeLayer)) map.removeLayer(removeLayer);
-      if (!map.hasLayer(dem) && !map.hasLayer(enc) && !map.hasLayer(oceanGroup) && !map.hasLayer(imagery)) {
-        oceanGroup.addTo(map);
+      if (!anyDetailBase()) {
+        if (blueTopoGroup) blueTopoGroup.addTo(map);
+        else demSolo.addTo(map);
       }
     }
 
     let demErr = 0; let demFb = false;
-    dem.on('tileerror', () => {
+    demSolo.on('tileerror', () => {
       demErr++;
       if (demFb || demErr < 6) return;
       demFb = true;
-      ensureFallback(dem);
+      ensureFallback(demSolo);
     });
     let encErr = 0; let encFb = false;
     enc.on('tileerror', () => {
@@ -325,16 +430,18 @@
       if (oceanFb || oceanErr < 5) return;
       oceanFb = true;
       if (map.hasLayer(oceanGroup)) map.removeLayer(oceanGroup);
-      if (!map.hasLayer(imagery) && !map.hasLayer(dem) && !map.hasLayer(enc)) imagery.addTo(map);
+      if (!anyDetailBase()) imagery.addTo(map);
     });
 
-    const bases = {
-      'NCEI DEM relief': dem,
-      'NOAA ENC detail': enc,
-      'Ocean chart': oceanGroup,
-      'Satellite': imagery
-    };
-    if (preferDem) dem.addTo(map);
+    const bases = {};
+    if (blueTopoGroup) bases[btLabel] = blueTopoGroup;
+    bases['NCEI DEM relief'] = demSolo;
+    bases['NOAA ENC detail'] = enc;
+    bases['Ocean chart'] = oceanGroup;
+    bases['Satellite'] = imagery;
+
+    if (preferBlueTopo && blueTopoGroup) blueTopoGroup.addTo(map);
+    else if (preferDem) demSolo.addTo(map);
     else if (preferEnc) enc.addTo(map);
     else oceanGroup.addTo(map);
     seamarks.addTo(map);
@@ -345,7 +452,10 @@
       collapsed: true
     }).addTo(map);
 
-    return { oceanGroup, imagery, seamarks, enc, dem, layersControl };
+    return {
+      oceanGroup, imagery, seamarks, enc, dem: demSolo,
+      blueTopoGroup, layersControl, usingBlueTopo: !!(preferBlueTopo && blueTopoGroup)
+    };
   }
 
   function paintMarkers(st, opts) {
@@ -482,7 +592,21 @@
         (opts.preferDem !== false && opts.preferEnc !== true &&
           (opts.radiusNm == null || opts.radiusNm <= 0.5));
       const preferEnc = !preferDem && (opts.preferEnc === true);
-      const mode = preferDem ? 'dem' : (preferEnc ? 'enc' : 'ocean');
+
+      const btCfg = preferDem ? await loadBlueTopoConfig() : null;
+      if (hosts.get(host)?.reqId !== reqId) return;
+      let blueTopoLayer = null;
+      if (preferDem && btCfg) {
+        try {
+          blueTopoLayer = await makeBlueTopoOverlay(btCfg);
+        } catch (e) {
+          console.warn('BlueTopo layer', e);
+        }
+      }
+      if (hosts.get(host)?.reqId !== reqId) return;
+
+      const usingBt = !!(preferDem && blueTopoLayer);
+      const mode = usingBt ? 'bt' : (preferDem ? 'dem' : (preferEnc ? 'enc' : 'ocean'));
       const { mapEl } = ensureShell(host, mode);
       let st = hosts.get(host) || { reqId, opts };
       st.reqId = reqId;
@@ -498,14 +622,21 @@
           tapTolerance: 18
         });
         L.control.attribution({ prefix: false, position: 'bottomright' }).addTo(st.map);
-        if (preferDem) {
+        if (usingBt || preferDem) {
           mapEl.classList.add('seafloor-leaflet', 'seafloor-dem');
+          if (usingBt) mapEl.classList.add('seafloor-bt');
         } else if (preferEnc) {
           mapEl.classList.add('seafloor-leaflet', 'seafloor-enc');
         } else {
           mapEl.classList.add('ocean-map-dark', 'seafloor-leaflet');
         }
-        addBaseLayers(st.map, { preferDem, preferEnc });
+        const added = await addBaseLayers(st.map, {
+          preferDem,
+          preferEnc,
+          blueTopoLayer,
+          blueTopoLabel: btCfg?.layerLabel || 'BlueTopo relief'
+        });
+        st.usingBlueTopo = added.usingBlueTopo;
         st.markers = L.layerGroup().addTo(st.map);
       }
 
@@ -532,8 +663,10 @@
       const spanLbl = radiusNm <= 0.5
         ? '~' + radiusFt + ' ft (' + f1(radiusNm) + ' nm)'
         : '~' + f1(radiusNm) + ' nm';
-      const chartLbl = preferDem ? 'NCEI DEM relief + OpenSeaMap'
-        : (preferEnc ? 'NOAA ENC detail + OpenSeaMap' : 'Esri Ocean Base + OpenSeaMap');
+      const chartLbl = st.usingBlueTopo
+        ? 'BlueTopo relief + NCEI DEM + OpenSeaMap'
+        : (preferDem ? 'NCEI DEM relief + OpenSeaMap'
+          : (preferEnc ? 'NOAA ENC detail + OpenSeaMap' : 'Esri Ocean Base + OpenSeaMap'));
       const baseMeta =
         chartLbl + ' · pinch-zoom · ' +
         nearCount + ' nearby pin' + (nearCount === 1 ? '' : 's') +

@@ -19,7 +19,7 @@ BoatBoard consolidates Southern California marine forecasts, GPS position, AIS t
 | `dive-engine.js` | Dive site library (**358 sites**), scoring (ported from DiveCast), Plan/On site rendering, dive maps, briefing UI |
 | `dive-briefings-data.js` | Pre-dive briefing content — `window.__BOAT_DIVE_BRIEFINGS__` keyed by site id |
 | `dive-site-intel.js` | Extra dive intel helpers |
-| `seafloor-render.js` | On-site Leaflet chart (NCEI DEM + ENC + Ocean + kelp) |
+| `seafloor-render.js` | On-site Leaflet chart (BlueTopo + NCEI DEM + ENC + Ocean + kelp) |
 | `coast-geo.js` | Audit-only high-res coastline (CScript pin tools). May contain phantom chords — not used by maps |
 | `coast-overlay-lite.js` | **Map display** shoreline (~100 ft, ~100 NM of slip). Loaded by dashboard |
 | `build-coast-overlay-lite.ps1` / `.js` | Rebuild overlay from OSM (`coast-osm.json`). **Do not** rebuild overlay from `coast-geo.js` |
@@ -242,11 +242,12 @@ Full enforceable rules: `.cursor/rules/water-pin-coords.mdc`.
 
 ### Seafloor (On site — dive & fish)
 `SeafloorRender` in `seafloor-render.js` (Leaflet, lazy-loaded):
-- **On site default**: NOAA NCEI `DEM_global_mosaic_hillshade` ColorHillshade via ImageServer `exportImage` tiles (real bathy/topo relief; CORS `*`). Layers also include NOAA ENC Online WMS, Esri Ocean Base, Satellite.
-- **Plan default**: Esri Ocean Base (no DEM/ENC by default — fewer heavy requests).
+- **On site default**: **BlueTopo relief** — NOAA NBS BlueTopo hillshade (nowCOAST WMTS, or self-hosted PMTiles via `bluetopo/config.json`) stacked over NCEI DEM. Undelivered BlueTopo cells are transparent. Layers also include NCEI DEM alone, NOAA ENC Online WMS, Esri Ocean Base, Satellite.
+- **Plan default**: Esri Ocean Base (no DEM/BlueTopo by default — fewer heavy requests).
 - **Overlays**: OpenSeaMap seamarks; CDFW kelp; nearby spot pins (verbatim coords).
 - **Fit**: On site `ONSITE_FIT_FT = 1300` (~0.21 nm); Plan `PLAN_FIT_NM = 2.5`.
-- **Honest limits**: CUDEM tile mosaic empty at SoCal test AOIs; BlueTopo still download-only for plotter-grade local grids. Flat shelf spots can look bland in DEM (little relief). Not for navigation.
+- **Self-host**: `bluetopo/` Docker → PMTiles → Cloudflare R2 Worker (same one-time pattern as AIS). Smoke AOI = Palos Verdes (delivered tiles); day-trip AOI docs note sparse S3 delivery (e.g. King Harbor often undelivered).
+- **Honest limits**: Not for navigation. Hillshade visualizes real elevations; plotter/ENC for decisions. CUDEM mosaic empty at some SoCal AOIs.
 
 ## Data sources
 
@@ -260,7 +261,7 @@ Full enforceable rules: `.cursor/rules/water-pin-coords.mdc`.
 | MPAs | CDFW ArcGIS MarineProtectedAreas_WebMer (SCSR) | 90-day cache |
 | AIS | AISStream via Cloudflare Worker (`ais-relay-worker/`) or local `ais-relay.mjs` | live |
 | Coastline / shadow | `coast-overlay-lite.js` (OSM) + runtime `OBSTACLES` | static |
-| Bathymetry | NCEI DEM hillshade (On site) · ENC/Ocean toggles · OpenSeaMap · CDFW kelp | on tab open |
+| Bathymetry | BlueTopo (nowCOAST WMTS / optional PMTiles) + NCEI DEM · ENC/Ocean toggles · OpenSeaMap · CDFW kelp | on tab open |
 | SST / chlorophyll | CoastWatch ERDDAP WMS (+ JSONP where needed) | tab/cache |
 | Cruise swell map | Windy embed (waves) | live iframe |
 | Underway radar imagery | Esri World Imagery tiles (same URL as plan maps) | cached per view |

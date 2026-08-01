@@ -2232,6 +2232,8 @@ let gpsTimeoutStreak = 0;
 let marine = null, wx = null, tides = null, cdipBuoys = {};
 /** In-flight NOAA tides fetch + last successful network time (ms). */
 let tidesFetchPromise = null, tidesFetchedAt = 0;
+/** Last tide fetch failure message (for empty-state UI; cleared on success). */
+let tidesLastError = '';
 /** Memoized height series from hi/lo predictions (avoid rebuild ×3 per render). */
 let tideSeriesMemo = { key: '', stepMs: 0, pts: null, events: null };
 let aisVessels = {};
@@ -2866,17 +2868,20 @@ function startGps(){
 }
 
 /* ============ fetch ============ */
-async function fetchJSON(url, timeout){
+/**
+ * Plain GET JSON — no custom headers by default.
+ * NOAA CO-OPS Allow-Headers is only X-Requested-With (+ AWS auth names). Setting
+ * Accept / User-Agent forces a CORS preflight that fails on mobile WebKit/Safari
+ * while desktop Chrome often treats the request as "simple" and skips OPTIONS.
+ * Pass opts.headers only for APIs that explicitly allow those header names.
+ */
+async function fetchJSON(url, timeout, opts){
   const ctl = new AbortController();
   const t = setTimeout(()=>ctl.abort(), timeout||14000);
   try{
-    const r = await fetch(url, {
-      signal: ctl.signal,
-      headers: {
-        Accept: 'application/geo+json, application/json',
-        'User-Agent': 'BoatBoard/1.0 (SoCal boat dashboard; local tablet use)'
-      }
-    });
+    const init = { signal: ctl.signal };
+    if(opts && opts.headers) init.headers = opts.headers;
+    const r = await fetch(url, init);
     if(!r.ok) throw new Error('HTTP '+r.status);
     return await r.json();
   } finally{ clearTimeout(t); }
@@ -3126,6 +3131,7 @@ function tidesCacheAgeMs(){
 function applyTidesData(data, fromNetwork){
   if(!data?.predictions?.length) return false;
   tides = data;
+  tidesLastError = '';
   tideSeriesMemo.key = '';
   if(fromNetwork){
     tidesFetchedAt = Date.now();
@@ -3134,6 +3140,16 @@ function applyTidesData(data, fromNetwork){
   /* SVG tide charts are costly — only paint when Tides tab is visible (switchTab paints on open). */
   try{ if(activeTab()==='tides') renderTides(); }catch(e){ console.error('renderTides', e); }
   return true;
+}
+
+function tideEmptyMsg(kind){
+  if(tidesFetchPromise){
+    return kind === 'rate' ? 'Tide rate loading…' : (kind === 'list' ? 'Loading tides…' : 'Tide chart loading…');
+  }
+  if(tidesLastError){
+    return 'NOAA tides unavailable — '+tidesLastError+'. Pull to refresh or open the NOAA link below.';
+  }
+  return kind === 'rate' ? 'Tide rate unavailable' : (kind === 'list' ? 'No tide data' : 'Tide chart unavailable');
 }
 
 /** NOAA hi/lo only — starts immediately (does not wait for marine/wx). Dedupes in-flight + fresh cache. */
@@ -3157,12 +3173,19 @@ async function refreshTides(force){
 
   tidesFetchPromise = (async ()=>{
     try{
-      const data = await fetchJSON(tideURL('hilo'), 10000);
-      applyTidesData(data, true);
+      /* 20s — cellular / slow NOAA; no custom headers (see fetchJSON CORS note). */
+      const data = await fetchJSON(tideURL('hilo'), 20000);
+      if(data?.error?.message) throw new Error(String(data.error.message));
+      if(!applyTidesData(data, true)) throw new Error('empty NOAA predictions');
       return tides;
     }catch(e){
+      const msg = e && e.name === 'AbortError' ? 'request timed out' : (e && e.message ? e.message : 'network error');
+      tidesLastError = msg;
       const c = loadCache('tides', 7*24*HR);
       if(c?.data) applyTidesData(c.data, false);
+      else if(activeTab()==='tides'){
+        try{ renderTides(); }catch(re){ console.error('renderTides', re); }
+      }
       throw e;
     }finally{
       tidesFetchPromise = null;
@@ -5229,7 +5252,7 @@ function renderTideTransit(pts, events){
   const box = $('tideTransit');
   if(!box) return;
   if(!pts?.length || !events?.length){
-    box.innerHTML = '<div class="skel">No tide data for transit analysis</div>';
+    box.innerHTML = '<div class="skel">'+(tidesFetchPromise || tidesLastError ? esc(tideEmptyMsg('list')) : 'No tide data for transit analysis')+'</div>';
     return;
   }
   const daily = tideSunDailyForRange(pts[0].t, pts[pts.length - 1].t);
@@ -5402,7 +5425,7 @@ function renderTideChart(){
   if(!host) return;
   const { eventsRaw, pts: fullPts, events } = getTideSeriesBundle();
   if(!eventsRaw || !eventsRaw.length){
-    host.innerHTML = '<div class="skel">Tide chart loading…</div>';
+    host.innerHTML = '<div class="skel">'+esc(tideEmptyMsg('chart'))+'</div>';
     if(nowEl) nowEl.textContent = '—';
     if(meta) meta.innerHTML = '';
     setTideChartTip(null);
@@ -5519,7 +5542,7 @@ function renderTideRateChart(){
   if(!host) return;
   const { eventsRaw, pts: fullPts } = getTideSeriesBundle();
   if(!eventsRaw || !eventsRaw.length){
-    host.innerHTML = '<div class="skel">Tide rate loading…</div>';
+    host.innerHTML = '<div class="skel">'+esc(tideEmptyMsg('rate'))+'</div>';
     if(nowEl) nowEl.textContent = '—';
     if(meta) meta.innerHTML = '';
     return;
@@ -5639,7 +5662,7 @@ function renderTideListAndTransit(pts, events){
   renderTideTransit(pts, events);
   const box = $('tideList');
   if(!box) return;
-  if(!tides || !tides.predictions){ box.innerHTML='<div class="skel">No tide data</div>'; return; }
+  if(!tides || !tides.predictions){ box.innerHTML='<div class="skel">'+esc(tideEmptyMsg('list'))+'</div>'; return; }
   const now = Date.now();
   box.innerHTML = tides.predictions.map(p=>{
     const t = parseTideTime(p.t);
@@ -9782,7 +9805,7 @@ function refreshFishSeafloor(row, ctx){
   ensureSeafloorRender().then(SR=>{
     if(!SR) return;
     const bp = boatPos();
-    /* Local structure: 1300 ft fit; NCEI DEM relief (real hillshade); ENC available in layers. */
+    /* Local structure: 1300 ft fit; BlueTopo (+ NCEI DEM underlay); ENC in layers. */
     const radiusNm = SR.ONSITE_FIT_NM != null ? SR.ONSITE_FIT_NM : (1300 / 6076.12);
     const nearNm = SR.ONSITE_NEAR_NM != null ? SR.ONSITE_NEAR_NM : 0.32;
     SR.update('fishSeafloorRender', {
@@ -9804,6 +9827,7 @@ function refreshFishSeafloor(row, ctx){
 function bathyLinksForSpot(spot){
   const q = spot.lat+','+spot.lon;
   return linkHtml('https://www.google.com/maps/@'+spot.lat+','+spot.lon+',14z/data=!5m1!1e4', 'Google Maps · depth layer', 'Satellite terrain & bathymetry near '+spotShortName(spot.name))+
+    linkHtml('https://nowcoast.noaa.gov/', 'NOAA BlueTopo (nowCOAST)', 'National Bathymetric Source relief — On site uses this where delivered')+
     linkHtml('https://www.ncei.noaa.gov/maps/bathymetry/', 'NOAA NCEI bathymetry', 'Regional seafloor charts — pan to spot coordinates')+
     linkHtml('https://cdip.ucsd.edu/m/forecast/model_grid/?wave_model=socal', 'CDIP SoCal nearshore grid', 'Wave model & refraction at this latitude')+
     linkHtml('https://maps.google.com/?q='+q, 'Coordinates '+fmtCoord(spot.lat)+', '+fmtCoord(spot.lon), 'Open in maps for navigation');
@@ -14387,7 +14411,8 @@ function switchTab(name){
   }
   if(name==='tides'){
     try{ renderTides(); }catch(e){ console.error('renderTides', e); }
-    refreshTides(false).catch(()=>{});
+    /* Force network when empty (recovers after prior CORS/timeout failure). */
+    refreshTides(!tides?.predictions?.length).catch(()=>{});
   }
   store.set('boatLastTab', name);
 }

@@ -1,0 +1,7 @@
+{
+  "pmtilesUrl": "",
+  "wmtsEnabled": true,
+  "layerLabel": "BlueTopo relief",
+  "aoi": "socal-daytrip",
+  "notes": "Empty pmtilesUrl → On site uses nowCOAST BlueTopo WMTS over NCEI DEM (transparent where BlueTopo not delivered). After you build + host a .pmtiles file (R2/Pages/Release), set pmtilesUrl to that HTTPS URL."
+}
