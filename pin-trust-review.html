@@ -109,6 +109,28 @@ aside {
   display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding-top: 10px;
   border-top: 1px solid var(--line); align-items: center;
 }
+.howto {
+  margin-top: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: rgba(0,0,0,.28); color: var(--ink2); font-size: 11px; line-height: 1.5;
+}
+.howto > summary {
+  cursor: pointer; font-size: 12px; font-weight: 700; color: var(--ink);
+  letter-spacing: .02em; list-style: none; touch-action: manipulation;
+}
+.howto > summary::-webkit-details-marker { display: none; }
+.howto > summary::before {
+  content: '▸ '; color: var(--cyan); font-weight: 700;
+}
+.howto[open] > summary::before { content: '▾ '; }
+.howto ol {
+  margin: 8px 0 0; padding-left: 1.2em;
+}
+.howto li { margin: 0 0 5px; }
+.howto code {
+  font-family: var(--mono); font-size: 10px; color: var(--cyan);
+  background: rgba(78,196,224,.08); padding: 1px 4px; border-radius: 3px;
+}
+.howto .warn { color: var(--amber); }
 .hint { font-size: 11px; color: var(--ink3); margin-top: 8px; }
 .near-row, .grp-row {
   display: grid; gap: 2px; padding: 8px; margin: 4px 0; border: 1px solid var(--line);
@@ -764,6 +786,27 @@ aside {
       '</div>' +
       '<div id="groupsList">' + groupsHtml + '</div>' +
 
+      '<details class="howto" open>' +
+      '<summary>How to use — review, export &amp; apply</summary>' +
+      '<ol>' +
+      '<li><strong>Purpose:</strong> Trust or reject published fish/dive coords on imagery. ' +
+      '<span class="warn">Never nudge or invent GPS</span> — Yes / No / Unsure only.</li>' +
+      '<li><strong>Review:</strong> Zoom imagery — pin in water (ok) vs land / pier / parking (reject). ' +
+      '<strong>Yes</strong> = trust as-is · <strong>No</strong> = omit from live maps · ' +
+      '<strong>Unsure</strong> = omit until re-reviewed. Optional note helps later.</li>' +
+      '<li><strong>Keys:</strong> <code>Y</code> yes · <code>N</code> no · <code>U</code> unsure · ' +
+      '<code>←</code>/<code>→</code> prev/next · <code>G</code> toggle focus in group selection ' +
+      '(disabled while typing in note/search).</li>' +
+      '<li><strong>Export:</strong> Download trust JSON → save in the repo as ' +
+      '<code>pin-trust-review-results.json</code> (overwrite prior export).</li>' +
+      '<li><strong>Apply locally:</strong> <code>cscript //Nologo apply-pin-trust-yes.js</code> ' +
+      'stamps <code>userTrusted</code> on Yes (coords unchanged) and removes No/Unsure from live ' +
+      '<code>FISH_SPOTS</code> / <code>DIVE_SITES</code>. Rebuild the queue when needed: ' +
+      '<code>cscript //Nologo build-pin-trust-review.js</code>.</li>' +
+      '<li><strong>After apply:</strong> Commit updated lists + results; run water-pin audits. ' +
+      'Still never nudge coords to silence audits.</li>' +
+      '</ol>' +
+      '</details>' +
       '<div class="export-row">' +
       '<button type="button" id="btnExport">Download trust JSON</button>' +
       '<button type="button" id="btnExportGroups">Download groups JSON</button>' +
@@ -771,8 +814,7 @@ aside {
       '<button type="button" id="btnCopy">Copy trust for chat</button>' +
       '<label>Import<input type="file" id="importFile" accept="application/json,.json,.js" hidden></label>' +
       '<button type="button" id="btnClear">Clear local answers</button>' +
-      '</div>' +
-      '<p class="hint">' + esc(DATA.instructions || '') + ' Keyboard: Y / N / U · ← → · G toggles focus in group selection</p>';
+      '</div>';
 
     document.querySelector('#panel h2').textContent = c.name;
     document.querySelector('#panel .coords').textContent =
