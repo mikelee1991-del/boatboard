@@ -13,6 +13,7 @@
 <link rel="dns-prefetch" href="https://api.open-meteo.com">
 <link rel="dns-prefetch" href="https://marine-api.open-meteo.com">
 <link rel="dns-prefetch" href="https://api.tidesandcurrents.noaa.gov">
+<link rel="dns-prefetch" href="https://data.ca.gov">
 <style>
 :root{
   --bg:#060a10; --bg2:#0c1219; --card:#111922; --card2:#182230;
@@ -204,7 +205,7 @@ svg text{font-family:var(--font-mono)}
 }
 .plan-split-map{min-width:0}
 .plan-split-map .plan-mapbox{margin-bottom:0}
-#divePlanMap,#fishMap,#surfMap,#wildMap,#chlMap,#sstMap{aspect-ratio:1/1;width:100%;height:auto;min-height:220px;max-height:min(62vh,460px);background:var(--bg);position:relative;z-index:1}
+#divePlanMap,#fishMap,#surfMap,#wildMap,#chlMap,#sstMap,#bactMap{aspect-ratio:1/1;width:100%;height:auto;min-height:220px;max-height:min(62vh,460px);background:var(--bg);position:relative;z-index:1}
 #map,#swellMap{background:var(--bg)!important}
 .leaflet-container.ocean-map-dark{background:var(--bg)!important}
 .leaflet-container.ocean-map-dark .leaflet-tile-pane{filter:brightness(.9) contrast(1.06)}
@@ -506,6 +507,26 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .chl-marine-h,.sst-marine-h{margin:14px 0 8px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600}
 .chl-marine-item,.sst-marine-item{margin:0 0 8px;font-size:13px;color:var(--ink2);line-height:1.5;padding-left:12px;border-left:3px solid var(--line2)}
 .chl-marine-item strong,.sst-marine-item strong{color:var(--ink)}
+.bact-mapbox{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:8px}
+.bact-mapbox h3{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding:10px 12px 0;font-weight:600}
+.bact-mapbox > p{font-size:11px;color:var(--ink3);padding:0 12px 8px;margin:0}
+.bact-bar{padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--card);border-bottom:1px solid var(--line);font-size:12px;color:var(--ink2)}
+.bact-bar .grow{flex:1}
+.bact-toggle{min-height:36px;padding:6px 12px;border:1px solid var(--line);background:var(--bg2);color:var(--ink2);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;touch-action:manipulation}
+.bact-toggle.active{color:var(--accent);border-color:var(--accent);background:var(--card)}
+.bact-toggle:disabled{opacity:.55;cursor:wait}
+#bactMap{aspect-ratio:1/1;width:100%;height:auto;min-height:220px;max-height:min(62vh,460px);background:var(--bg);position:relative;z-index:1}
+.bact-legend{font-size:11px;color:var(--ink3);padding:8px 12px 10px;border-top:1px solid var(--line2);font-family:var(--mono);line-height:1.45}
+.bact-legend-swatches{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 6px}
+.bact-legend-swatches span{display:inline-flex;align-items:center;gap:5px}
+.bact-legend-swatches i{width:10px;height:10px;border-radius:50%;display:inline-block;border:1px solid rgba(255,255,255,.35)}
+.bact-detail-level{font-family:var(--mono);font-size:12px;margin:6px 0 8px}
+.bact-detail-level.good{color:var(--good)}
+.bact-detail-level.fair{color:var(--fair)}
+.bact-detail-level.poor{color:var(--poor)}
+.bact-detail-meta{font-family:var(--mono);font-size:11px;color:var(--ink3);line-height:1.45;margin:0 0 8px}
+.bact-detail-note{font-size:12px;color:var(--ink2);line-height:1.45;margin:0 0 10px}
+.bact-official{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 
 .wild-mapbox{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:8px}
 .wild-mapbox h3{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding:10px 12px 0;font-weight:600}
@@ -889,6 +910,32 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
       </div>
       <div class="sec">Selected spot</div>
       <div class="card" id="surfDetail"><div class="skel">Tap a spot above for swell breakdown…</div></div>
+      <div class="sec">Shoreline bacteria</div>
+      <p class="prose" style="margin-bottom:10px;font-size:13px">LA County + OC + Catalina <strong>Enterococcus</strong> grab samples (not a continuous ocean map). Tap <strong>Show stations</strong> to load — never fetched on Overview boot. Shoreline monitoring only; sampling lags; not mid-channel safety.</p>
+      <div class="bact-mapbox">
+        <h3>Beach bacteria stations</h3>
+        <p>Green / yellow / red vs CA Enterococcus thresholds · ▲ = you · pin tap = sample detail</p>
+        <div class="bact-bar">
+          <button type="button" class="bact-toggle" id="bactToggle" aria-pressed="false">Show stations</button>
+          <button type="button" class="bact-toggle" id="bactRefresh" hidden>Refresh</button>
+          <span class="grow"></span>
+          <span id="bactStatus" class="mono" style="font-size:11px;color:var(--ink3)">Off — no network yet</span>
+        </div>
+        <div id="bactMap"><div class="skel" style="padding:20px">Tap Show stations to load SoCal BeachWatch samples…</div></div>
+        <div class="bact-legend">
+          <div class="bact-legend-swatches" aria-hidden="true">
+            <span><i style="background:var(--good)"></i>OK (&lt;35)</span>
+            <span><i style="background:var(--fair)"></i>Elevated (35–103)</span>
+            <span><i style="background:var(--poor)"></i>Exceeds (≥104 or geo-mean ≥35)</span>
+          </div>
+          Data: CA Open Data Safe to Swim / BeachWatch FIB · filtered SoCal bbox + last 21 days + Enterococcus only.
+        </div>
+      </div>
+      <div class="card" id="bactDetail" style="margin-top:8px">
+        <h3 id="bactDetailTitle">Station detail</h3>
+        <p id="bactDetailHint" class="prose" style="font-size:13px;color:var(--ink2);margin:0">Load stations, then tap a pin. Official advisories live on county sites — sample pins can lag posted warnings.</p>
+        <div id="bactDetailBody" hidden></div>
+      </div>
       <div class="sec">Verify before you paddle out</div>
       <div id="surfLinks"></div>
     </section>
@@ -2137,6 +2184,23 @@ let sstLegendTimer = null, sstLegendSeq = 0;
 let sstActiveScale = null;
 let sstScaleCache = null;
 let sstOverlayScaleKey = null;
+/* Beach bacteria — Safe to Swim FIB (lazy; SoCal bbox + Enterococcus + recent only) */
+let bactMap = null, bactMapInited = false, bactLayer = null, bactBoatMarker = null;
+let bactStations = null, bactFetchedAt = 0, bactLoadPromise = null, bactEnabled = false;
+const FIB_RESOURCE_ID = '15a63495-8d9f-4a49-b43a-3092ef3106b9';
+const FIB_SQL_URL = 'https://data.ca.gov/api/3/action/datastore_search_sql';
+const FIB_DATASET_URL = 'https://data.ca.gov/dataset/surface-water-fecal-indicator-bacteria-results';
+const FIB_LA_DPH_URL = 'http://publichealth.lacounty.gov/beach/';
+const FIB_OC_BEACHINFO_URL = 'https://ocbeachinfo.com/';
+/** Malibu → OC + Catalina shoreline (King Harbor day-trip focus — not statewide). */
+const FIB_BBOX = { latMin:33.30, latMax:34.15, lonMin:-118.95, lonMax:-117.55 };
+const FIB_LOOKBACK_DAYS = 21;
+const FIB_TIMEOUT_MS = 12000;
+const FIB_CACHE_KEY = 'boatFib:socalEntero';
+const FIB_CACHE_TTL = 6 * HR;
+const FIB_SSM = 104; /* CA single-sample Enterococcus max (MPN or CFU /100 mL) */
+const FIB_GM = 35;   /* CA 30-day geometric mean */
+const FIB_MAP_ZOOM = 10;
 const CHL_SOURCES = {
   noaa: {
     id:'noaa', label:'NOAA CoastWatch', resolution:'4 km', lagDays:2,
@@ -2429,6 +2493,10 @@ function refreshBoatMarkers(){
     sstBoatMarker.setLatLng([bp.lat, bp.lon]);
     sstBoatMarker.setPopupContent(you);
   }
+  if(bactMap && bactBoatMarker){
+    bactBoatMarker.setLatLng([bp.lat, bp.lon]);
+    bactBoatMarker.setPopupContent(you);
+  }
   if(window.BoatDive?.invalidatePlanMap) BoatDive.invalidatePlanMap();
 }
 
@@ -2621,6 +2689,10 @@ function onGps(posObj){
   if(moved && sstMap && sstBoatMarker){
     sstBoatMarker.setLatLng([bp.lat, bp.lon]);
     sstBoatMarker.setPopupContent('<b>You'+boatPosLabel()+'</b><br>'+fmtCoord(bp.lat)+', '+fmtCoord(bp.lon));
+  }
+  if(moved && bactMap && bactBoatMarker){
+    bactBoatMarker.setLatLng([bp.lat, bp.lon]);
+    bactBoatMarker.setPopupContent('<b>You'+boatPosLabel()+'</b><br>'+fmtCoord(bp.lat)+', '+fmtCoord(bp.lon));
   }
   if(moved && wildMapMode === 'embed') updateWildPointBlueEmbed(false);
   if(moved && activeTab()==='cruise'){
@@ -10322,8 +10394,295 @@ function renderSurf(){
       linkHtml('https://www.weather.gov/wrh/TextProduct?product=srflox','NWS LOX surf forecast','Forecaster-written surf zone text')+
       linkHtml('https://cdip.ucsd.edu/m/forecast/model_grid/?wave_model=socal','CDIP SoCal swell model','Cross-check nearshore energy')+
       linkHtml('https://www.ndbc.noaa.gov/','NDBC buoys','Observed wave height & period')+
+      linkHtml(FIB_LA_DPH_URL,'LA County beach water quality','Official advisories & rain warnings')+
+      linkHtml(FIB_OC_BEACHINFO_URL,'OC Beachinfo','Orange County beach postings & closures')+
       linkHtml('https://www.surfline.com/surf-forecasts','Surfline forecasts','Live cams & human forecasts (external)');
   }catch(e){ console.error('renderSurf links', e); }
+}
+
+/* ============ shoreline bacteria (Safe to Swim FIB) ============ */
+function fibIsoDateDaysAgo(days){
+  const d = new Date(Date.now() - days * 86400000);
+  return d.toISOString().slice(0, 10);
+}
+function fibBuildSql(){
+  const since = fibIsoDateDaysAgo(FIB_LOOKBACK_DAYS);
+  const b = FIB_BBOX;
+  return 'SELECT DISTINCT ON ("StationCode") '+
+    '"StationName","StationCode","SampleDate","Analyte","Result","ResultQualCode","Unit",'+
+    '"TargetLatitude","TargetLongitude","ParentProject","30DayGeoMean" '+
+    'FROM "'+FIB_RESOURCE_ID+'" '+
+    'WHERE "Analyte" ILIKE \'%Enterococcus%\' '+
+    'AND "SampleDate" >= \''+since+'\' '+
+    'AND "TargetLatitude" BETWEEN '+b.latMin+' AND '+b.latMax+' '+
+    'AND "TargetLongitude" BETWEEN '+b.lonMin+' AND '+b.lonMax+' '+
+    'ORDER BY "StationCode", "SampleDate" DESC';
+}
+function fibSessionLoad(){
+  try{
+    const raw = sessionStorage.getItem(FIB_CACHE_KEY);
+    if(!raw) return null;
+    const c = JSON.parse(raw);
+    if(!c?.at || !Array.isArray(c.data)) return null;
+    if(Date.now() - c.at > FIB_CACHE_TTL) return null;
+    return { at:c.at, data:c.data };
+  }catch(e){ return null; }
+}
+function fibSessionSave(stations){
+  try{
+    sessionStorage.setItem(FIB_CACHE_KEY, JSON.stringify({ at: Date.now(), data: stations }));
+  }catch(e){}
+}
+function fibNum(v){
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  return isFinite(n) ? n : null;
+}
+function fibLevel(result, geoMean){
+  const r = fibNum(result);
+  const g = fibNum(geoMean);
+  if((r != null && r >= FIB_SSM) || (g != null && g >= FIB_GM)) return 'poor';
+  if(r != null && r >= FIB_GM) return 'fair';
+  return 'good';
+}
+function fibLevelLabel(level){
+  if(level === 'poor') return 'Exceeds CA Enterococcus threshold';
+  if(level === 'fair') return 'Elevated (below single-sample max)';
+  return 'OK vs CA Enterococcus thresholds';
+}
+function fibLevelColor(level){
+  if(level === 'poor') return '#ff5c5c';
+  if(level === 'fair') return '#ffd966';
+  return '#3dff9a';
+}
+function fibFmtResult(st){
+  const r = fibNum(st.result);
+  if(r == null) return '—';
+  const q = st.qual && st.qual !== '=' ? st.qual+' ' : '';
+  return q + f0(r) + ' ' + (st.unit || 'MPN/100 mL');
+}
+function fibFmtDate(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  if(!isFinite(d.getTime())) return String(iso).slice(0, 10);
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric', timeZone:'America/Los_Angeles' });
+}
+function fibNormalizeRecords(records){
+  const out = [];
+  for(const rec of records || []){
+    const lat = fibNum(rec.TargetLatitude);
+    const lon = fibNum(rec.TargetLongitude);
+    if(lat == null || lon == null) continue;
+    if(lat < FIB_BBOX.latMin || lat > FIB_BBOX.latMax || lon < FIB_BBOX.lonMin || lon > FIB_BBOX.lonMax) continue;
+    const result = fibNum(rec.Result);
+    const geoMean = fibNum(rec['30DayGeoMean']);
+    const level = fibLevel(result, geoMean);
+    out.push({
+      code: String(rec.StationCode || ''),
+      name: String(rec.StationName || rec.StationCode || 'Station'),
+      date: rec.SampleDate || '',
+      analyte: String(rec.Analyte || 'Enterococcus'),
+      result,
+      qual: String(rec.ResultQualCode || '='),
+      unit: String(rec.Unit || 'MPN/100 mL'),
+      lat, lon,
+      project: String(rec.ParentProject || ''),
+      geoMean,
+      level
+    });
+  }
+  return out;
+}
+function setBactStatus(msg){
+  const el = $('bactStatus');
+  if(el) el.textContent = msg;
+}
+function setBactToggleUi(){
+  const btn = $('bactToggle');
+  const ref = $('bactRefresh');
+  if(btn){
+    btn.classList.toggle('active', bactEnabled);
+    btn.setAttribute('aria-pressed', bactEnabled ? 'true' : 'false');
+    btn.textContent = bactEnabled ? 'Stations on' : 'Show stations';
+  }
+  if(ref) ref.hidden = !bactEnabled;
+}
+function renderBactDetail(st){
+  const title = $('bactDetailTitle');
+  const hint = $('bactDetailHint');
+  const body = $('bactDetailBody');
+  if(!title || !body) return;
+  if(!st){
+    if(hint){ hint.hidden = false; hint.textContent = 'Load stations, then tap a pin. Official advisories live on county sites — sample pins can lag posted warnings.'; }
+    body.hidden = true;
+    body.innerHTML = '';
+    title.textContent = 'Station detail';
+    return;
+  }
+  if(hint) hint.hidden = true;
+  title.textContent = st.name;
+  body.hidden = false;
+  const gm = st.geoMean != null ? f0(st.geoMean) : '—';
+  body.innerHTML =
+    '<div class="bact-detail-level '+st.level+'">'+esc(fibLevelLabel(st.level))+'</div>'+
+    '<p class="bact-detail-meta">'+
+      esc(st.analyte)+' · '+esc(fibFmtResult(st))+'<br>'+
+      'Sample '+esc(fibFmtDate(st.date))+' · 30-day geo-mean '+esc(gm)+'<br>'+
+      'Thresholds: single ≥'+FIB_SSM+' or geo-mean ≥'+FIB_GM+' → red<br>'+
+      (st.code ? 'Station '+esc(st.code)+'<br>' : '')+
+      (st.project ? esc(st.project) : '')+
+    '</p>'+
+    '<p class="bact-detail-note">Shoreline / surf-zone monitoring only — not mid-channel or open-ocean safety. Lab results lag; after rain follow county rain advisories (~72 h).</p>'+
+    '<div class="bact-official">'+
+      linkHtml(FIB_LA_DPH_URL, 'LA County DPH beach', 'Official LA County ocean warnings')+
+      linkHtml(FIB_OC_BEACHINFO_URL, 'OC Beachinfo', 'Official Orange County beach postings')+
+      linkHtml(FIB_DATASET_URL, 'CA Open Data FIB', 'Safe to Swim BeachWatch source table')+
+    '</div>';
+  body.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+async function fetchFibStations(force){
+  if(!force){
+    if(bactStations && Date.now() - bactFetchedAt < FIB_CACHE_TTL) return bactStations;
+    const sess = fibSessionLoad();
+    if(sess){
+      bactStations = sess.data;
+      bactFetchedAt = sess.at;
+      return bactStations;
+    }
+  }
+  if(bactLoadPromise && !force) return bactLoadPromise;
+  const url = FIB_SQL_URL + '?sql=' + encodeURIComponent(fibBuildSql());
+  bactLoadPromise = (async ()=>{
+    const j = await fetchJSON(url, FIB_TIMEOUT_MS);
+    if(!j?.success) throw new Error(j?.error?.message || 'FIB query failed');
+    const stations = fibNormalizeRecords(j.result?.records);
+    bactStations = stations;
+    bactFetchedAt = Date.now();
+    fibSessionSave(stations);
+    return stations;
+  })().finally(()=>{ bactLoadPromise = null; });
+  return bactLoadPromise;
+}
+async function ensureBactMap(){
+  const host = $('bactMap');
+  if(!host) return false;
+  if(bactMap){
+    bactMap.invalidateSize(true);
+    return true;
+  }
+  try{
+    await loadLeaflet();
+    await loadCoastOverlayLite().catch(()=>{});
+    host.innerHTML = '';
+    const bp = boatPos();
+    bactMap = L.map(host, { zoomControl:true, attributionControl:false, minZoom:7, maxZoom:14 })
+      .setView([bp.lat, bp.lon], FIB_MAP_ZOOM);
+    planMapBaseLayer(bactMap, { maxZoom:14 });
+    addCoastOverlay(L.layerGroup().addTo(bactMap));
+    if(bactMap.attributionControl){
+      bactMap.attributionControl.addAttribution(
+        '<a href="'+FIB_DATASET_URL+'" target="_blank" rel="noopener">CA Open Data · Safe to Swim FIB</a>'
+      );
+    }
+    bactLayer = L.layerGroup().addTo(bactMap);
+    bactBoatMarker = L.marker([bp.lat, bp.lon], {
+      icon: L.divIcon({
+        className:'',
+        html:'<div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:14px solid var(--accent);filter:drop-shadow(0 1px 2px #000)"></div>',
+        iconSize:[14,14], iconAnchor:[7,12]
+      }),
+      zIndexOffset: 800
+    }).bindPopup('<b>You'+boatPosLabel()+'</b>').addTo(bactMap);
+    bactMapInited = true;
+    return true;
+  }catch(e){
+    console.error('bact map', e);
+    bactMap = null; bactMapInited = false;
+    return false;
+  }
+}
+function paintBactStations(stations){
+  if(!bactMap || !bactLayer) return;
+  bactLayer.clearLayers();
+  const bounds = [];
+  for(const st of stations || []){
+    const color = fibLevelColor(st.level);
+    const m = L.circleMarker([st.lat, st.lon], {
+      radius: 7,
+      color: '#0a1018',
+      weight: 1,
+      fillColor: color,
+      fillOpacity: 0.92
+    });
+    m.bindTooltip(st.name, { direction:'top', opacity:0.92 });
+    m.on('click', () => renderBactDetail(st));
+    m.addTo(bactLayer);
+    bounds.push([st.lat, st.lon]);
+  }
+  const bp = boatPos();
+  if(bactBoatMarker) bactBoatMarker.setLatLng([bp.lat, bp.lon]);
+  if(bounds.length){
+    try{
+      const b = L.latLngBounds(bounds);
+      b.extend([bp.lat, bp.lon]);
+      bactMap.fitBounds(b.pad(0.12), { maxZoom: 12 });
+    }catch(e){}
+  }
+}
+async function enableBactLayer(force){
+  bactEnabled = true;
+  setBactToggleUi();
+  setBactStatus('Loading…');
+  const btn = $('bactToggle');
+  if(btn) btn.disabled = true;
+  try{
+    const ok = await ensureBactMap();
+    if(!ok) throw new Error('Map unavailable');
+    const stations = await fetchFibStations(!!force);
+    paintBactStations(stations);
+    const ageMin = Math.max(0, Math.round((Date.now() - bactFetchedAt) / 60000));
+    if(!stations.length){
+      setBactStatus('No recent samples in SoCal bbox');
+      renderBactDetail(null);
+      const hint = $('bactDetailHint');
+      if(hint){
+        hint.hidden = false;
+        hint.textContent = 'No Enterococcus results in the last '+FIB_LOOKBACK_DAYS+' days for this LA/OC/Catalina window. Check LA DPH / OC Beachinfo for live advisories.';
+      }
+    }else{
+      const nPoor = stations.filter(s => s.level === 'poor').length;
+      setBactStatus(stations.length+' stations'+(nPoor ? ' · '+nPoor+' exceed' : '')+(ageMin ? ' · '+ageMin+'m cache' : ''));
+    }
+    setTimeout(() => { if(bactMap) bactMap.invalidateSize(true); }, 80);
+    setTimeout(() => { if(bactMap) bactMap.invalidateSize(true); }, 280);
+  }catch(e){
+    console.error('bact layer', e);
+    setBactStatus('Unavailable — try again');
+    const hint = $('bactDetailHint');
+    if(hint){
+      hint.hidden = false;
+      hint.textContent = 'Could not load BeachWatch samples (timeout or network). Use LA DPH / OC Beachinfo links below, then retry Show stations.';
+    }
+    if(bactStations?.length && bactLayer) paintBactStations(bactStations);
+    else if(bactLayer) bactLayer.clearLayers();
+  }finally{
+    if(btn) btn.disabled = false;
+    setBactToggleUi();
+  }
+}
+function disableBactLayer(){
+  bactEnabled = false;
+  setBactToggleUi();
+  if(bactLayer) bactLayer.clearLayers();
+  renderBactDetail(null);
+  setBactStatus('Off — no network yet');
+}
+function toggleBactLayer(){
+  if(bactEnabled) disableBactLayer();
+  else enableBactLayer(false);
+}
+function onBactRefresh(){
+  if(!bactEnabled) return;
+  enableBactLayer(true);
 }
 
 /* ============ wildlife — map, sightings & seasonal intel ============ */
@@ -13693,6 +14052,10 @@ function switchTab(name){
     try{ renderSurf(); }catch(e){ console.error('renderSurf', e); }
     initSurfMapWithRetry(0);
     refreshOcean();
+    if(bactEnabled && bactMap){
+      setTimeout(() => { if(bactMap) bactMap.invalidateSize(true); }, 120);
+      setTimeout(() => { if(bactMap) bactMap.invalidateSize(true); }, 350);
+    }
   }
   if(name==='chlorophyll'){
     try{ renderChlorophyll(true); }catch(e){ console.error('renderChlorophyll', e); }
@@ -13752,6 +14115,8 @@ function bindUI(){
     if(!btn?.dataset.sstSource) return;
     onSstSourceChange(btn.dataset.sstSource);
   });
+  $('bactToggle')?.addEventListener('click', () => toggleBactLayer());
+  $('bactRefresh')?.addEventListener('click', () => onBactRefresh());
   document.querySelectorAll('.subtabs').forEach(bar=>{
     bar.addEventListener('click', e=>{
       const btn = e.target.closest('.subtab');
