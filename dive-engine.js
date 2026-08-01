@@ -413,13 +413,17 @@
     { id: 'pv_biodome', name: 'Biodome — Pt Vicente', lat: 33.7418333, lon: -118.4152167, face: 250, depth: 50, boat: true, userTrusted: true },
     { id: 'cat_doctorscove', name: 'Doctor\'s Cove — Catalina (Emerald Bay NW)', lat: 33.471, lon: -118.5313, face: 250, depth: 50, boat: true, userTrusted: true },
     { id: 'cat_lulureef', name: 'Lulu Reef — Catalina (inshore Eagle Reef)', lat: 33.45475, lon: -118.5063333, face: 250, depth: 50, boat: true, userTrusted: true },
-    { id: 'cat_nooksandcrannies', name: 'Nooks and Crannies — Catalina', lat: 33.4234833, lon: -118.4132, face: 250, depth: 50, boat: true, userTrusted: true }
+    { id: 'cat_nooksandcrannies', name: 'Nooks and Crannies — Catalina', lat: 33.4234833, lon: -118.4132, face: 250, depth: 50, boat: true, userTrusted: true },
+    /* —— Near-slip trusted fish→dive mirrors (KML + userTrusted; coords verbatim) —— */
+    { id: 'hermosahardbottom', name: 'Hermosa Hard Bottom', lat: 33.8682, lon: -118.4205, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true },
+    { id: 'manhattanhardbottom', name: 'Manhattan Hard Bottom', lat: 33.88, lon: -118.4333, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true }
   ];
 
   /** Pre-dive briefing — loaded from dive-briefings-data.js (sectioned { h, body[] } per site). */
   const DIVE_BRIEFINGS = (typeof window !== 'undefined' && window.__BOAT_DIVE_BRIEFINGS__) || {};
   /** Entry/logistics/hazards — loaded from dive-site-intel.js (keyed by site id). */
   const DIVE_SITE_INTEL = (typeof window !== 'undefined' && window.__BOAT_DIVE_SITE_INTEL__) || {};
+  const BRIEFING_SYNTH = (typeof window !== 'undefined' && window.__BOAT_BRIEFING_SYNTH__) || null;
   const HAB_CACHE_MS = 45 * 60e3;
   const HAB_LS_KEY = 'habCharmLast';
   const HAB_LS_MAX_AGE_MS = 7 * 24 * 60 * 60e3;
@@ -1366,6 +1370,9 @@
 
   function siteBriefing(site) {
     if (!site) return null;
+    if (BRIEFING_SYNTH && typeof BRIEFING_SYNTH.diveBriefingFor === 'function') {
+      return BRIEFING_SYNTH.diveBriefingFor(site, DIVE_BRIEFINGS, DIVE_SITE_INTEL);
+    }
     return DIVE_BRIEFINGS[site.id] || null;
   }
 

@@ -118,6 +118,15 @@ svg text{font-family:var(--font-mono)}
 .prose{font-size:14px;color:var(--ink2);line-height:1.6}
 .prose p{margin-bottom:8px}
 .skel{color:var(--ink3);font-family:var(--mono);font-size:13px;padding:12px 0}
+.dive-briefing-card{margin-bottom:10px}
+.dive-briefing-card h3{margin:0 0 12px;font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink)}
+.dive-briefing-card .dive-briefing-prose{font-size:14px;color:var(--ink2);line-height:1.65}
+.dive-briefing-card .dive-briefing-prose p{margin:0 0 12px}
+.dive-briefing-card .dive-briefing-h{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);font-weight:600;margin:18px 0 8px;padding-top:4px;border-top:1px solid var(--line)}
+.dive-briefing-card .dive-briefing-prose .dive-briefing-h:first-child{margin-top:0;padding-top:0;border-top:none}
+.dive-briefing-card .dive-briefing-prose p:last-child{margin-bottom:0}
+.dive-briefing-placeholder{font-size:13px;color:var(--ink3);line-height:1.5}
+@media(max-width:719px){.dive-briefing-card .dive-briefing-prose{max-height:min(70vh,640px);overflow-y:auto;padding-right:4px}}
 
 #mapWrap{height:calc(100% - 44px);min-height:300px}
 #map{height:100%;width:100%;background:var(--bg2)}
@@ -816,6 +825,8 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <select id="fishUtilSpot" aria-label="Spot for on-site guide"></select>
         </div>
         <div id="fishUtilHero" class="card"><div class="skel">Pick a spot — loads tackle, conditions at the mark, and charts.</div></div>
+        <div class="sec">Fishing briefing</div>
+        <div id="fishSpotBriefing" class="card dive-briefing-card"><p class="dive-briefing-placeholder">Select a fishing spot to load the briefing.</p></div>
         <div class="sec">Seafloor at the mark</div>
         <div class="card seafloor-card">
           <div id="fishSeafloorRender" class="seafloor-host" role="img" aria-label="Seafloor bathymetry around vessel and fishing mark">
@@ -1325,6 +1336,7 @@ function ensureDiveEngine(){
   _diveEnginePromise = loadScript('pin-feature-groups-data.js').catch(function(){ /* optional */ })
     .then(()=> loadScript('dive-briefings-data.js'))
     .then(()=> loadScript('dive-site-intel.js'))
+    .then(()=> loadScript('briefing-synth.js'))
     .then(()=> loadScript('dive-engine.js'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
@@ -8268,7 +8280,48 @@ const FISH_SPOTS = [
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
     depth: '30-120 ft', habitat: 'User-trusted water target',
     tactics: 'Pin-trust review yes — published coords unchanged.',
-    bestTide: 'incoming', bestTime: 'dawn', minSstF: 58 }
+    bestTide: 'incoming', bestTime: 'dawn', minSstF: 58 },
+  /* —— Near-slip dive→fish mirrors (pin-trust yes; coords verbatim from DIVE_SITES) —— */
+  { name: "The Crane — Haggerty's offshore", lat: 33.8049333, lon: -118.409, face: 250, userTrusted: true,
+    species: ['calico bass', 'sand bass', 'sheephead', 'rockfish'],
+    depth: '30-60 ft', habitat: 'PV offshore reef / kelp complex off Haggerty\'s',
+    tactics: 'Short run from King Harbor; drift kelp edge up-current with live bait or swimbaits.',
+    bestTide: 'incoming', bestTime: 'morning', minSstF: 58 },
+  { name: 'Resort Point Wall — PV', lat: 33.76455, lon: -118.428, face: 225, userTrusted: true,
+    species: ['calico bass', 'sheephead', 'rockfish', 'white seabass'],
+    depth: '35-70 ft', habitat: 'High-relief PV wall and kelp cap',
+    tactics: 'Sounder the wall toe; vertical jig or live bait on the drop-off.',
+    bestTide: 'either', bestTime: 'dawn', minSstF: 58 },
+  { name: 'Neptune Cove Underwater Arch — PV', lat: 33.7512667, lon: -118.4178333, face: 210, userTrusted: true,
+    species: ['calico bass', 'sheephead', 'garibaldi', 'rockfish'],
+    depth: '20-35 ft', habitat: 'Shallow PV reef / arch structure',
+    tactics: 'Light tackle around structure; respect nearby MPA boundaries.',
+    bestTide: 'incoming', bestTime: 'morning', minSstF: 58 },
+  { name: 'Halfway Reef — PV (Christmas Tree–Honeymoon)', lat: 33.76265, lon: -118.4255667, face: 220, userTrusted: true,
+    species: ['calico bass', 'sheephead', 'rockfish', 'sand bass'],
+    depth: '50-75 ft', habitat: 'Offshore PV reef between Christmas Tree and Honeymoon',
+    tactics: 'Boat drift on marked high spot; live squid or vertical iron.',
+    bestTide: 'incoming', bestTime: 'dawn', minSstF: 58 },
+  { name: "Kevin's Reef — Christmas Tree Cove offshore", lat: 33.7616833, lon: -118.4256167, face: 215, userTrusted: true,
+    species: ['calico bass', 'sheephead', 'rockfish', 'lingcod'],
+    depth: '60-80 ft', habitat: 'Offshore Christmas Tree Cove reef / sand',
+    tactics: 'Mark the pinnacle; dropper loop or live bait on the sand edge.',
+    bestTide: 'either', bestTime: 'morning', minSstF: 56 },
+  { name: 'Jenny Lynne wreck — Long Point PV', lat: 33.733, lon: -118.3968, face: 210, userTrusted: true,
+    species: ['rockfish', 'sheephead', 'lingcod', 'sand bass'],
+    depth: '120-150 ft', habitat: 'Deep wreck off Long Point / Terranea',
+    tactics: 'Deep drop; heavy gear — watch nets/cables; advanced boat craft.',
+    bestTide: 'either', bestTime: 'morning', minSstF: 54 },
+  { name: 'Portuguese Point high spot — PV', lat: 33.73585, lon: -118.3761, face: 220, userTrusted: true,
+    species: ['calico bass', 'sheephead', 'white seabass', 'rockfish'],
+    depth: '25-40 ft', habitat: 'High spot SW of Portuguese Point (Abalone Cove SMCA nearby)',
+    tactics: 'Confirm MPA lines before any take; light tackle on kelp high spot.',
+    bestTide: 'incoming', bestTime: 'dawn', minSstF: 58 },
+  { name: 'Biodome — Pt Vicente', lat: 33.7418333, lon: -118.4152167, face: 250, userTrusted: true,
+    species: ['calico bass', 'sheephead', 'rockfish', 'white seabass'],
+    depth: '40-55 ft', habitat: 'Pt Vicente pinnacle / kelp complex (SMCA nearby)',
+    tactics: 'Boat the lee of the point; live bait on kelp line — verify no-take boundaries.',
+    bestTide: 'either', bestTime: 'morning', minSstF: 58 }
 ];
 
 /**
@@ -9505,6 +9558,45 @@ function bathyLinksForSpot(spot){
     linkHtml('https://maps.google.com/?q='+q, 'Coordinates '+fmtCoord(spot.lat)+', '+fmtCoord(spot.lon), 'Open in maps for navigation');
 }
 
+let _briefingSynthPromise = null;
+function ensureBriefingSynth(){
+  if(window.__BOAT_BRIEFING_SYNTH__) return Promise.resolve(window.__BOAT_BRIEFING_SYNTH__);
+  if(_briefingSynthPromise) return _briefingSynthPromise;
+  _briefingSynthPromise = loadScript('briefing-synth.js').then(()=> window.__BOAT_BRIEFING_SYNTH__).catch(e=>{
+    _briefingSynthPromise = null; throw e;
+  });
+  return _briefingSynthPromise;
+}
+function renderFishSpotBriefing(spot, distNm){
+  const box = $('fishSpotBriefing');
+  if(!box) return;
+  if(!spot){
+    box.innerHTML = '<p class="dive-briefing-placeholder">Select a fishing spot to load the briefing.</p>';
+    return;
+  }
+  const paint = (synth)=>{
+    const blocks = synth && synth.synthesizeFishBriefing
+      ? synth.synthesizeFishBriefing(spot, distNm)
+      : null;
+    if(!blocks || !blocks.length){
+      box.innerHTML = '<p class="dive-briefing-placeholder">No briefing available for <strong>'+esc(spot.name)+'</strong>.</p>';
+      return;
+    }
+    if(synth.briefingBlocksToHtml){
+      box.innerHTML = synth.briefingBlocksToHtml(esc, blocks, 'Fishing briefing — '+spot.name);
+      return;
+    }
+    box.innerHTML = '<h3>Fishing briefing — '+esc(spot.name)+'</h3><div class="dive-briefing-prose">'+
+      blocks.map(b => '<h4 class="dive-briefing-h">'+esc(b.h)+'</h4>'+(b.body||[]).map(p=>'<p>'+esc(p)+'</p>').join('')).join('')+
+      '</div>';
+  };
+  const ready = window.__BOAT_BRIEFING_SYNTH__;
+  if(ready){ paint(ready); return; }
+  box.innerHTML = '<p class="dive-briefing-placeholder">Loading briefing…</p>';
+  ensureBriefingSynth().then(paint).catch(()=>{
+    box.innerHTML = '<p class="dive-briefing-placeholder">Briefing loader failed — check tackle notes above.</p>';
+  });
+}
 function renderFishUtilDetail(row, ctx, sw, sol){
   const hero = $('fishUtilHero'), bathy = $('fishUtilBathy');
   if(!row || !hero) return;
@@ -9542,6 +9634,7 @@ function renderFishUtilDetail(row, ctx, sw, sol){
     (comfort.leeNotes.length ? '<p class="mono" style="font-size:11px;color:var(--ink3);margin-top:6px">'+esc(comfort.leeNotes.join(' · '))+'</p>' : '');
 
   if(bathy) bathy.innerHTML = bathyLinksForSpot(spot);
+  renderFishSpotBriefing(spot, distNm);
   lastFishUtilRow = row;
   lastFishUtilCtx = ctx;
   if(activeTab()==='fishing' && activeSubtab('fishing')==='onsite') refreshFishSeafloor(row, ctx);
@@ -9555,6 +9648,7 @@ function renderFishUtil(synthRanked, ctx, sw, sol){
     if(sel) sel.innerHTML = '';
     const hero = $('fishUtilHero');
     if(hero) hero.innerHTML = '<div class="skel">No local spots ranked yet.</div>';
+    renderFishSpotBriefing(null);
     return;
   }
   if(sel){
