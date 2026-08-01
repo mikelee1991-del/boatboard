@@ -895,7 +895,14 @@
       '.dive-briefing-card .dive-briefing-prose .dive-briefing-h:first-child{margin-top:0;padding-top:0;border-top:none}',
       '.dive-briefing-card .dive-briefing-prose p:last-child{margin-bottom:0}',
       '.dive-briefing-placeholder{font-size:13px;color:var(--ink3);line-height:1.5}',
-      '@media(max-width:719px){.dive-briefing-card .dive-briefing-prose{max-height:min(70vh,640px);overflow-y:auto;padding-right:4px}}',
+      '.briefing-live-strip{margin:0 0 12px;padding:10px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--bg2)}',
+      '.briefing-live-strip strong{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:600;margin:0 0 8px}',
+      '.briefing-live-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}',
+      '.briefing-live-grid div span{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}',
+      '.briefing-live-grid div b{display:block;font-size:12px;font-weight:600;color:var(--ink);margin-top:2px;line-height:1.35;font-family:var(--font-mono,var(--mono))}',
+      '.briefing-live-meta{font-size:12px;color:var(--ink3);margin:0;line-height:1.45}',
+      '.briefing-live-caveat{font-size:11px;color:var(--ink3);margin:8px 0 0;line-height:1.4}',
+      '@media(max-width:719px){.dive-briefing-card .dive-briefing-prose{max-height:min(70vh,640px);overflow-y:auto;padding-right:4px}.briefing-live-grid{grid-template-columns:1fr;gap:6px}}',
       '.dive-hab-banner{padding:10px 12px;border-radius:10px;border:1px solid var(--line);margin-bottom:10px;font-size:13px;line-height:1.5}',
       '.dive-hab-banner.watch{background:#1a1408;border-color:#4a4020;color:var(--fair)}',
       '.dive-hab-banner.elevated{background:#1a0c0c;border-color:#4a2020;color:var(--poor)}',
@@ -1869,6 +1876,52 @@
       (block.body || []).map(p => '<p>' + esc(p) + '</p>').join('');
   }
 
+  function diveLiveStripHtml() {
+    if (typeof window.briefingLiveStripHtml === 'function') {
+      try { return window.briefingLiveStripHtml() || ''; } catch (e) { /* fall through */ }
+    }
+    const synth = BRIEFING_SYNTH;
+    const m = lastM;
+    if (!m || (!m.ok.marine && !m.ok.wx && !m.ok.tides)) {
+      const cond = { loading: !m, empty: !!m };
+      if (synth && synth.liveConditionsStripHtml) return synth.liveConditionsStripHtml(esc, cond);
+      return '<div class="briefing-live-strip empty"><strong>Today\u2019s conditions</strong>' +
+        '<p class="briefing-live-meta">Live conditions not ready yet.</p></div>';
+    }
+    let swellLabel = '\u2014';
+    if (m.swellNow != null) {
+      swellLabel = f1(m.swellNow) + ' ft';
+      if (m.swellPer != null) swellLabel += ' @ ' + f0(m.swellPer) + ' s';
+      if (m.swellDir != null) swellLabel += ' ' + compass(m.swellDir);
+    }
+    let windLabel = '\u2014';
+    if (m.windNow != null) {
+      windLabel = f0(m.windNow) + ' kn';
+      if (m.windDir != null) windLabel += ' ' + compass(m.windDir);
+    }
+    let tideLabel = '\u2014';
+    if (m.ok.tides) {
+      const phase = m.rising == null ? 'Tide' : (m.rising ? 'Incoming' : 'Outgoing');
+      if (m.nextTide) {
+        const kind = m.nextTide.type === 'H' ? 'high' : 'low';
+        tideLabel = phase + ' — ' + kind;
+        if (m.tideH != null) tideLabel += ' · ' + f1(m.tideH) + ' ft';
+      } else {
+        tideLabel = phase + (m.tideH != null ? ' · ' + f1(m.tideH) + ' ft MLLW' : '');
+      }
+    }
+    const sstLabel = m.sstF != null ? f0(m.sstF) + '\u00b0F' : '\u2014';
+    const cond = {
+      swellLabel: swellLabel,
+      windLabel: windLabel,
+      tideLabel: tideLabel,
+      sstLabel: sstLabel,
+      caveat: 'Live model near the boat — briefing prose stays timeless.'
+    };
+    if (synth && synth.liveConditionsStripHtml) return synth.liveConditionsStripHtml(esc, cond);
+    return '';
+  }
+
   function renderDiveBriefing(site) {
     const box = $('diveSiteBriefing');
     if (!box) return;
@@ -1879,14 +1932,16 @@
     const mpos = siteMapPos(site);
     const bactHit = window.BoatFib?.nearestElevated?.(mpos.lat, mpos.lon);
     const bactNote = window.BoatFib?.nearNoteHtml?.(bactHit) || '';
+    const liveStrip = diveLiveStripHtml();
     const blocks = siteBriefing(site);
     if (!blocks || !blocks.length) {
-      box.innerHTML = (bactNote || '') +
+      box.innerHTML = liveStrip + (bactNote || '') +
         '<p class="dive-briefing-placeholder">No briefing on file for <strong>' + esc(site.name) + '</strong> yet — check entry notes below and local dive reports before entering the water.</p>';
       return;
     }
     box.innerHTML =
       '<h3>Pre-dive briefing — ' + esc(site.name) + '</h3>' +
+      liveStrip +
       (bactNote || '') +
       '<div class="dive-briefing-prose">' +
       blocks.map(briefingBlockHtml).join('') +

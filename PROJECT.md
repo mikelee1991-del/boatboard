@@ -19,6 +19,7 @@ BoatBoard consolidates Southern California marine forecasts, GPS position, AIS t
 | `dive-engine.js` | Dive site library (**358 sites**), scoring (ported from DiveCast), Plan/On site rendering, dive maps, briefing UI |
 | `dive-briefings-data.js` | Pre-dive briefing content — `window.__BOAT_DIVE_BRIEFINGS__` keyed by site id |
 | `dive-site-intel.js` | Extra dive intel helpers |
+| `fish-spot-intel.js` | Thin curated fish intel for high-value King Harbor day-trip marks |
 | `seafloor-render.js` | On-site Leaflet chart (BlueTopo + NCEI DEM + ENC + Ocean + kelp) |
 | `coast-geo.js` | Audit-only high-res coastline (CScript pin tools). May contain phantom chords — not used by maps |
 | `coast-overlay-lite.js` | **Map display** shoreline (~100 ft, ~100 NM of slip). Loaded by dashboard |

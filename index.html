@@ -127,7 +127,17 @@ svg text{font-family:var(--font-mono)}
 .dive-briefing-card .dive-briefing-prose .dive-briefing-h:first-child{margin-top:0;padding-top:0;border-top:none}
 .dive-briefing-card .dive-briefing-prose p:last-child{margin-bottom:0}
 .dive-briefing-placeholder{font-size:13px;color:var(--ink3);line-height:1.5}
-@media(max-width:719px){.dive-briefing-card .dive-briefing-prose{max-height:min(70vh,640px);overflow-y:auto;padding-right:4px}}
+.briefing-live-strip{margin:0 0 12px;padding:10px 12px;border-radius:10px;border:1px solid var(--line2);background:var(--bg2)}
+.briefing-live-strip strong{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:600;margin:0 0 8px}
+.briefing-live-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.briefing-live-grid div span{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.briefing-live-grid div b{display:block;font-size:12px;font-weight:600;color:var(--ink);margin-top:2px;line-height:1.35;font-family:var(--font-mono,var(--mono))}
+.briefing-live-meta{font-size:12px;color:var(--ink3);margin:0;line-height:1.45}
+.briefing-live-caveat{font-size:11px;color:var(--ink3);margin:8px 0 0;line-height:1.4}
+@media(max-width:719px){
+  .dive-briefing-card .dive-briefing-prose{max-height:min(70vh,640px);overflow-y:auto;padding-right:4px}
+  .briefing-live-grid{grid-template-columns:1fr;gap:6px}
+}
 
 #mapWrap{position:relative;height:calc(100% - 44px);min-height:300px}
 #map{height:100%;width:100%;background:var(--bg2)}
@@ -10003,13 +10013,85 @@ function bathyLinksForSpot(spot){
 
 let _briefingSynthPromise = null;
 function ensureBriefingSynth(){
-  if(window.__BOAT_BRIEFING_SYNTH__) return Promise.resolve(window.__BOAT_BRIEFING_SYNTH__);
+  if(window.__BOAT_BRIEFING_SYNTH__){
+    if(!window.__BOAT_FISH_SPOT_INTEL__){
+      loadScript('fish-spot-intel.js').catch(()=>{});
+    }
+    return Promise.resolve(window.__BOAT_BRIEFING_SYNTH__);
+  }
   if(_briefingSynthPromise) return _briefingSynthPromise;
-  _briefingSynthPromise = loadScript('briefing-synth.js').then(()=> window.__BOAT_BRIEFING_SYNTH__).catch(e=>{
-    _briefingSynthPromise = null; throw e;
-  });
+  _briefingSynthPromise = loadScript('briefing-synth.js')
+    .then(()=> loadScript('fish-spot-intel.js').catch(()=>{}))
+    .then(()=> window.__BOAT_BRIEFING_SYNTH__)
+    .catch(e=>{ _briefingSynthPromise = null; throw e; });
   return _briefingSynthPromise;
 }
+/** Live swell/wind/tide/SST payload for On site briefing strips (timeless prose stays separate). */
+function gatherBriefingLiveConditions(){
+  const mc = marine && marine.current;
+  const wc = wx && wx.current;
+  const tide = typeof tideStateNow === 'function' ? tideStateNow() : null;
+  const hasAny = !!(mc || wc || tide);
+  if(!hasAny){
+    const pending = marine == null && wx == null;
+    return pending ? { loading: true } : { empty: true };
+  }
+  let swellLabel = '—';
+  if(mc && mc.swell_wave_height != null){
+    swellLabel = f1(mc.swell_wave_height * M2FT)+' ft';
+    if(mc.swell_wave_period != null) swellLabel += ' @ '+f0(mc.swell_wave_period)+' s';
+    if(mc.swell_wave_direction != null) swellLabel += ' '+compass(mc.swell_wave_direction);
+  }else if(mc && mc.wave_height != null){
+    swellLabel = 'Seas '+f1(mc.wave_height * M2FT)+' ft';
+    if(mc.wave_period != null) swellLabel += ' @ '+f0(mc.wave_period)+' s';
+  }
+  let windLabel = '—';
+  if(wc && wc.wind_speed_10m != null){
+    windLabel = f0(wc.wind_speed_10m)+' kn';
+    if(wc.wind_direction_10m != null) windLabel += ' '+compass(wc.wind_direction_10m);
+  }
+  let tideLabel = '—';
+  if(tide){
+    const phase = tide.rising == null ? 'Tide' : (tide.rising ? 'Incoming' : 'Outgoing');
+    if(tide.next){
+      const kind = tide.next.type === 'H' ? 'high' : 'low';
+      const mins = typeof minsUntil === 'function' ? minsUntil(tide.next.t) : null;
+      tideLabel = phase+' — '+kind+(mins != null ? ' in '+mins+' min' : '');
+      if(tide.h != null) tideLabel += ' · '+f1(tide.h)+' ft';
+    }else{
+      tideLabel = phase+(tide.h != null ? ' · '+f1(tide.h)+' ft MLLW' : '');
+    }
+  }
+  let sstLabel = '—';
+  if(mc && mc.sea_surface_temperature != null){
+    sstLabel = f0(mc.sea_surface_temperature * 9/5 + 32)+'°F';
+  }
+  return {
+    swellLabel, windLabel, tideLabel, sstLabel,
+    caveat: 'Live model near the boat — briefing prose stays timeless.'
+  };
+}
+function briefingLiveStripHtml(){
+  const cond = gatherBriefingLiveConditions();
+  const synth = window.__BOAT_BRIEFING_SYNTH__;
+  if(synth && synth.liveConditionsStripHtml) return synth.liveConditionsStripHtml(esc, cond);
+  if(cond.loading){
+    return '<div class="briefing-live-strip loading"><strong>Today\u2019s conditions</strong><p class="briefing-live-meta">Loading live swell, wind, tide &amp; SST\u2026</p></div>';
+  }
+  if(cond.empty){
+    return '<div class="briefing-live-strip empty"><strong>Today\u2019s conditions</strong><p class="briefing-live-meta">Live conditions not ready yet — wait for the marine/weather refresh.</p></div>';
+  }
+  const seasWind = (cond.swellLabel === '—' && cond.windLabel === '—') ? '—' :
+    (cond.swellLabel === '—' ? cond.windLabel : (cond.windLabel === '—' ? cond.swellLabel : cond.swellLabel+' · '+cond.windLabel));
+  return '<div class="briefing-live-strip"><strong>Today\u2019s conditions</strong>'+
+    '<div class="briefing-live-grid">'+
+    '<div><span>Swell / wind</span><b>'+esc(seasWind)+'</b></div>'+
+    '<div><span>Tide window</span><b>'+esc(cond.tideLabel || '—')+'</b></div>'+
+    '<div><span>SST</span><b>'+esc(cond.sstLabel || '—')+'</b></div>'+
+    '</div><p class="briefing-live-caveat">'+esc(cond.caveat || '')+'</p></div>';
+}
+window.briefingLiveStripHtml = briefingLiveStripHtml;
+window.gatherBriefingLiveConditions = gatherBriefingLiveConditions;
 function renderFishSpotBriefing(spot, distNm){
   const box = $('fishSpotBriefing');
   if(!box) return;
@@ -10018,23 +10100,37 @@ function renderFishSpotBriefing(spot, distNm){
     return;
   }
   const paint = (synth)=>{
-    const blocks = synth && synth.synthesizeFishBriefing
-      ? synth.synthesizeFishBriefing(spot, distNm)
-      : null;
+    const liveStrip = briefingLiveStripHtml();
+    const blocks = synth && synth.fishBriefingFor
+      ? synth.fishBriefingFor(spot, distNm, window.__BOAT_FISH_SPOT_INTEL__)
+      : (synth && synth.synthesizeFishBriefing
+        ? synth.synthesizeFishBriefing(spot, distNm, synth.resolveFishIntel ? synth.resolveFishIntel(spot, window.__BOAT_FISH_SPOT_INTEL__) : null)
+        : null);
     if(!blocks || !blocks.length){
-      box.innerHTML = '<p class="dive-briefing-placeholder">No briefing available for <strong>'+esc(spot.name)+'</strong>.</p>';
+      box.innerHTML = liveStrip +
+        '<p class="dive-briefing-placeholder">No briefing available for <strong>'+esc(spot.name)+'</strong>.</p>';
       return;
     }
-    if(synth.briefingBlocksToHtml){
-      box.innerHTML = synth.briefingBlocksToHtml(esc, blocks, 'Fishing briefing — '+spot.name);
-      return;
+    const title = 'Fishing briefing — '+spot.name;
+    const prose = synth.briefingBlocksToHtml
+      ? synth.briefingBlocksToHtml(esc, blocks, title)
+      : ('<h3>'+esc(title)+'</h3><div class="dive-briefing-prose">'+
+        blocks.map(b => '<h4 class="dive-briefing-h">'+esc(b.h)+'</h4>'+(b.body||[]).map(p=>'<p>'+esc(p)+'</p>').join('')).join('')+
+        '</div>');
+    /* Insert live strip after the h3 when present */
+    if(/^<h3>/.test(prose)){
+      box.innerHTML = prose.replace(/^<h3>[^<]*<\/h3>/, m => m + liveStrip);
+    }else{
+      box.innerHTML = liveStrip + prose;
     }
-    box.innerHTML = '<h3>Fishing briefing — '+esc(spot.name)+'</h3><div class="dive-briefing-prose">'+
-      blocks.map(b => '<h4 class="dive-briefing-h">'+esc(b.h)+'</h4>'+(b.body||[]).map(p=>'<p>'+esc(p)+'</p>').join('')).join('')+
-      '</div>';
   };
   const ready = window.__BOAT_BRIEFING_SYNTH__;
-  if(ready){ paint(ready); return; }
+  if(ready && window.__BOAT_FISH_SPOT_INTEL__){ paint(ready); return; }
+  if(ready){
+    loadScript('fish-spot-intel.js').catch(()=>{}).then(()=> paint(ready));
+    box.innerHTML = '<p class="dive-briefing-placeholder">Loading briefing…</p>';
+    return;
+  }
   box.innerHTML = '<p class="dive-briefing-placeholder">Loading briefing…</p>';
   ensureBriefingSynth().then(paint).catch(()=>{
     box.innerHTML = '<p class="dive-briefing-placeholder">Briefing loader failed — check tackle notes above.</p>';

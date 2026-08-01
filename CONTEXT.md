@@ -45,6 +45,8 @@ Review UI: `pin-trust-review.html` (build with `build-pin-trust-review.js`).
 |------|------|
 | `index.html` | UI, fish, weather, cruise, SST, GPS |
 | `dive-engine.js` | Dive sites / scoring / maps |
+| `fish-spot-intel.js` | Thin curated fish intel (structure / approach / quirks) |
+| `briefing-synth.js` | Template dive/fish briefings + live conditions strip HTML |
 | `windy-waves-embed.html` | Cruise ft lock |
 | `verified-water-pins.json` + sync scripts | Multi-source pins |
 | `pin-trust-review*.json/js/html` | Trust review pipeline |

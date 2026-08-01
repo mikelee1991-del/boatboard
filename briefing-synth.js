@@ -294,8 +294,109 @@
     return 'structure';
   }
 
-  function synthesizeFishBriefing(spot, distNm) {
+  /** Map FISH_SPOTS names → fish-spot-intel.js slugs (reef families / aliases). */
+  var FISH_INTEL_ALIASES = {
+    /* CDFG Hermosa modules */
+    'hermosa beach artificial reef a': 'hermosareef',
+    'hermosa beach artificial reef b': 'hermosareef',
+    'hermosa beach artificial reef c': 'hermosareef',
+    'hermosa beach artificial reef d': 'hermosareef',
+    'hermosa beach artificial reef center': 'hermosareef',
+    /* CDFG Redondo + barge */
+    'redondo beach artificial reef a': 'redondoreef',
+    'barge 287 - redondo beach artificial reef b': 'redondoreef',
+    'redondo beach artificial reef c': 'redondoreef',
+    'redondo beach artificial reef d': 'redondoreef',
+    'redondo beach artificial reef e': 'redondoreef',
+    'redondo beach artificial reef f': 'redondoreef',
+    'redondo beach artificial reef g': 'redondoreef',
+    'redondo beach artificial reef h': 'redondoreef',
+    'redondo beach artificial reef i': 'redondoreef',
+    'redondo beach artificial reef j': 'redondoreef',
+    'redondo beach artificial reef k': 'redondoreef',
+    'redondo beach artificial reef center': 'redondoreef',
+    'ss palawan wreck fish grounds': 'palawan',
+    'horseshoe kelp - san pedro bay': 'horseshoe',
+    'rocky pt kelp — palos verdes': 'rockypoint',
+    'worm reef fish grounds — rocky point': 'rockypoint',
+    'ss avalon wreck fish grounds — palos verdes': 'ssavalon',
+    'golf ball reef — haggerty\'s / bluff cove': 'golfball',
+    'the crane — haggerty\'s offshore': 'crane',
+    'merry\'s reef — honeymoon cove offshore': 'merrysreef',
+    'halfway reef — pv (christmas tree–honeymoon)': 'halfway',
+    'kevin\'s reef — christmas tree cove offshore': 'halfway',
+    'resort point wall — pv': 'resortpoint',
+    'hawthorne reef (barberpole) — pv': 'hawthorne',
+    'pt vicente pinnacles — palos verdes': 'ptvicente',
+    'biodome — pt vicente': 'ptvicente',
+    'portuguese point high spot — pv': 'portuguese',
+    'portuguese kelp — palos verdes (usc waypoint)': 'portuguese',
+    'pvr restoration reef — module 2a': 'pvr',
+    'pvr restoration reef — module 5c': 'pvr',
+    'redondo canyon west wall': 'redondocanyon',
+    '36 fathom pinnacle': 'thirtysixfathom',
+    '37 fathom spot': 'thirtysevenfathom',
+    '40 fathom curve': 'fortyfathom',
+    '47 fathom ridge': 'fortysevenfathom',
+    'marina del rey artificial reef (center)': 'mdreyreef',
+    'marina del rey artificial reef 2a': 'mdreyreef',
+    'marina del rey artificial reef 1 center': 'mdreyreef',
+    'hermosa hard bottom': 'hermosahardbottom',
+    'manhattan hard bottom': 'manhattanhardbottom',
+    'inside south bank pinnacle 26 fathom': 'insidesouthbank',
+    'sculpin hardbottom area': 'sculpinhardbottom',
+    'pt. fermin kelp — san pedro (usc waypoint)': 'ptfermin',
+    'jenny lynne wreck — long point pv': 'jennlynne'
+  };
+
+  function resolveFishIntel(spot, intelMap) {
+    if (!spot || !intelMap) return null;
+    if (spot.id && intelMap[spot.id]) return intelMap[spot.id];
+    var name = String(spot.name || '');
+    var key = FISH_INTEL_ALIASES[name.toLowerCase()];
+    if (key && intelMap[key]) return intelMap[key];
+    var n = name.toLowerCase();
+    if (/hermosa.*artificial\s*reef|hermosa beach artificial/.test(n) && intelMap.hermosareef) return intelMap.hermosareef;
+    if (/barge\s*287|redondo.*artificial\s*reef/.test(n) && intelMap.redondoreef) return intelMap.redondoreef;
+    if (/palawan/.test(n) && intelMap.palawan) return intelMap.palawan;
+    if (/horseshoe/.test(n) && intelMap.horseshoe) return intelMap.horseshoe;
+    if (/worm\s*reef|rocky\s*pt\s*kelp|rocky point kelp/.test(n) && intelMap.rockypoint) return intelMap.rockypoint;
+    if (/ss\s*avalon|avalon wreck/.test(n) && intelMap.ssavalon) return intelMap.ssavalon;
+    if (/golf\s*ball/.test(n) && intelMap.golfball) return intelMap.golfball;
+    if (/\bcrane\b/.test(n) && /haggerty/.test(n) && intelMap.crane) return intelMap.crane;
+    if (/merry'?s\s*reef/.test(n) && intelMap.merrysreef) return intelMap.merrysreef;
+    if (/halfway\s*reef|kevin'?s\s*reef/.test(n) && intelMap.halfway) return intelMap.halfway;
+    if (/resort\s*point/.test(n) && intelMap.resortpoint) return intelMap.resortpoint;
+    if (/hawthorne|barberpole/.test(n) && intelMap.hawthorne) return intelMap.hawthorne;
+    if (/biodome|pt\.?\s*vicente\s*pinnacle|point vicente pinnacle/.test(n) && intelMap.ptvicente) return intelMap.ptvicente;
+    if (/portuguese/.test(n) && intelMap.portuguese) return intelMap.portuguese;
+    if (/\bpvr\b|restoration reef/.test(n) && intelMap.pvr) return intelMap.pvr;
+    if (/redondo\s*canyon/.test(n) && intelMap.redondocanyon) return intelMap.redondocanyon;
+    if (/36\s*fathom/.test(n) && intelMap.thirtysixfathom) return intelMap.thirtysixfathom;
+    if (/37\s*fathom/.test(n) && intelMap.thirtysevenfathom) return intelMap.thirtysevenfathom;
+    if (/40\s*fathom/.test(n) && intelMap.fortyfathom) return intelMap.fortyfathom;
+    if (/47\s*fathom/.test(n) && intelMap.fortysevenfathom) return intelMap.fortysevenfathom;
+    if (/marina\s*del\s*rey.*artificial|mdrey/.test(n) && intelMap.mdreyreef) return intelMap.mdreyreef;
+    if (/hermosa\s*hard\s*bottom/.test(n) && intelMap.hermosahardbottom) return intelMap.hermosahardbottom;
+    if (/manhattan\s*hard\s*bottom/.test(n) && intelMap.manhattanhardbottom) return intelMap.manhattanhardbottom;
+    if (/inside\s*south\s*bank/.test(n) && intelMap.insidesouthbank) return intelMap.insidesouthbank;
+    if (/sculpin\s*hardbottom|sculpin hard bottom/.test(n) && intelMap.sculpinhardbottom) return intelMap.sculpinhardbottom;
+    if (/fermin/.test(n) && intelMap.ptfermin) return intelMap.ptfermin;
+    if (/jenny\s*lynne/.test(n) && intelMap.jennlynne) return intelMap.jennlynne;
+    return null;
+  }
+
+  function fishBriefingFor(spot, distNm, intelMap) {
     if (!spot) return null;
+    var intel = resolveFishIntel(spot, intelMap || global.__BOAT_FISH_SPOT_INTEL__ || {});
+    return synthesizeFishBriefing(spot, distNm, intel);
+  }
+
+  function synthesizeFishBriefing(spot, distNm, intel) {
+    if (!spot) return null;
+    if (intel == null && arguments.length < 3) {
+      intel = resolveFishIntel(spot, global.__BOAT_FISH_SPOT_INTEL__ || null);
+    }
     var name = spot.name || 'This mark';
     var species = (spot.species && spot.species.length) ? spot.species : ['calico bass', 'sand bass', 'rockfish'];
     var habitat = spot.habitat || 'Offshore structure';
@@ -316,6 +417,7 @@
       spot.bestTide === 'outgoing' ? 'outgoing tide' : 'either tide phase';
     var tod = spot.bestTime || 'morning';
     var face = spot.face != null ? Math.round(spot.face) + '° ' + compass(spot.face) : null;
+    var intelHaz = (intel && intel.hazards) ? intel.hazards.slice(0, 4) : null;
 
     var why1 = name + ' targets ' + species.slice(0, 4).join(', ') +
       ' over ' + habitat.toLowerCase() + ' in the ' + depth + ' band' +
@@ -324,19 +426,23 @@
       (nm != null ? f1(nm) + ' nm run' + (run ? ' (~' + Math.round(run.brg) + '° ' + compass(run.brg) + ')' : '') : 'charted local mark') +
       (spot.regional ? ' (regional day-trip fuel plan)' : ' for a same-day turn.') + ' ' + trust;
 
-    var why2 = surface
-      ? ('Water character: ' + habitat +
-        '. Watch for bait marks, color/temp breaks, and birds — troll feathers or cast surface irons along the edge, then slide to nearby structure if the bite goes quiet.')
-      : ('Structure character: ' + habitat +
-        '. ' + (/artificial|module|cdfg|pvr|wreck|barge|pipe/i.test(name + habitat)
-          ? 'Work high spots and module edges up-current; fish stack on the first relief that breaks the sand.'
-          : /kelp|cove|point|rock/i.test(name + habitat)
-            ? 'Work kelp edges and rock fingers; keep baits just outside the fronds to avoid snags while staying in the strike zone.'
-            : 'Probe hard-to-soft transitions with the sounder — marks often sit on the first color change.'));
+    var why2 = intel && intel.structure
+      ? ('Structure / water: ' + intel.structure +
+        (intel.speciesNotes ? ' Species quirks: ' + intel.speciesNotes + '.' : ''))
+      : (surface
+        ? ('Water character: ' + habitat +
+          '. Watch for bait marks, color/temp breaks, and birds — troll feathers or cast surface irons along the edge, then slide to nearby structure if the bite goes quiet.')
+        : ('Structure character: ' + habitat +
+          '. ' + (/artificial|module|cdfg|pvr|wreck|barge|pipe/i.test(name + habitat)
+            ? 'Work high spots and module edges up-current; fish stack on the first relief that breaks the sand.'
+            : /kelp|cove|point|rock/i.test(name + habitat)
+              ? 'Work kelp edges and rock fingers; keep baits just outside the fronds to avoid snags while staying in the strike zone.'
+              : 'Probe hard-to-soft transitions with the sounder — marks often sit on the first color change.')));
 
     var why3 = 'Condition filter: prefer ' + tod + ' windows and ' + tide +
       (spot.minSstF ? '; water above ~' + spot.minSstF + '°F helps warm-water species' : '') +
       '. ' + (face ? 'Spot face ~' + face + ' — lee up when swell is large. ' : '') +
+      (intel && intel.bestWhen ? ('Local window: ' + intel.bestWhen + '. ') : '') +
       ({ pv: 'PV marks fish best after several calm days when vis clears and kelp stands up.',
          smb: 'Santa Monica Bay marks are the slip\'s bread-and-butter when west swell is up on PV.',
          catalina: 'Catalina crossings need a weather window; fish the lee kelp line first.',
@@ -345,11 +451,13 @@
          regional: 'Treat as a dedicated run, not a quick harbor hop.',
          socal: 'Match seas and wind to the exposure before leaving the breakwater.' }[region] || '');
 
-    var tech1 = surface
-      ? ('Primary approach: ' + tactics +
-        ' Sounder for bait and temperature edges first — set a controlled troll or open-water drift along the color break, then cast irons/feathers when marks boil.')
-      : ('Primary approach: ' + tactics +
-        ' Sounder first — idle across the high spot, mark fish and relief, then set a controlled drift or short-soak anchor up-current of the bite.');
+    var tech1 = intel && intel.approach
+      ? ('Primary approach: ' + intel.approach + ' Chart tactics: ' + tactics)
+      : (surface
+        ? ('Primary approach: ' + tactics +
+          ' Sounder for bait and temperature edges first — set a controlled troll or open-water drift along the color break, then cast irons/feathers when marks boil.')
+        : ('Primary approach: ' + tactics +
+          ' Sounder first — idle across the high spot, mark fish and relief, then set a controlled drift or short-soak anchor up-current of the bite.'));
 
     var tech2 = surface
       ? ('Bait & presentation: feathers, yo-yos, and surface irons when bait is up; live sardine on a short flat-line or kite when YT/bonito show. ' +
@@ -362,30 +470,74 @@
       (surface
         ? '. Give wide berth to dive flags and other trollers; circle bait schools wide rather than cutting through. '
         : '. Watch for dive flags on shared reefs (Hermosa / Redondo modules, PV coves). ') +
+      (intelHaz && intelHaz.length
+        ? ('Hazards on file: ' + intelHaz.join('; ') + '. ')
+        : '') +
       'If wind builds afternoon, fish the closest productive ' + (surface ? 'bait line' : 'structure') + ' on the way home rather than extending the run.';
 
-    var season1 = surface
-      ? ('Targets by season: bonito / barracuda / yellowtail when SST and bait align in summer–fall; ' +
-        'calico and sand bass remain available on adjacent structure year-round.')
-      : ('Targets by season: calico and sand bass year-round on structure; sheephead stronger on warmer months; rockfish deeper in winter cold; ' +
-        (species.join(' ').toLowerCase().indexOf('bonito') >= 0 || species.join(' ').toLowerCase().indexOf('yellowtail') >= 0
-          ? 'bonito / yellowtail when SST and bait align in summer–fall.'
-          : 'pelagics occasional when bait and SST push into the bay.'));
+    var season1 = intel && intel.speciesNotes
+      ? ('Targets & quirks: ' + intel.speciesNotes +
+        (surface
+          ? ' Surface seasons still favor bonito / barracuda / yellowtail when SST and bait align in summer–fall.'
+          : ' Calico and sand bass remain available year-round on structure when the window is workable.'))
+      : (surface
+        ? ('Targets by season: bonito / barracuda / yellowtail when SST and bait align in summer–fall; ' +
+          'calico and sand bass remain available on adjacent structure year-round.')
+        : ('Targets by season: calico and sand bass year-round on structure; sheephead stronger on warmer months; rockfish deeper in winter cold; ' +
+          (species.join(' ').toLowerCase().indexOf('bonito') >= 0 || species.join(' ').toLowerCase().indexOf('yellowtail') >= 0
+            ? 'bonito / yellowtail when SST and bait align in summer–fall.'
+            : 'pelagics occasional when bait and SST push into the bay.')));
 
     var season2 = 'MPA & regs: several PV and Catalina marks sit in or beside SMCAs — know no-take lines before fishing Portuguese Point, Pt Vicente, Abalone Cove, or island parks. ' +
       'Depth and rockfish closures change — verify current CDFW regs the morning of the trip.';
 
-    var season3 = surface
-      ? ('Local tip: if surface fish shut off, slide toward the nearest kelp high spot or Horseshoe structure pin rather than making a long reposition. ' +
-        'Feature-group siblings often share one bait corridor.')
-      : ('Local tip: pair this mark with a nearby module or kelp line for a two-stop loop without a long reposition. ' +
-        'If the bite is soft, slide 0.1–0.2 nm along the same contour rather than abandoning the complex — feature groups often share one reef system.');
+    var season3 = intel && intel.notes
+      ? ('Local tip: ' + intel.notes)
+      : (surface
+        ? ('Local tip: if surface fish shut off, slide toward the nearest kelp high spot or Horseshoe structure pin rather than making a long reposition. ' +
+          'Feature-group siblings often share one bait corridor.')
+        : ('Local tip: pair this mark with a nearby module or kelp line for a two-stop loop without a long reposition. ' +
+          'If the bite is soft, slide 0.1–0.2 nm along the same contour rather than abandoning the complex — feature groups often share one reef system.'));
 
     return [
       { h: 'Why fish here', body: [why1, why2, why3] },
       { h: 'Approach, tactics & boat craft', body: [tech1, tech2, tech3] },
       { h: 'Seasonal notes & regulations', body: [season1, season2, season3] }
     ];
+  }
+
+  /**
+   * Compact live “today” strip for On site briefing cards.
+   * cond: { loading, empty, swellLabel, windLabel, tideLabel, sstLabel, caveat }
+   */
+  function liveConditionsStripHtml(escFn, cond) {
+    var esc = typeof escFn === 'function' ? escFn : function (s) { return String(s == null ? '' : s); };
+    cond = cond || {};
+    if (cond.loading) {
+      return '<div class="briefing-live-strip loading">' +
+        '<strong>Today\u2019s conditions</strong>' +
+        '<p class="briefing-live-meta">Loading live swell, wind, tide &amp; SST\u2026</p></div>';
+    }
+    if (cond.empty) {
+      return '<div class="briefing-live-strip empty">' +
+        '<strong>Today\u2019s conditions</strong>' +
+        '<p class="briefing-live-meta">Live conditions not ready yet \u2014 wait for the marine/weather refresh, or open Overview and pull to refresh.</p></div>';
+    }
+    var swell = cond.swellLabel != null && cond.swellLabel !== '' ? cond.swellLabel : '\u2014';
+    var wind = cond.windLabel != null && cond.windLabel !== '' ? cond.windLabel : '\u2014';
+    var tide = cond.tideLabel != null && cond.tideLabel !== '' ? cond.tideLabel : '\u2014';
+    var sst = cond.sstLabel != null && cond.sstLabel !== '' ? cond.sstLabel : '\u2014';
+    var seasWind = swell === '\u2014' && wind === '\u2014' ? '\u2014' :
+      (swell === '\u2014' ? wind : (wind === '\u2014' ? swell : swell + ' · ' + wind));
+    var caveat = cond.caveat || 'Live model near the boat — not baked into briefing prose.';
+    return '<div class="briefing-live-strip">' +
+      '<strong>Today\u2019s conditions</strong>' +
+      '<div class="briefing-live-grid">' +
+      '<div><span>Swell / wind</span><b>' + esc(seasWind) + '</b></div>' +
+      '<div><span>Tide window</span><b>' + esc(tide) + '</b></div>' +
+      '<div><span>SST</span><b>' + esc(sst) + '</b></div>' +
+      '</div>' +
+      '<p class="briefing-live-caveat">' + esc(caveat) + '</p></div>';
   }
 
   function briefingBlocksToHtml(esc, blocks, title) {
@@ -407,9 +559,13 @@
     diveBriefingFor: diveBriefingFor,
     synthesizeDiveBriefing: synthesizeDiveBriefing,
     synthesizeFishBriefing: synthesizeFishBriefing,
+    fishBriefingFor: fishBriefingFor,
+    resolveFishIntel: resolveFishIntel,
     classifyFishStyle: classifyFishStyle,
     briefingBlocksToHtml: briefingBlocksToHtml,
+    liveConditionsStripHtml: liveConditionsStripHtml,
     DIVE_BRIEFING_ALIASES: DIVE_BRIEFING_ALIASES,
+    FISH_INTEL_ALIASES: FISH_INTEL_ALIASES,
     runFromSlip: runFromSlip
   };
 })(typeof window !== 'undefined' ? window : globalThis);
