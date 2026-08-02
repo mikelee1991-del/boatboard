@@ -45,7 +45,7 @@
    * @param {string} [opts.note]
    * @param {function(number):string} [opts.scoreColor]
    * @param {object} [opts.daily] sun daily for day/night bands
-   * @param {number} [opts.goodAt] default 75
+   * @param {number} [opts.goodAt] default 82
    * @param {number} [opts.fairAt] default 55
    * @param {boolean} [opts.markPeaks]
    * @param {number|null} [opts.highlightMs] plan-time instant to mark (hide when null/out of window)
@@ -79,7 +79,7 @@
       day: 'rgba(24,34,48,0.42)', night: 'rgba(4,8,14,0.72)', sunMarker: '#91a0b0'
     });
     const scoreColor = opts.scoreColor || (v =>
-      v >= (opts.goodAt != null ? opts.goodAt : 75) ? CHART.good
+      v >= (opts.goodAt != null ? opts.goodAt : 82) ? CHART.good
         : v >= (opts.fairAt != null ? opts.fairAt : 55) ? CHART.fair
           : CHART.poor);
 
@@ -158,7 +158,7 @@
       svg = sunMark(svg, daily, xS, padT, padT + plotH, tMin, tMax);
     }
 
-    const goodAt = opts.goodAt != null ? opts.goodAt : 75;
+    const goodAt = opts.goodAt != null ? opts.goodAt : 82;
     const fairAt = opts.fairAt != null ? opts.fairAt : 55;
     [[goodAt, CHART.good], [fairAt, CHART.fair]].forEach(([th, col]) => {
       const y = yS(th);

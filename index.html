@@ -4586,8 +4586,8 @@ function renderOverview(){
       moonIllum: sol.illum
     };
     const bite = fishBiteScore(fishCtx);
-    const biteCol = bite.score >= 75 ? 'var(--good)' : bite.score >= 58 ? 'var(--fair)' : 'var(--poor)';
-    cards.push(ovCard('Fish bite', bite.score+'/100', bite.score >= 75 ? 'Good day to go' : bite.score >= 55 ? 'Pick your window' : 'Timing matters', biteCol));
+    const biteCol = bite.score >= BITE_GOOD_AT ? 'var(--good)' : bite.score >= BITE_FAIR_AT ? 'var(--fair)' : 'var(--poor)';
+    cards.push(ovCard('Fish bite', bite.score+'/100', bite.score >= BITE_GOOD_AT ? 'Good day to go' : bite.score >= BITE_FAIR_AT ? 'Pick your window' : 'Timing matters', biteCol));
 
     const hdg = travelHeading();
     const src = boatPosSource();
@@ -9040,42 +9040,69 @@ function solunarStatus(sol, now){
   return { active: isFinite(min) && min <= 50, minutes: isFinite(min) ? min : 999, nearest, windows };
 }
 
+/*
+ * Bite index calibration (SoCal-relative):
+ * Typical calm morning ≈ 45–60; stacked excellent window ≈ 80–95; blown/poor ≈ teens–30s.
+ * Dawn + solunar alone must not clear ~85 — start low and require wind/seas/tide stack for "good".
+ */
+const BITE_GOOD_AT = 82;
+const BITE_FAIR_AT = 55;
+
+/** Approx tide slope (ft/hr) from height → next extremum; negative = ebb. */
+function approxTideRateFtHr(tide, refMs){
+  if(!tide || tide.next == null || tide.h == null || !isFinite(tide.h) || !isFinite(tide.next.v)) return null;
+  const dtHr = (tide.next.t - refMs) / 3600000;
+  if(!(dtHr > 0.08)) return null;
+  return (tide.next.v - tide.h) / dtHr;
+}
+
 function fishBiteScore(ctx){
-  let s = 45, notes = [];
+  let s = 32, notes = [];
   const period = dayPeriod(ctx.hour);
-  if(period === 'dawn' || period === 'dusk'){ s += 18; notes.push('prime dawn/dusk period'); }
-  else if(period === 'morning' || period === 'afternoon'){ s += 8; }
-  else if(period === 'midday'){ s -= 5; notes.push('midday lull typical'); }
+  if(period === 'dawn' || period === 'dusk'){ s += 12; notes.push('prime dawn/dusk period'); }
+  else if(period === 'morning' || period === 'afternoon'){ s += 5; }
+  else if(period === 'midday'){ s -= 6; notes.push('midday lull typical'); }
   else { s -= 12; notes.push('night — limited nearshore options'); }
 
-  if(ctx.sol.active){ s += 22; notes.push('solunar window active now'); }
-  else if(ctx.sol.minutes <= 90){ s += 12; notes.push('solunar peak in '+Math.round(ctx.sol.minutes)+' min'); }
+  if(ctx.sol.active){ s += 14; notes.push('solunar window active now'); }
+  else if(ctx.sol.minutes <= 90){ s += 7; notes.push('solunar peak in '+Math.round(ctx.sol.minutes)+' min'); }
 
   if(ctx.tide){
-    if(ctx.tide.rising){ s += 10; notes.push('incoming tide — cleaner water at reefs'); }
-    else if(ctx.tide.rising === false){ s += 4; notes.push('outgoing tide — try sand edges for halibut'); }
-    if(ctx.tide.next){
-      const ref = ctx.planWhen != null ? +ctx.planWhen : Date.now();
-      const toChange = Math.round((ctx.tide.next.t - ref) / 60000);
-      if(toChange >= 0 && toChange <= 90){ s += 8; notes.push('tide change in '+toChange+' min — slack bite window'); }
+    const ref = ctx.planWhen != null ? +ctx.planWhen : Date.now();
+    if(ctx.tide.rising){ s += 8; notes.push('incoming tide — cleaner water at reefs'); }
+    else if(ctx.tide.rising === false){
+      const rate = approxTideRateFtHr(ctx.tide, ref);
+      if(rate != null && rate < -0.45){ s -= 10; notes.push('strong ebb — bait/water quality often worse'); }
+      else if(rate != null && rate < -0.25){ s -= 4; notes.push('ebb running'); }
+      /* No free +4 on mild falling — ebb is neutral-to-negative. */
     }
+    if(ctx.tide.next){
+      const toChange = Math.round((ctx.tide.next.t - ref) / 60000);
+      if(toChange >= 0 && toChange <= 90){ s += 6; notes.push('tide change in '+toChange+' min — slack bite window'); }
+    }
+  } else {
+    s -= 3; notes.push('tide data missing');
   }
 
   if(ctx.wind != null){
-    if(ctx.wind < 8){ s += 10; notes.push('light wind — comfortable drift fishing'); }
-    else if(ctx.wind < 14){ s += 4; }
+    if(ctx.wind < 8){ s += 8; notes.push('light wind — comfortable drift fishing'); }
+    else if(ctx.wind < 14){ s += 2; }
     else if(ctx.wind >= 18){ s -= 18; notes.push('strong wind — stay in lee or postpone offshore'); }
     else { s -= 6; notes.push('breezy — favor protected kelp'); }
+  } else {
+    s -= 4; notes.push('wind data missing');
   }
 
   if(ctx.seas != null){
     if(ctx.seas > 4){ s -= 20; notes.push('heavy seas — harbor/nearshore only'); }
     else if(ctx.seas > 2.5){ s -= 10; notes.push('moderate swell — reef fishing only'); }
-    else if(ctx.seas <= 1.5){ s += 6; }
+    else if(ctx.seas <= 1.5){ s += 4; }
+  } else {
+    s -= 4; notes.push('seas data missing');
   }
 
-  if(ctx.sstF != null && ctx.sstF >= 65){ s += 8; notes.push('warm SST — pelagics more likely'); }
-  if(ctx.moonIllum >= 80){ s += 4; notes.push('bright moon — night bite possible'); }
+  if(ctx.sstF != null && ctx.sstF >= 65){ s += 6; notes.push('warm SST — pelagics more likely'); }
+  if(ctx.moonIllum >= 80){ s += 3; notes.push('bright moon — night bite possible'); }
 
   return { score: clamp(Math.round(s), 5, 98), notes };
 }
@@ -9139,7 +9166,7 @@ function biteIndexHonestyNote(cov){
   ];
   if(cov){
     if(cov.marine < 0.85 || cov.wx < 0.85){
-      parts.push('Some hours lack Open-Meteo wind/seas/SST — those slots score without the missing factor (not a fake sine wave).');
+      parts.push('Some hours lack Open-Meteo wind/seas/SST — those slots take a mild missing-data penalty (not a fake sine wave).');
     } else {
       parts.push('Wind, seas, and SST are Open-Meteo hourly forecasts; tides from NOAA; solunar computed locally.');
     }
@@ -9174,8 +9201,8 @@ function renderBiteIndexChart(){
       stroke: 'var(--accent)',
       fillId: 'biteIndexFill',
       scoreColor: fishScoreColor,
-      goodAt: 75,
-      fairAt: 55,
+      goodAt: BITE_GOOD_AT,
+      fairAt: BITE_FAIR_AT,
       daily,
       dayNightBands: typeof wxChartDayNightBands === 'function' ? wxChartDayNightBands : null,
       sunMarkers: typeof wxChartSunMarkers === 'function' ? wxChartSunMarkers : null,
@@ -9579,8 +9606,8 @@ function spotGearLine(spot){
 
 function spotConditionRec(spot, score, ctx){
   const parts = [];
-  if(score >= 75) parts.push('Strong pick right now');
-  else if(score >= 58) parts.push('Worth considering today');
+  if(score >= BITE_GOOD_AT) parts.push('Strong pick right now');
+  else if(score >= BITE_FAIR_AT) parts.push('Worth considering today');
   else parts.push('Timing-dependent — check peak window');
   if(ctx.tide?.rising && spot.bestTide === 'incoming') parts.push('incoming tide helps');
   else if(ctx.tide?.rising === false && spot.bestTide === 'incoming') parts.push('wait for incoming tide');
@@ -9599,7 +9626,7 @@ function renderFishTopPicks(ranked, ctx, sol){
   const picks = ranked.slice(0, 10);
   if(!picks.length){ box.innerHTML = '<div class="skel">No spots ranked</div>'; return; }
   box.innerHTML = picks.map(({ spot, score, distNm }, i) => {
-    const cls = score >= 75 ? 'hot' : score >= 58 ? 'warm' : '';
+    const cls = score >= BITE_GOOD_AT ? 'hot' : score >= BITE_FAIR_AT ? 'warm' : '';
     const tl = spotTimeline24h(spot, ctx, sol, 2);
     const peak = spotBestPeak(tl);
     const peakTxt = peak ? 'Peak '+fmtDayTime(new Date(peak.t))+' ('+peak.score+'/100)' : '';
@@ -10064,7 +10091,7 @@ function renderFishTimeline(ranked, sol, baseCtx){
       const col = fishScoreColor(slot.score);
       const op = clamp(0.3 + slot.score / 130, 0.3, 1);
       svg += '<rect x="'+x.toFixed(1)+'" y="'+y+'" width="'+w.toFixed(1)+'" height="22" rx="3" fill="'+col+'" opacity="'+op.toFixed(2)+'"/>';
-      if(slot.score >= 75 && si > 0){
+      if(slot.score >= BITE_GOOD_AT && si > 0){
         svg += '<text x="'+(x+w/2)+'" y="'+(y+14)+'" text-anchor="middle" font-size="8" fill="#060a10" font-weight="700">'+slot.score+'</text>';
       }
     });
@@ -10073,8 +10100,8 @@ function renderFishTimeline(ranked, sol, baseCtx){
   host.innerHTML = svg;
   if(nowEl) nowEl.textContent = 'Now · 2h steps · 24h';
   if(meta) meta.innerHTML =
-    '<span><i style="background:'+CHART.good+'"></i> ≥75 hot</span>'+
-    '<span><i style="background:'+CHART.fair+'"></i> ≥58 decent</span>'+
+    '<span><i style="background:'+CHART.good+'"></i> ≥'+BITE_GOOD_AT+' hot</span>'+
+    '<span><i style="background:'+CHART.fair+'"></i> ≥'+BITE_FAIR_AT+' decent</span>'+
     '<span><i style="background:'+CHART.now+'"></i> Now line</span>';
 }
 
@@ -10182,8 +10209,8 @@ function buildFishWindows(sol, tide, anchor){
 function fishAdviceSummary(ctx, bite){
   const parts = [];
   const period = dayPeriod(ctx.hour);
-  if(bite.score >= 75) parts.push('Conditions look favorable today.');
-  else if(bite.score >= 55) parts.push('Decent fishing day with some timing needed.');
+  if(bite.score >= BITE_GOOD_AT) parts.push('Conditions look favorable today.');
+  else if(bite.score >= BITE_FAIR_AT) parts.push('Decent fishing day with some timing needed.');
   else parts.push('Tougher day — pick protected spots and narrow windows.');
 
   if(period === 'dawn' || period === 'morning') parts.push('You\'re in the morning window locals favor for calico and halibut.');
@@ -10487,7 +10514,7 @@ function renderFishing(){
 
     const ctx = { lat: boatPos().lat, lon: boatPos().lon, hour: now.getHours(), sol: solSt, tide, sstF, wind, seas, moonIllum: sol.illum, planWhen: planMs };
     const bite = fishBiteScore(ctx);
-    const biteCol = bite.score >= 75 ? 'var(--good)' : bite.score >= 55 ? 'var(--fair)' : 'var(--poor)';
+    const biteCol = bite.score >= BITE_GOOD_AT ? 'var(--good)' : bite.score >= BITE_FAIR_AT ? 'var(--fair)' : 'var(--poor)';
     const near = solSt.nearest;
     const solSub = near && near.time
       ? fmtTime(near.time)+' '+near.label.toLowerCase()
@@ -10548,7 +10575,7 @@ function renderFishing(){
       /* Same score-ranked nearby pool as the map (#1–25), not re-sorted by distance alone. */
       const nearestDetail = synthRanked.slice(0, FISH_PICKER_POOL);
       spotBox.innerHTML = nearestDetail.map(({ spot, score, distNm, comfort })=>{
-        const cls = score >= 75 ? 'hot' : score >= 58 ? 'warm' : '';
+        const cls = score >= BITE_GOOD_AT ? 'hot' : score >= BITE_FAIR_AT ? 'warm' : '';
         const species = spot.species.slice(0, 5).map(s=>'<span class="chip a">'+esc(s)+'</span>').join('');
         const tl = spotTimeline24h(spot, ctx, sol, 2);
         const peak = spotBestPeak(tl);
@@ -10575,7 +10602,7 @@ function renderFishing(){
     }
 
     const cards = [
-      ['Bite index', String(bite.score)+'/100', bite.score >= 75 ? 'Go fish' : bite.score >= 55 ? 'Worth the run' : 'Pick your window'],
+      ['Bite index', String(bite.score)+'/100', bite.score >= BITE_GOOD_AT ? 'Go fish' : bite.score >= BITE_FAIR_AT ? 'Worth the run' : 'Pick your window'],
       ['Moon', sol.illum+'% lit', 'Phase '+Math.round(sol.phase*100)/100],
       ['Solunar', solSt.active ? 'ACTIVE NOW' : 'Peak in '+Math.round(solSt.minutes)+'m', solSub]
     ];

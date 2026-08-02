@@ -1197,8 +1197,17 @@
     return { f: 0.3, label: 'site is sheltered from this direction — mostly refracted energy' };
   }
 
-  function colorFor(s) { return s >= 75 ? 'var(--good)' : s >= 50 ? 'var(--fair)' : 'var(--poor)'; }
+  /* Glance / chart thresholds — relative to best SoCal days, not "pretty good". */
+  const DIVE_GOOD_AT = 82;
+  const DIVE_FAIR_AT = 50;
 
+  function colorFor(s) { return s >= DIVE_GOOD_AT ? 'var(--good)' : s >= DIVE_FAIR_AT ? 'var(--fair)' : 'var(--poor)'; }
+
+  /*
+   * Dive score calibration (SoCal-relative):
+   * Typical calm morning ≈ 45–60; stacked excellent window ≈ 80–95; blown/rain ≈ teens–30s (hard caps).
+   * Soft baselines are intentionally middling (vis ~70, dry runoff ~80) so "good" requires a real best-case stack.
+   */
   function scoreDive(site, m) {
     const F = [], caps = [];
     const depth = site.depth || 30;
@@ -1212,8 +1221,9 @@
       const L = 5.12 * T * T;
       const feltDepth = L / 2;
       const surgeAmp = Heff * Math.exp(-2 * Math.PI * depth / L);
-      let s = 100 - 21 * Math.pow(Math.max(0, Heff - 0.7), 1.2);
-      if (T >= 14 && Heff >= 2) s -= 8;
+      /* Steeper Heff curve + tighter free zone (~0.35 ft) than the old soft 0.7 ft / 21× curve. */
+      let s = 95 - 32 * Math.pow(Math.max(0, Heff - 0.35), 1.4);
+      if (T >= 14 && Heff >= 2) s -= 10;
       s = clamp(Math.round(s), 4, 98);
       F.push({
         key: 'surge', name: 'Surge & swell energy', weight: 30, score: s,
@@ -1230,15 +1240,15 @@
         ],
         spark: { series: m.waveSeries, nowPos: m.waveNowPos, unit: 'ft', label: 'Combined seas — 72 h before & 48 h after', markLabel: m.markLabel },
         why: 'Waves are orbital motion, and that motion penetrates to about half the wavelength (wavelength \u2248 5.12 \u00d7 period\u00b2, in feet). A 6-second wind chop dies out ~90 ft of wavelength down — you barely feel it at depth. A 15-second groundswell has a ~1,150 ft wavelength and will push you around even at 60+ ft, silting the bottom as it goes. This is why period matters as much as height, and why a site\u2019s facing direction can turn a big swell into a non-event.',
-        scoring: 'Roughly: under ~1 ft of effective seas scores in the 90s, 2 ft \u2248 70, 3 ft \u2248 45, 4 ft \u2248 15. Long-period swell (\u226514 s) over 2 ft costs another 8 for deep surge. Swell arriving outside the site\u2019s exposure window is discounted 30\u201370% before any of this.'
+        scoring: 'Roughly: under ~0.5 ft of effective seas scores in the mid-90s, 1.5 ft \u2248 55, 2 ft \u2248 35, 3 ft \u2248 teens. Long-period swell (\u226514 s) over 2 ft costs another 10 for deep surge. Swell arriving outside the site\u2019s exposure window is discounted 30\u201370% before any of this.'
       });
     }
 
     if (m.ok.marine || m.ok.wx) {
-      let s = 88, parts = [];
+      let s = 70, parts = [];
       if (m.avg48 != null) {
         const avgEff = m.avg48 * (0.4 + 0.6 * exp.f);
-        const stir = Math.max(0, avgEff - 1.2) * 17;
+        const stir = Math.max(0, avgEff - 0.8) * 22;
         s -= stir;
         if (stir > 1) parts.push('\u2212' + f0(stir) + ' for sediment stirred by recent seas (48-h avg ' + f1(m.avg48) + ' ft' + (exp.f < 1 ? ', reduced for shelter' : '') + ')');
       }
@@ -1247,7 +1257,7 @@
         s -= rp; if (rp > 1) parts.push('\u2212' + f0(rp) + ' for ' + f1(m.rain72) + '\u2033 of rain runoff in the past 72 h');
       }
       if (m.windAvg24 != null) {
-        const mixp = Math.max(0, m.windAvg24 - 10) * 1.6;
+        const mixp = Math.max(0, m.windAvg24 - 8) * 1.8;
         s -= mixp; if (mixp > 1) parts.push('\u2212' + f0(mixp) + ' for wind-driven mixing (24-h avg ' + f0(m.windAvg24) + ' kn)');
       }
       if (m.trendPct <= -0.15) { s += 7; parts.push('+7 — swell is dropping, water should be clearing'); }
@@ -1265,13 +1275,13 @@
           'Adjustments applied: ' + (parts.length ? parts.join(' \u00b7 ') : 'none — clean baseline')
         ],
         why: 'Visibility is mostly about what happened over the previous two or three days, not the moment itself. Days of waves keep fine sediment suspended long after the swell drops; rain flushes silt and everything on the streets into the water through storm drains; and sustained wind mixes the surface layer. The classic SoCal pattern for great vis: several days of small swell, no rain, light wind — often right after a swell fades. Note the model can\u2019t see plankton blooms or red tide, which can wreck vis on an otherwise perfect day.',
-        scoring: 'Starts at 88. Subtracts ~17 points per foot the shelter-adjusted 48-hour sea state exceeds 1.2 ft, ~45 points per inch of 72-hour rainfall, and 1.6 points per knot the 24-hour wind average exceeds 10 kn. A clearly dropping swell adds 7; a building one subtracts 7. The score maps to an estimated range of roughly 5\u201328 ft.'
+        scoring: 'Starts at 70 (typical-day baseline, not a free A). Subtracts ~22 points per foot the shelter-adjusted 48-hour sea state exceeds 0.8 ft, ~45 points per inch of 72-hour rainfall, and 1.8 points per knot the 24-hour wind average exceeds 8 kn. A clearly dropping swell adds 7; a building one subtracts 7. The score maps to an estimated range of roughly 5\u201328 ft.'
       });
     }
 
     if (m.ok.wx) {
       const gustEx = Math.max(0, (m.gustNow || 0) - (m.windNow || 0));
-      let s = 100 - 3.6 * Math.max(0, (m.windNow || 0) - 4) - 1.2 * Math.max(0, gustEx - 4) - 5 * Math.max(0, (m.windWaveNow || 0) - 0.7);
+      let s = 100 - 3.8 * Math.max(0, (m.windNow || 0) - 2) - 1.3 * Math.max(0, gustEx - 3) - 6 * Math.max(0, (m.windWaveNow || 0) - 0.5);
       s = clamp(Math.round(s), 4, 98);
       F.push({
         key: 'wind', name: 'Wind & surface state', weight: 20, score: s,
@@ -1287,13 +1297,13 @@
         ],
         spark: { series: m.windSeries, nowPos: m.windNowPos, unit: 'kn', label: 'Wind speed — 72 h before & 24 h after', markLabel: m.markLabel },
         why: 'Wind builds short-period chop within hours. It rarely affects you at depth, but it controls the hardest parts of a shore dive: getting in, getting out, and the surface swim. It also drives your safety-stop comfort and how easy it is to spot a surfaced buddy. SoCal has a strong daily rhythm — calm mornings, westerly sea breeze rising after noon — which is why locals dive early and why the noon and 5 PM outlook slots usually score below the 7 AM slot. Offshore (easterly/Santa Ana) wind flattens the surface but can bring its own hazards.',
-        scoring: 'The first 4 kn are free (that\u2019s glassy). Beyond that it loses 3.6 points per knot of sustained wind, 1.2 per knot of gust excess beyond 4 kn over sustained, and 5 per foot of locally generated wind wave above 0.7 ft.'
+        scoring: 'The first 2 kn are free. Beyond that it loses 3.8 points per knot of sustained wind, 1.3 per knot of gust excess beyond 3 kn over sustained, and 6 per foot of locally generated wind wave above 0.5 ft.'
       });
     }
 
     if (m.ok.wx) {
       const r = m.rain72;
-      let s = r <= 0.02 ? 96 : r <= 0.1 ? 72 : r <= 0.25 ? 50 : r <= 0.5 ? 32 : r <= 1 ? 20 : 8;
+      let s = r <= 0.02 ? 80 : r <= 0.1 ? 58 : r <= 0.25 ? 40 : r <= 0.5 ? 26 : r <= 1 ? 16 : 6;
       F.push({
         key: 'runoff', name: 'Runoff & water quality', weight: 10, score: s,
         stat: f1(r) + '\u2033 / 72 h',
@@ -1304,13 +1314,13 @@
           m.lastRainHrs == null ? 'Last measurable rain: none within the prior 72 h' : 'Last measurable rain: about ' + m.lastRainHrs + ' h before this time'
         ],
         why: 'In urban SoCal, rain doesn\u2019t just add fresh water — it flushes storm drains straight into the ocean, carrying silt, oil, and bacteria. LA County public health advises avoiding ocean-water contact for 72 hours after significant rain, and visibility near river mouths and drains can collapse for days. Offshore sites like Catalina recover much faster than mainland beaches below big watersheds.',
-        scoring: 'Stepped on 72-hour rainfall totals: under 0.02\u2033 scores ~96; 0.1\u2033 ~72; 0.25\u2033 ~50; 0.5\u2033 ~32; an inch or more drops to 20 or below. Heavy recent rain also caps the overall rating (see methodology).'
+        scoring: 'Stepped on 72-hour rainfall totals: under 0.02\u2033 scores ~80 (dry is good, not a free A); 0.1\u2033 ~58; 0.25\u2033 ~40; 0.5\u2033 ~26; an inch or more drops to teens or below. Heavy recent rain also caps the overall rating (see methodology).'
       });
     }
 
     if (m.ok.tides) {
-      let s = m.tideRange <= 3.5 ? 88 : m.tideRange <= 5.5 ? 74 : 56;
-      if (m.rising) s += 8;
+      let s = m.tideRange <= 3.5 ? 72 : m.tideRange <= 5.5 ? 58 : 44;
+      if (m.rising) s += 6;
       s = clamp(Math.round(s), 4, 98);
       F.push({
         key: 'tide', name: 'Tide movement', weight: 10, score: s,
@@ -1323,17 +1333,23 @@
           m.nextTide ? 'Next event: ' + (m.nextTide.type === 'H' ? 'high' : 'low') + ' of ' + f1(m.nextTide.v) + ' ft at ' + fmtDay(m.nextTide.t) + ' ' + fmtTime(m.nextTide.t) : 'No upcoming event parsed'
         ],
         why: 'Tides matter two ways. First, water movement: the bigger the day\u2019s range (spring tides, around full/new moons), the stronger the currents as water moves — worth timing your dive near a high or low (\u201cslack\u201d) when flow pauses. Second, water quality: an incoming (flooding) tide pushes clean offshore water toward the beach, while an outgoing tide can drag turbid harbor and back-bay water across a site. Divers often aim for the last hour of the flood.',
-        scoring: 'Ranges up to 3.5 ft score ~88, up to 5.5 ft ~74, larger spring-tide ranges ~56. A rising tide at the evaluated time adds 8.'
+        scoring: 'Ranges up to 3.5 ft score ~72, up to 5.5 ft ~58, larger spring-tide ranges ~44. A rising tide at the evaluated time adds 6.'
       });
     }
 
     const wSum = F.reduce((a, f) => a + f.weight, 0) || 1;
     let composite = Math.round(F.reduce((a, f) => a + f.score * f.weight, 0) / wSum);
+    /* Mild honesty haircut when a major input stream is missing (do not invent fill-in factors). */
+    if (!m.ok.marine) { composite -= 5; caps.push('incomplete: no wave model'); }
+    if (!m.ok.wx) { composite -= 5; caps.push('incomplete: no weather'); }
+    if (!m.ok.tides) { composite -= 3; caps.push('incomplete: no tides'); }
+    composite = clamp(composite, 4, 98);
     if (Heff != null && Heff >= 4 && composite > 40) { composite = 40; caps.push('capped: surf entry through ' + f1(Heff) + ' ft seas is hazardous'); }
     if (m.rain72 >= 1 && composite > 45) { composite = 45; caps.push('capped: >1\u2033 of rain in 72 h — water-quality advisory'); }
     else if (m.rain72 >= 0.5 && composite > 65) { composite = 65; caps.push('capped: recent rain — 72-hour water-quality advisory in effect'); }
     const stars = clamp(Math.round(composite / 10) / 2, 1, 5);
-    const verdict = stars >= 4.5 ? 'Exceptional' : stars >= 3.5 ? 'Good' : stars >= 2.5 ? 'Fair' : stars >= 1.5 ? 'Poor' : 'Blown out';
+    /* "Good" starts at ~4.0★ (~80) so typical mid-50s days read Fair, not Good. */
+    const verdict = stars >= 4.5 ? 'Exceptional' : stars >= 4 ? 'Good' : stars >= 2.5 ? 'Fair' : stars >= 1.5 ? 'Poor' : 'Blown out';
     return { factors: F, composite, stars, verdict, caps };
   }
 
@@ -1965,8 +1981,8 @@
         stroke: 'var(--accent2)',
         fillId: 'diveScoreFill',
         scoreColor: diveScoreColor,
-        goodAt: 75,
-        fairAt: 50,
+        goodAt: DIVE_GOOD_AT,
+        fairAt: DIVE_FAIR_AT,
         daily,
         dayNightBands: typeof window.wxChartDayNightBands === 'function' ? window.wxChartDayNightBands : null,
         sunMarkers: typeof window.wxChartSunMarkers === 'function' ? window.wxChartSunMarkers : null,
