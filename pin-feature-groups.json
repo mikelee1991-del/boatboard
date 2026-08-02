@@ -1,6 +1,6 @@
 {
   "type": "pin-feature-groups",
-  "exportedAt": "2026-08-02T05:38:13.876Z",
+  "exportedAt": "2026-08-02T05:38:52.967Z",
   "note": "Explicit feature groups from pin-trust-review.html. Members keep published coords (never nudged). Live dive/fish grouping unions matched pins even when names do not normalize together.",
   "groups": [
     {

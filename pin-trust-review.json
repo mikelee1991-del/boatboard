@@ -1,5 +1,5 @@
 {
-  "generated": "2026-08-01T20:39:04Z",
+  "generated": "2026-08-02T05:49:55Z",
   "home": {
     "name": "King Harbor slip",
     "lat": 33.8481667,
@@ -15,14 +15,14 @@
     "fishTotal": 565,
     "diveTotal": 382,
     "livePins": 938,
-    "featureGroups": 2
+    "featureGroups": 4
   },
-  "priorExportedAt": "2026-08-01T20:33:15.917Z",
+  "priorExportedAt": "2026-08-02T05:38:55.326Z",
   "priorSummary": {
-    "yes": 821,
+    "yes": 834,
     "no": 8,
     "unsure": 5,
-    "pending": 13,
+    "pending": 0,
     "total": 847
   },
   "priorResults": [
@@ -2955,6 +2955,118 @@
       "reviewedAt": "2026-07-29T06:16:02.137Z"
     },
     {
+      "id": "fish_ut_558",
+      "kind": "fish",
+      "name": "Portuguese Point high spot — PV",
+      "lat": 33.73585,
+      "lon": -118.3761,
+      "priority": "medium",
+      "trustClass": "user-trusted-fish",
+      "currentlyDisplayed": true,
+      "source": "FISH_SPOTS userTrusted (live promote)",
+      "sourceUrl": "",
+      "reason": "Live with userTrusted (published chart / DMS dual) — optional imagery spot-check. Not KML/CDFG/verified.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-02T05:34:25.605Z"
+    },
+    {
+      "id": "fish_ut_554",
+      "kind": "fish",
+      "name": "Neptune Cove Underwater Arch — PV",
+      "lat": 33.7512667,
+      "lon": -118.4178333,
+      "priority": "medium",
+      "trustClass": "user-trusted-fish",
+      "currentlyDisplayed": true,
+      "source": "FISH_SPOTS userTrusted (live promote)",
+      "sourceUrl": "",
+      "reason": "Live with userTrusted (published chart / DMS dual) — optional imagery spot-check. Not KML/CDFG/verified.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-02T05:34:34.488Z"
+    },
+    {
+      "id": "fish_ut_555",
+      "kind": "fish",
+      "name": "Halfway Reef — PV (Christmas Tree–Honeymoon)",
+      "lat": 33.76265,
+      "lon": -118.4255667,
+      "priority": "medium",
+      "trustClass": "user-trusted-fish",
+      "currentlyDisplayed": true,
+      "source": "FISH_SPOTS userTrusted (live promote)",
+      "sourceUrl": "",
+      "reason": "Live with userTrusted (published chart / DMS dual) — optional imagery spot-check. Not KML/CDFG/verified.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-02T05:34:39.023Z"
+    },
+    {
+      "id": "fish_ut_557",
+      "kind": "fish",
+      "name": "Jenny Lynne wreck — Long Point PV",
+      "lat": 33.733,
+      "lon": -118.3968,
+      "priority": "medium",
+      "trustClass": "user-trusted-fish",
+      "currentlyDisplayed": true,
+      "source": "FISH_SPOTS userTrusted (live promote)",
+      "sourceUrl": "",
+      "reason": "Live with userTrusted (published chart / DMS dual) — optional imagery spot-check. Not KML/CDFG/verified.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-02T05:34:46.873Z"
+    },
+    {
+      "id": "fish_ut_562",
+      "kind": "fish",
+      "name": "Merry's Reef — Honeymoon Cove offshore",
+      "lat": 33.7641,
+      "lon": -118.4268667,
+      "priority": "medium",
+      "trustClass": "user-trusted-fish",
+      "currentlyDisplayed": true,
+      "source": "FISH_SPOTS userTrusted (live promote)",
+      "sourceUrl": "",
+      "reason": "Live with userTrusted (published chart / DMS dual) — optional imagery spot-check. Not KML/CDFG/verified.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-02T05:34:49.538Z"
+    },
+    {
+      "id": "fish_ut_556",
+      "kind": "fish",
+      "name": "Kevin's Reef — Christmas Tree Cove offshore",
+      "lat": 33.7616833,
+      "lon": -118.4256167,
+      "priority": "medium",
+      "trustClass": "user-trusted-fish",
+      "currentlyDisplayed": true,
+      "source": "FISH_SPOTS userTrusted (live promote)",
+      "sourceUrl": "",
+      "reason": "Live with userTrusted (published chart / DMS dual) — optional imagery spot-check. Not KML/CDFG/verified.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-02T05:34:53.935Z"
+    },
+    {
+      "id": "fish_ut_559",
+      "kind": "fish",
+      "name": "Biodome — Pt Vicente",
+      "lat": 33.7418333,
+      "lon": -118.4152167,
+      "priority": "medium",
+      "trustClass": "user-trusted-fish",
+      "currentlyDisplayed": true,
+      "source": "FISH_SPOTS userTrusted (live promote)",
+      "sourceUrl": "",
+      "reason": "Live with userTrusted (published chart / DMS dual) — optional imagery spot-check. Not KML/CDFG/verified.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-02T05:34:57.279Z"
+    },
+    {
       "id": "pv_pvr_2a",
       "kind": "fish",
       "name": "PVR Restoration Reef — Module 2A",
@@ -2969,6 +3081,38 @@
       "verdict": "yes",
       "note": "",
       "reviewedAt": "2026-07-29T06:17:49.136Z"
+    },
+    {
+      "id": "fish_ut_564",
+      "kind": "fish",
+      "name": "Pt Vicente pinnacles — Palos Verdes",
+      "lat": 33.7388,
+      "lon": -118.4149167,
+      "priority": "medium",
+      "trustClass": "user-trusted-fish",
+      "currentlyDisplayed": true,
+      "source": "FISH_SPOTS userTrusted (live promote)",
+      "sourceUrl": "",
+      "reason": "Live with userTrusted (published chart / DMS dual) — optional imagery spot-check. Not KML/CDFG/verified.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-02T05:35:00.434Z"
+    },
+    {
+      "id": "fish_ut_553",
+      "kind": "fish",
+      "name": "Resort Point Wall — PV",
+      "lat": 33.76455,
+      "lon": -118.428,
+      "priority": "medium",
+      "trustClass": "user-trusted-fish",
+      "currentlyDisplayed": true,
+      "source": "FISH_SPOTS userTrusted (live promote)",
+      "sourceUrl": "",
+      "reason": "Live with userTrusted (published chart / DMS dual) — optional imagery spot-check. Not KML/CDFG/verified.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-02T05:35:04.384Z"
     },
     {
       "id": "pv_pvr_5c",
@@ -3003,6 +3147,38 @@
       "reviewedAt": "2026-07-29T06:19:31.762Z"
     },
     {
+      "id": "fish_ut_552",
+      "kind": "fish",
+      "name": "The Crane — Haggerty's offshore",
+      "lat": 33.8049333,
+      "lon": -118.409,
+      "priority": "medium",
+      "trustClass": "user-trusted-fish",
+      "currentlyDisplayed": true,
+      "source": "FISH_SPOTS userTrusted (live promote)",
+      "sourceUrl": "",
+      "reason": "Live with userTrusted (published chart / DMS dual) — optional imagery spot-check. Not KML/CDFG/verified.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-02T05:35:10.864Z"
+    },
+    {
+      "id": "fish_ut_563",
+      "kind": "fish",
+      "name": "Hawthorne Reef (Barberpole) — PV",
+      "lat": 33.7469,
+      "lon": -118.4205667,
+      "priority": "medium",
+      "trustClass": "user-trusted-fish",
+      "currentlyDisplayed": true,
+      "source": "FISH_SPOTS userTrusted (live promote)",
+      "sourceUrl": "",
+      "reason": "Live with userTrusted (published chart / DMS dual) — optional imagery spot-check. Not KML/CDFG/verified.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-02T05:35:16.366Z"
+    },
+    {
       "id": "pv_portuguesekelp_usc",
       "kind": "fish",
       "name": "Portuguese Kelp — Palos Verdes (USC waypoint)",
@@ -3017,6 +3193,22 @@
       "verdict": "yes",
       "note": "",
       "reviewedAt": "2026-07-29T06:19:35.359Z"
+    },
+    {
+      "id": "fish_ut_561",
+      "kind": "fish",
+      "name": "Golf Ball Reef — Haggerty's / Bluff Cove",
+      "lat": 33.80825,
+      "lon": -118.4094833,
+      "priority": "medium",
+      "trustClass": "user-trusted-fish",
+      "currentlyDisplayed": true,
+      "source": "FISH_SPOTS userTrusted (live promote)",
+      "sourceUrl": "",
+      "reason": "Live with userTrusted (published chart / DMS dual) — optional imagery spot-check. Not KML/CDFG/verified.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-02T05:35:18.151Z"
     },
     {
       "id": "cat_yellowtailpoint",
@@ -9227,6 +9419,22 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
+      "id": "dive_ver_johnsonsrocks",
+      "kind": "dive",
+      "name": "Johnson's Rocks — Catalina (West End)",
+      "lat": 33.4768833,
+      "lon": -118.5885667,
+      "priority": "low",
+      "trustClass": "dive-verified",
+      "currentlyDisplayed": true,
+      "source": "verified-water-pins.json (multi-source)",
+      "sourceUrl": "",
+      "reason": "Default-trusted multi-source verified dive (verified-water-pins.json). Optional imagery spot-check only.",
+      "verdict": "yes",
+      "note": "",
+      "reviewedAt": "2026-08-02T05:35:51.775Z"
+    },
+    {
       "id": "fish_ver_johnsonsrockscatalinawes",
       "kind": "fish",
       "name": "Johnson's Rocks — Catalina (West End)",
@@ -9435,22 +9643,6 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "dive_ver_malibureef",
-      "kind": "dive",
-      "name": "Malibu Artificial Reef A",
-      "lat": 34.0301806,
-      "lon": -118.6505306,
-      "priority": "low",
-      "trustClass": "cdfg",
-      "currentlyDisplayed": true,
-      "source": "CDFG Artificial Reef Appendix",
-      "sourceUrl": "",
-      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
-      "verdict": "yes",
-      "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z"
-    },
-    {
       "id": "fish_ver_malibuartificialreefa",
       "kind": "fish",
       "name": "Malibu Artificial Reef A",
@@ -9467,11 +9659,11 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "dive_ver_cdfg_malibu_ar_b",
+      "id": "dive_ver_malibureef",
       "kind": "dive",
-      "name": "Malibu Artificial Reef B",
-      "lat": 34.0302778,
-      "lon": -118.6513889,
+      "name": "Malibu Artificial Reef A",
+      "lat": 34.0301806,
+      "lon": -118.6505306,
       "priority": "low",
       "trustClass": "cdfg",
       "currentlyDisplayed": true,
@@ -9483,11 +9675,11 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "dive_ver_mdreyreef",
+      "id": "dive_ver_cdfg_malibu_ar_b",
       "kind": "dive",
-      "name": "Marina del Rey Artificial Reef (Center)",
-      "lat": 33.9683333,
-      "lon": -118.4863889,
+      "name": "Malibu Artificial Reef B",
+      "lat": 34.0302778,
+      "lon": -118.6513889,
       "priority": "low",
       "trustClass": "cdfg",
       "currentlyDisplayed": true,
@@ -9512,6 +9704,22 @@
       "reason": "Multi-source verified — default trusted.",
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins.json multi-source trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "dive_ver_mdreyreef",
+      "kind": "dive",
+      "name": "Marina del Rey Artificial Reef (Center)",
+      "lat": 33.9683333,
+      "lon": -118.4863889,
+      "priority": "low",
+      "trustClass": "cdfg",
+      "currentlyDisplayed": true,
+      "source": "CDFG Artificial Reef Appendix",
+      "sourceUrl": "",
+      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
+      "verdict": "yes",
+      "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
@@ -9995,22 +10203,6 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "fish_ver_newportbeachartificialre",
-      "kind": "fish",
-      "name": "Newport Beach Artificial Reef (Center)",
-      "lat": 33.6036111,
-      "lon": -117.9636111,
-      "priority": "low",
-      "trustClass": "verified",
-      "currentlyDisplayed": true,
-      "source": "verified-water-pins.json (multi-source)",
-      "sourceUrl": "",
-      "reason": "Multi-source verified — default trusted.",
-      "verdict": "yes",
-      "note": "Auto-yes: verified-water-pins.json multi-source trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z"
-    },
-    {
       "id": "dive_ver_newportreef",
       "kind": "dive",
       "name": "Newport Beach Artificial Reef (Center)",
@@ -10024,6 +10216,22 @@
       "reason": "Default trusted verified/CDFG dive — optional spot-check.",
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "fish_ver_newportbeachartificialre",
+      "kind": "fish",
+      "name": "Newport Beach Artificial Reef (Center)",
+      "lat": 33.6036111,
+      "lon": -117.9636111,
+      "priority": "low",
+      "trustClass": "verified",
+      "currentlyDisplayed": true,
+      "source": "verified-water-pins.json (multi-source)",
+      "sourceUrl": "",
+      "reason": "Multi-source verified — default trusted.",
+      "verdict": "yes",
+      "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
@@ -10779,22 +10987,6 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "fish_ver_pacificbeachartificialre",
-      "kind": "fish",
-      "name": "Pacific Beach Artificial Reef Center",
-      "lat": 32.7930556,
-      "lon": -117.2763889,
-      "priority": "low",
-      "trustClass": "verified",
-      "currentlyDisplayed": true,
-      "source": "verified-water-pins.json (multi-source)",
-      "sourceUrl": "",
-      "reason": "Multi-source verified — default trusted.",
-      "verdict": "yes",
-      "note": "Auto-yes: verified-water-pins.json multi-source trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z"
-    },
-    {
       "id": "dive_ver_pacificbeach",
       "kind": "dive",
       "name": "Pacific Beach Artificial Reef Center",
@@ -10808,6 +11000,22 @@
       "reason": "Default trusted verified/CDFG dive — optional spot-check.",
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "fish_ver_pacificbeachartificialre",
+      "kind": "fish",
+      "name": "Pacific Beach Artificial Reef Center",
+      "lat": 32.7930556,
+      "lon": -117.2763889,
+      "priority": "low",
+      "trustClass": "verified",
+      "currentlyDisplayed": true,
+      "source": "verified-water-pins.json (multi-source)",
+      "sourceUrl": "",
+      "reason": "Multi-source verified — default trusted.",
+      "verdict": "yes",
+      "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
@@ -11515,6 +11723,22 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
+      "id": "fish_ver_santamonicaartificialree",
+      "kind": "fish",
+      "name": "Santa Monica Artificial Reef A",
+      "lat": 34.0094444,
+      "lon": -118.5297222,
+      "priority": "low",
+      "trustClass": "verified",
+      "currentlyDisplayed": true,
+      "source": "verified-water-pins.json (multi-source)",
+      "sourceUrl": "",
+      "reason": "Multi-source verified — default trusted.",
+      "verdict": "yes",
+      "note": "Auto-yes: verified-water-pins.json multi-source trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
       "id": "dive_ver_smareefa",
       "kind": "dive",
       "name": "Santa Monica Artificial Reef A",
@@ -11544,22 +11768,6 @@
       "reason": "Default trusted verified/CDFG dive — optional spot-check.",
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z"
-    },
-    {
-      "id": "fish_ver_santamonicaartificialree",
-      "kind": "fish",
-      "name": "Santa Monica Artificial Reef A",
-      "lat": 34.0094444,
-      "lon": -118.5297222,
-      "priority": "low",
-      "trustClass": "verified",
-      "currentlyDisplayed": true,
-      "source": "verified-water-pins.json (multi-source)",
-      "sourceUrl": "",
-      "reason": "Multi-source verified — default trusted.",
-      "verdict": "yes",
-      "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
@@ -11627,22 +11835,6 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
-      "id": "fish_ver_santamonicabayartificial",
-      "kind": "fish",
-      "name": "Santa Monica Bay Artificial Reef (Center)",
-      "lat": 34.0130556,
-      "lon": -118.5425,
-      "priority": "low",
-      "trustClass": "verified",
-      "currentlyDisplayed": true,
-      "source": "verified-water-pins.json (multi-source)",
-      "sourceUrl": "",
-      "reason": "Multi-source verified — default trusted.",
-      "verdict": "yes",
-      "note": "Auto-yes: verified-water-pins.json multi-source trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z"
-    },
-    {
       "id": "dive_ver_smbayreef",
       "kind": "dive",
       "name": "Santa Monica Bay Artificial Reef (Center)",
@@ -11656,6 +11848,22 @@
       "reason": "Default trusted verified/CDFG dive — optional spot-check.",
       "verdict": "yes",
       "note": "Auto-yes: verified-water-pins / CDFG inherent trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z"
+    },
+    {
+      "id": "fish_ver_santamonicabayartificial",
+      "kind": "fish",
+      "name": "Santa Monica Bay Artificial Reef (Center)",
+      "lat": 34.0130556,
+      "lon": -118.5425,
+      "priority": "low",
+      "trustClass": "verified",
+      "currentlyDisplayed": true,
+      "source": "verified-water-pins.json (multi-source)",
+      "sourceUrl": "",
+      "reason": "Multi-source verified — default trusted.",
+      "verdict": "yes",
+      "note": "Auto-yes: verified-water-pins.json multi-source trust",
       "reviewedAt": "2026-07-29T05:27:12.858Z"
     },
     {
@@ -21894,9 +22102,255 @@
         }
       ],
       "updatedAt": "2026-08-01T20:29:26.928Z"
+    },
+    {
+      "groupId": "pfg_johnson_s_rocks_a2tt",
+      "displayName": "Johnson's Rocks",
+      "members": [
+        {
+          "id": "fish_ver_johnsonsrockscatalinawes",
+          "kind": "fish",
+          "name": "Johnson's Rocks — Catalina (West End)",
+          "lat": 33.4768833,
+          "lon": -118.5885667,
+          "diveId": ""
+        },
+        {
+          "id": "fish_kml_264",
+          "kind": "fish",
+          "name": "Johnson Rock - Caution Boiler rocks",
+          "lat": 33.4775,
+          "lon": -118.5893,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_ut_johnsonrockcautionboilerro_264",
+          "kind": "dive",
+          "name": "Johnson Rock - Caution Boiler rocks",
+          "lat": 33.4775,
+          "lon": -118.5893,
+          "diveId": "ut_johnsonrockcautionboilerro_264"
+        }
+      ],
+      "updatedAt": "2026-08-02T05:35:48.689Z"
+    },
+    {
+      "groupId": "pfg_marina_del_rey_artificial_reef_cix4",
+      "displayName": "Marina Del Rey Artificial Reef",
+      "members": [
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2p_50",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2P",
+          "lat": 33.9691667,
+          "lon": -118.4875,
+          "diveId": "cdfg_marinadelreyartificialreef2p_50"
+        },
+        {
+          "id": "fish_ver_marinadelreyartificialre",
+          "kind": "fish",
+          "name": "Marina del Rey Artificial Reef (Center)",
+          "lat": 33.9691667,
+          "lon": -118.4875,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2o_49",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2O",
+          "lat": 33.9691667,
+          "lon": -118.4866667,
+          "diveId": "cdfg_marinadelreyartificialreef2o_49"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2l_46",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2L",
+          "lat": 33.9686111,
+          "lon": -118.4877778,
+          "diveId": "cdfg_marinadelreyartificialreef2l_46"
+        },
+        {
+          "id": "coord_fish|33.968889|-118.485278",
+          "kind": "fish",
+          "name": "Marina Del Rey Artificial Reef 2M",
+          "lat": 33.9688889,
+          "lon": -118.4852778,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2m_47",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2M",
+          "lat": 33.9688889,
+          "lon": -118.4852778,
+          "diveId": "cdfg_marinadelreyartificialreef2m_47"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef1t_55",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 1T",
+          "lat": 33.9644444,
+          "lon": -118.4861111,
+          "diveId": "cdfg_marinadelreyartificialreef1t_55"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2n_48",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2N",
+          "lat": 33.9688889,
+          "lon": -118.4861111,
+          "diveId": "cdfg_marinadelreyartificialreef2n_48"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2k_45",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2K",
+          "lat": 33.9686111,
+          "lon": -118.4872222,
+          "diveId": "cdfg_marinadelreyartificialreef2k_45"
+        },
+        {
+          "id": "dive_ver_mdreyreef",
+          "kind": "dive",
+          "name": "Marina del Rey Artificial Reef (Center)",
+          "lat": 33.9683333,
+          "lon": -118.4863889,
+          "diveId": "mdreyreef"
+        },
+        {
+          "id": "fish_kml_527",
+          "kind": "fish",
+          "name": "Reef #1 - 65 ft",
+          "lat": 33.965,
+          "lon": -118.4862,
+          "diveId": ""
+        },
+        {
+          "id": "coord_fish|33.965000|-118.486111",
+          "kind": "fish",
+          "name": "Marina del Rey Artificial Reef 1 Center",
+          "lat": 33.965,
+          "lon": -118.4861111,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_mdrey1ctr",
+          "kind": "dive",
+          "name": "Marina del Rey Artificial Reef 1 Center",
+          "lat": 33.965,
+          "lon": -118.4861111,
+          "diveId": "mdrey1ctr"
+        },
+        {
+          "id": "fish_kml_326",
+          "kind": "fish",
+          "name": "Reef #2 - 65 ft",
+          "lat": 33.9683,
+          "lon": -118.4863,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef1q_52",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 1Q",
+          "lat": 33.9655556,
+          "lon": -118.4869444,
+          "diveId": "cdfg_marinadelreyartificialreef1q_52"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2i_43",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2I",
+          "lat": 33.9680556,
+          "lon": -118.4852778,
+          "diveId": "cdfg_marinadelreyartificialreef2i_43"
+        },
+        {
+          "id": "coord_fish|33.967222|-118.486944",
+          "kind": "fish",
+          "name": "Marina del Rey Artificial Reef 2A",
+          "lat": 33.9672222,
+          "lon": -118.4869444,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef1r_53",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 1R",
+          "lat": 33.9658333,
+          "lon": -118.4861111,
+          "diveId": "cdfg_marinadelreyartificialreef1r_53"
+        },
+        {
+          "id": "dive_ver_mdrey2a",
+          "kind": "dive",
+          "name": "Marina del Rey Artificial Reef 2A",
+          "lat": 33.9672222,
+          "lon": -118.4869444,
+          "diveId": "mdrey2a"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2d_38",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2D",
+          "lat": 33.9669444,
+          "lon": -118.4869444,
+          "diveId": "cdfg_marinadelreyartificialreef2d_38"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2g_41",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2G",
+          "lat": 33.9670833,
+          "lon": -118.4866667,
+          "diveId": "cdfg_marinadelreyartificialreef2g_41"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2c_37",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2C",
+          "lat": 33.9668056,
+          "lon": -118.4866667,
+          "diveId": "cdfg_marinadelreyartificialreef2c_37"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2e_39",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2E",
+          "lat": 33.9668056,
+          "lon": -118.4858333,
+          "diveId": "cdfg_marinadelreyartificialreef2e_39"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2f_40",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2F",
+          "lat": 33.9669444,
+          "lon": -118.4861111,
+          "diveId": "cdfg_marinadelreyartificialreef2f_40"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2b_36",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2B",
+          "lat": 33.9667111,
+          "lon": -118.4863889,
+          "diveId": "cdfg_marinadelreyartificialreef2b_36"
+        },
+        {
+          "id": "coord_fish|33.966667|-118.486111",
+          "kind": "fish",
+          "name": "Marina del Rey Artificial Reef 2A",
+          "lat": 33.9666667,
+          "lon": -118.4861111,
+          "diveId": ""
+        }
+      ],
+      "updatedAt": "2026-08-02T05:37:42.856Z"
     }
   ],
-  "featureGroupsExportedAt": "2026-08-01T20:34:52.249Z",
+  "featureGroupsExportedAt": "2026-08-02T05:38:52.967Z",
   "candidates": [
     {
       "id": "pv_portuguesebend_usc",
@@ -25565,6 +26019,9 @@
       "currentlyDisplayed": true,
       "shoreDistM": 193,
       "nmFromSlip": 6.8,
+      "priorVerdict": "yes",
+      "priorNote": "",
+      "reviewedAt": "2026-08-02T05:34:25.605Z",
       "about": "High spot SW of Portuguese Point (Abalone Cove SMCA nearby). Depth 25-40 ft.",
       "description": "High spot SW of Portuguese Point (Abalone Cove SMCA nearby). Depth 25-40 ft."
     },
@@ -25583,6 +26040,9 @@
       "currentlyDisplayed": true,
       "shoreDistM": 348,
       "nmFromSlip": 5.9,
+      "priorVerdict": "yes",
+      "priorNote": "",
+      "reviewedAt": "2026-08-02T05:34:34.488Z",
       "about": "Shallow PV reef / arch structure. Depth 20-35 ft.",
       "description": "Shallow PV reef / arch structure. Depth 20-35 ft."
     },
@@ -25601,6 +26061,9 @@
       "currentlyDisplayed": true,
       "shoreDistM": 355,
       "nmFromSlip": 5.3,
+      "priorVerdict": "yes",
+      "priorNote": "",
+      "reviewedAt": "2026-08-02T05:34:39.023Z",
       "about": "Offshore PV reef between Christmas Tree and Honeymoon. Depth 50-75 ft.",
       "description": "Offshore PV reef between Christmas Tree and Honeymoon. Depth 50-75 ft."
     },
@@ -25619,6 +26082,9 @@
       "currentlyDisplayed": true,
       "shoreDistM": 374,
       "nmFromSlip": 6.9,
+      "priorVerdict": "yes",
+      "priorNote": "",
+      "reviewedAt": "2026-08-02T05:34:46.873Z",
       "about": "Deep wreck off Long Point / Terranea. Depth 120-150 ft.",
       "description": "Deep wreck off Long Point / Terranea. Depth 120-150 ft."
     },
@@ -25637,6 +26103,9 @@
       "currentlyDisplayed": true,
       "shoreDistM": 391,
       "nmFromSlip": 5.3,
+      "priorVerdict": "yes",
+      "priorNote": "",
+      "reviewedAt": "2026-08-02T05:34:49.538Z",
       "about": "Kelp wall west of Honeymoon Cove. Depth 35-55 ft.",
       "description": "Kelp wall west of Honeymoon Cove. Depth 35-55 ft."
     },
@@ -25655,6 +26124,9 @@
       "currentlyDisplayed": true,
       "shoreDistM": 400,
       "nmFromSlip": 5.4,
+      "priorVerdict": "yes",
+      "priorNote": "",
+      "reviewedAt": "2026-08-02T05:34:53.935Z",
       "about": "Offshore Christmas Tree Cove reef / sand. Depth 60-80 ft.",
       "description": "Offshore Christmas Tree Cove reef / sand. Depth 60-80 ft."
     },
@@ -25673,6 +26145,9 @@
       "currentlyDisplayed": true,
       "shoreDistM": 410,
       "nmFromSlip": 6.5,
+      "priorVerdict": "yes",
+      "priorNote": "",
+      "reviewedAt": "2026-08-02T05:34:57.279Z",
       "about": "Pt Vicente pinnacle / kelp complex (SMCA nearby). Depth 40-55 ft.",
       "description": "Pt Vicente pinnacle / kelp complex (SMCA nearby). Depth 40-55 ft."
     },
@@ -25712,6 +26187,9 @@
       "currentlyDisplayed": true,
       "shoreDistM": 456,
       "nmFromSlip": 6.6,
+      "priorVerdict": "yes",
+      "priorNote": "",
+      "reviewedAt": "2026-08-02T05:35:00.434Z",
       "about": "Pt Vicente pinnacles (SMCA nearby). Depth 40-60 ft.",
       "description": "Pt Vicente pinnacles (SMCA nearby). Depth 40-60 ft."
     },
@@ -25730,6 +26208,9 @@
       "currentlyDisplayed": true,
       "shoreDistM": 468,
       "nmFromSlip": 5.3,
+      "priorVerdict": "yes",
+      "priorNote": "",
+      "reviewedAt": "2026-08-02T05:35:04.384Z",
       "about": "High-relief PV wall and kelp cap. Depth 35-70 ft.",
       "description": "High-relief PV wall and kelp cap. Depth 35-70 ft."
     },
@@ -25790,6 +26271,9 @@
       "currentlyDisplayed": true,
       "shoreDistM": 699,
       "nmFromSlip": 2.7,
+      "priorVerdict": "yes",
+      "priorNote": "",
+      "reviewedAt": "2026-08-02T05:35:10.864Z",
       "about": "PV offshore reef / kelp complex off Haggerty's. Depth 30-60 ft.",
       "description": "PV offshore reef / kelp complex off Haggerty's. Depth 30-60 ft."
     },
@@ -25808,6 +26292,9 @@
       "currentlyDisplayed": true,
       "shoreDistM": 762,
       "nmFromSlip": 6.2,
+      "priorVerdict": "yes",
+      "priorNote": "",
+      "reviewedAt": "2026-08-02T05:35:16.366Z",
       "about": "High-relief offshore PV reef / Barberpole. Depth 65-85 ft.",
       "description": "High-relief offshore PV reef / Barberpole. Depth 65-85 ft."
     },
@@ -25847,6 +26334,9 @@
       "currentlyDisplayed": true,
       "shoreDistM": 1041,
       "nmFromSlip": 2.5,
+      "priorVerdict": "yes",
+      "priorNote": "",
+      "reviewedAt": "2026-08-02T05:35:18.151Z",
       "about": "Offshore pinnacle / kelp crown off Haggerty's\"Bluff Cove. Depth 30-55 ft.",
       "description": "Offshore pinnacle / kelp crown off Haggerty's\"Bluff Cove. Depth 30-55 ft."
     },
@@ -33520,6 +34010,9 @@
       "trustClass": "dive-verified",
       "currentlyDisplayed": true,
       "diveId": "johnsonsrocks",
+      "priorVerdict": "yes",
+      "priorNote": "",
+      "reviewedAt": "2026-08-02T05:35:51.775Z",
       "about": "Dive site - ~50 ft - face 90 - boat dive",
       "description": "Dive site - ~50 ft - face 90 - boat dive"
     },
@@ -33772,25 +34265,6 @@
       "description": "Offshore structure & hard bottom. Depth 30-120 ft"
     },
     {
-      "id": "fish_ver_malibuartificialreefa",
-      "kind": "fish",
-      "name": "Malibu Artificial Reef A",
-      "lat": 34.0302778,
-      "lon": -118.6505556,
-      "priority": "low",
-      "reason": "Multi-source verified — default trusted.",
-      "source": "verified-water-pins.json (multi-source)",
-      "sourceUrl": "",
-      "sourceDetail": "Prior yes — confirm still trusted.",
-      "trustClass": "verified",
-      "currentlyDisplayed": true,
-      "priorVerdict": "yes",
-      "priorNote": "Auto-yes: verified-water-pins.json multi-source trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z",
-      "about": "CDFG artificial reef modules. Depth 40-90 ft.",
-      "description": "CDFG artificial reef modules. Depth 40-90 ft."
-    },
-    {
       "id": "dive_ver_malibureef",
       "kind": "dive",
       "name": "Malibu Artificial Reef A",
@@ -33808,6 +34282,25 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z",
       "about": "Malibu Artificial Reef A at 34-01-48N 118-38-59W is the deepest SM Bay reef module field in 55-65 ft \" long run from King Harbor but fish-rich on calm days.",
       "description": "Malibu Artificial Reef A at 34-01-48N 118-38-59W is the deepest SM Bay reef module field in 55-65 ft \" long run from King Harbor but fish-rich on calm days."
+    },
+    {
+      "id": "fish_ver_malibuartificialreefa",
+      "kind": "fish",
+      "name": "Malibu Artificial Reef A",
+      "lat": 34.0302778,
+      "lon": -118.6505556,
+      "priority": "low",
+      "reason": "Multi-source verified — default trusted.",
+      "source": "verified-water-pins.json (multi-source)",
+      "sourceUrl": "",
+      "sourceDetail": "Prior yes — confirm still trusted.",
+      "trustClass": "verified",
+      "currentlyDisplayed": true,
+      "priorVerdict": "yes",
+      "priorNote": "Auto-yes: verified-water-pins.json multi-source trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z",
+      "about": "CDFG artificial reef modules. Depth 40-90 ft.",
+      "description": "CDFG artificial reef modules. Depth 40-90 ft."
     },
     {
       "id": "dive_ver_cdfg_malibu_ar_b",
@@ -33829,25 +34322,6 @@
       "description": "Dive site - ~60 ft - face 250 - boat dive"
     },
     {
-      "id": "fish_ver_marinadelreyartificialre",
-      "kind": "fish",
-      "name": "Marina del Rey Artificial Reef (Center)",
-      "lat": 33.9691667,
-      "lon": -118.4875,
-      "priority": "low",
-      "reason": "Multi-source verified — default trusted.",
-      "source": "verified-water-pins.json (multi-source)",
-      "sourceUrl": "",
-      "sourceDetail": "Prior yes — confirm still trusted.",
-      "trustClass": "verified",
-      "currentlyDisplayed": true,
-      "priorVerdict": "yes",
-      "priorNote": "Auto-yes: verified-water-pins.json multi-source trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z",
-      "about": "CDFG artificial reef modules. Depth 40-90 ft.",
-      "description": "CDFG artificial reef modules. Depth 40-90 ft."
-    },
-    {
       "id": "dive_ver_mdreyreef",
       "kind": "dive",
       "name": "Marina del Rey Artificial Reef (Center)",
@@ -33865,6 +34339,25 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z",
       "about": "Marina del Rey Artificial Reef at 33-58-06N 118-29-11W is a CDFG quarry-rock field in 60-70 ft \" one of the original 1980s South Bay reef projects.",
       "description": "Marina del Rey Artificial Reef at 33-58-06N 118-29-11W is a CDFG quarry-rock field in 60-70 ft \" one of the original 1980s South Bay reef projects."
+    },
+    {
+      "id": "fish_ver_marinadelreyartificialre",
+      "kind": "fish",
+      "name": "Marina del Rey Artificial Reef (Center)",
+      "lat": 33.9691667,
+      "lon": -118.4875,
+      "priority": "low",
+      "reason": "Multi-source verified — default trusted.",
+      "source": "verified-water-pins.json (multi-source)",
+      "sourceUrl": "",
+      "sourceDetail": "Prior yes — confirm still trusted.",
+      "trustClass": "verified",
+      "currentlyDisplayed": true,
+      "priorVerdict": "yes",
+      "priorNote": "Auto-yes: verified-water-pins.json multi-source trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z",
+      "about": "CDFG artificial reef modules. Depth 40-90 ft.",
+      "description": "CDFG artificial reef modules. Depth 40-90 ft."
     },
     {
       "id": "dive_ver_mdrey1ctr",
@@ -34437,25 +34930,6 @@
       "description": "Offshore fishing grounds. Depth 30-120 ft"
     },
     {
-      "id": "dive_ver_newportreef",
-      "kind": "dive",
-      "name": "Newport Beach Artificial Reef (Center)",
-      "lat": 33.6036111,
-      "lon": -117.9636111,
-      "priority": "low",
-      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
-      "source": "CDFG Artificial Reef Appendix",
-      "sourceUrl": "",
-      "sourceDetail": "Prior yes — confirm still trusted.",
-      "trustClass": "cdfg",
-      "currentlyDisplayed": true,
-      "priorVerdict": "yes",
-      "priorNote": "Auto-yes: verified-water-pins / CDFG inherent trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z",
-      "about": "Dive site - ~72 ft - face 200 - boat dive",
-      "description": "Dive site - ~72 ft - face 200 - boat dive"
-    },
-    {
       "id": "fish_ver_newportbeachartificialre",
       "kind": "fish",
       "name": "Newport Beach Artificial Reef (Center)",
@@ -34473,6 +34947,25 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z",
       "about": "CDFG artificial reef modules. Depth 40-90 ft.",
       "description": "CDFG artificial reef modules. Depth 40-90 ft."
+    },
+    {
+      "id": "dive_ver_newportreef",
+      "kind": "dive",
+      "name": "Newport Beach Artificial Reef (Center)",
+      "lat": 33.6036111,
+      "lon": -117.9636111,
+      "priority": "low",
+      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
+      "source": "CDFG Artificial Reef Appendix",
+      "sourceUrl": "",
+      "sourceDetail": "Prior yes — confirm still trusted.",
+      "trustClass": "cdfg",
+      "currentlyDisplayed": true,
+      "priorVerdict": "yes",
+      "priorNote": "Auto-yes: verified-water-pins / CDFG inherent trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z",
+      "about": "Dive site - ~72 ft - face 200 - boat dive",
+      "description": "Dive site - ~72 ft - face 200 - boat dive"
     },
     {
       "id": "dive_ver_cdfg_newport_beach_ar_a",
@@ -35368,25 +35861,6 @@
       "description": "Dive site - ~57 ft - face 270 - boat dive"
     },
     {
-      "id": "dive_ver_pacificbeach",
-      "kind": "dive",
-      "name": "Pacific Beach Artificial Reef Center",
-      "lat": 32.7930556,
-      "lon": -117.2763889,
-      "priority": "low",
-      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
-      "source": "CDFG Artificial Reef Appendix",
-      "sourceUrl": "",
-      "sourceDetail": "Prior yes — confirm still trusted.",
-      "trustClass": "cdfg",
-      "currentlyDisplayed": true,
-      "priorVerdict": "yes",
-      "priorNote": "Auto-yes: verified-water-pins / CDFG inherent trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z",
-      "about": "Dive site - ~55 ft - face 270 - boat dive",
-      "description": "Dive site - ~55 ft - face 270 - boat dive"
-    },
-    {
       "id": "fish_ver_pacificbeachartificialre",
       "kind": "fish",
       "name": "Pacific Beach Artificial Reef Center",
@@ -35404,6 +35878,25 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z",
       "about": "CDFG artificial reef modules. Depth 40-90 ft.",
       "description": "CDFG artificial reef modules. Depth 40-90 ft."
+    },
+    {
+      "id": "dive_ver_pacificbeach",
+      "kind": "dive",
+      "name": "Pacific Beach Artificial Reef Center",
+      "lat": 32.7930556,
+      "lon": -117.2763889,
+      "priority": "low",
+      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
+      "source": "CDFG Artificial Reef Appendix",
+      "sourceUrl": "",
+      "sourceDetail": "Prior yes — confirm still trusted.",
+      "trustClass": "cdfg",
+      "currentlyDisplayed": true,
+      "priorVerdict": "yes",
+      "priorNote": "Auto-yes: verified-water-pins / CDFG inherent trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z",
+      "about": "Dive site - ~55 ft - face 270 - boat dive",
+      "description": "Dive site - ~55 ft - face 270 - boat dive"
     },
     {
       "id": "fish_kml_live_246",
@@ -36242,6 +36735,25 @@
       "description": "Offshore fishing grounds. Depth 30-120 ft"
     },
     {
+      "id": "dive_ver_cdfg_santamonicaartificialreefa_31",
+      "kind": "dive",
+      "name": "Santa Monica Artificial Reef A",
+      "lat": 34.0095,
+      "lon": -118.5303333,
+      "priority": "low",
+      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
+      "source": "CDFG Artificial Reef Appendix",
+      "sourceUrl": "",
+      "sourceDetail": "Prior yes — confirm still trusted.",
+      "trustClass": "cdfg",
+      "currentlyDisplayed": true,
+      "priorVerdict": "yes",
+      "priorNote": "Auto-yes: verified-water-pins / CDFG inherent trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z",
+      "about": "Dive site - ~60 ft - face 250 - boat dive",
+      "description": "Dive site - ~60 ft - face 250 - boat dive"
+    },
+    {
       "id": "fish_ver_santamonicaartificialree",
       "kind": "fish",
       "name": "Santa Monica Artificial Reef A",
@@ -36278,25 +36790,6 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z",
       "about": "Dive site - ~60 ft - face 270 - boat dive",
       "description": "Dive site - ~60 ft - face 270 - boat dive"
-    },
-    {
-      "id": "dive_ver_cdfg_santamonicaartificialreefa_31",
-      "kind": "dive",
-      "name": "Santa Monica Artificial Reef A",
-      "lat": 34.0095,
-      "lon": -118.5303333,
-      "priority": "low",
-      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
-      "source": "CDFG Artificial Reef Appendix",
-      "sourceUrl": "",
-      "sourceDetail": "Prior yes — confirm still trusted.",
-      "trustClass": "cdfg",
-      "currentlyDisplayed": true,
-      "priorVerdict": "yes",
-      "priorNote": "Auto-yes: verified-water-pins / CDFG inherent trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z",
-      "about": "Dive site - ~60 ft - face 250 - boat dive",
-      "description": "Dive site - ~60 ft - face 250 - boat dive"
     },
     {
       "id": "dive_ver_cdfg_santamonicaartificialreefb_32",
@@ -36375,25 +36868,6 @@
       "description": "Dive site - ~60 ft - face 270 - boat dive"
     },
     {
-      "id": "dive_ver_smbayreef",
-      "kind": "dive",
-      "name": "Santa Monica Bay Artificial Reef (Center)",
-      "lat": 34.0130556,
-      "lon": -118.5425,
-      "priority": "low",
-      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
-      "source": "CDFG Artificial Reef Appendix",
-      "sourceUrl": "",
-      "sourceDetail": "Prior yes — confirm still trusted.",
-      "trustClass": "cdfg",
-      "currentlyDisplayed": true,
-      "priorVerdict": "yes",
-      "priorNote": "Auto-yes: verified-water-pins / CDFG inherent trust",
-      "reviewedAt": "2026-07-29T05:27:12.858Z",
-      "about": "Santa Monica Bay Artificial Reef at 34-00-47N 118-32-33W is a large CDFG quarry-rock field in 55-75 ft \" classic north-bay boat dive from MDR or King Harbor.",
-      "description": "Santa Monica Bay Artificial Reef at 34-00-47N 118-32-33W is a large CDFG quarry-rock field in 55-75 ft \" classic north-bay boat dive from MDR or King Harbor."
-    },
-    {
       "id": "fish_ver_santamonicabayartificial",
       "kind": "fish",
       "name": "Santa Monica Bay Artificial Reef (Center)",
@@ -36411,6 +36885,25 @@
       "reviewedAt": "2026-07-29T05:27:12.858Z",
       "about": "CDFG artificial reef modules. Depth 40-90 ft.",
       "description": "CDFG artificial reef modules. Depth 40-90 ft."
+    },
+    {
+      "id": "dive_ver_smbayreef",
+      "kind": "dive",
+      "name": "Santa Monica Bay Artificial Reef (Center)",
+      "lat": 34.0130556,
+      "lon": -118.5425,
+      "priority": "low",
+      "reason": "Default trusted verified/CDFG dive — optional spot-check.",
+      "source": "CDFG Artificial Reef Appendix",
+      "sourceUrl": "",
+      "sourceDetail": "Prior yes — confirm still trusted.",
+      "trustClass": "cdfg",
+      "currentlyDisplayed": true,
+      "priorVerdict": "yes",
+      "priorNote": "Auto-yes: verified-water-pins / CDFG inherent trust",
+      "reviewedAt": "2026-07-29T05:27:12.858Z",
+      "about": "Santa Monica Bay Artificial Reef at 34-00-47N 118-32-33W is a large CDFG quarry-rock field in 55-75 ft \" classic north-bay boat dive from MDR or King Harbor.",
+      "description": "Santa Monica Bay Artificial Reef at 34-00-47N 118-32-33W is a large CDFG quarry-rock field in 55-75 ft \" classic north-bay boat dive from MDR or King Harbor."
     },
     {
       "id": "dive_ver_cdfg_santa_monica_bay_ar_10",
