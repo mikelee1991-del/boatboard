@@ -251,7 +251,6 @@
     { id: 'westeaglereef', name: 'West Eagle Reef — Catalina (Isthmus)', lat: 33.4613, lon: -118.51145, face: 90, depth: 55, verified: true, boat: true, regional: true, userTrusted: true},
     { id: 'goatharbor', name: 'Goat Harbor — Catalina', lat: 33.4165, lon: -118.3961, face: 90, depth: 40, verified: true, boat: true, regional: true, userTrusted: true},
     { id: 'henrock', name: 'Hen Rock — Catalina', lat: 33.40085, lon: -118.3664, face: 90, depth: 45, verified: true, boat: true, regional: true, userTrusted: true},
-    { id: 'churchrock', name: 'Church Rock — Catalina', lat: 33.29675, lon: -118.3269833, face: 90, depth: 45, verified: true, boat: true, regional: true, userTrusted: true},
     { id: 'shiprock', name: 'Ship Rock — Catalina (Isthmus)', lat: 33.4631983, lon: -118.4916767, face: 90, depth: 80, verified: true, boat: true, regional: true, userTrusted: true},
     { id: 'indianrock', name: 'Indian Rock — Emerald Bay / Catalina', lat: 33.467997, lon: -118.526799, face: 90, depth: 45, verified: true, boat: true, regional: true, userTrusted: true},
     { id: 'empirelanding', name: 'Empire Landing — Catalina', lat: 33.4319444, lon: -118.4430556, face: 90, depth: 50, verified: true, boat: true, regional: true, userTrusted: true},
@@ -445,7 +444,39 @@
     /* —— Local KML banks near PV / SMB (pin-trust yes; coords verbatim from FISH_SPOTS) —— */
     { id: 'thirtysevenfathomspot', name: '37 Fathom Spot', lat: 33.7967, lon: -118.4558, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true },
     { id: 'fortyfathomcurve', name: '40 Fathom Curve', lat: 33.7808, lon: -118.4667, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true },
-    { id: 'fortysevenfathomridge', name: '47 Fathom Ridge', lat: 33.7878, lon: -118.4903, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true }
+    { id: 'fortysevenfathomridge', name: '47 Fathom Ridge', lat: 33.7878, lon: -118.4903, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true },
+    /* —— Pin-trust yes dive promotes (coords verbatim) —— */
+    { id: 'pv_malagacove_dive', name: 'Malaga Cove — Palos Verdes (USGS bay)', lat: 33.8041823, lon: -118.3945183, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'pv_christmastree_dive', name: 'Christmas Tree Cove — Palos Verdes (USGS bay)', lat: 33.7619605, lon: -118.4186847, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'pv_flatrock_dive', name: 'Flat Rock — Palos Verdes (USGS bar)', lat: 33.7964044, lon: -118.4103517, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'pv_bluffcove_dive', name: 'Bluff Cove — Palos Verdes (USGS bay)', lat: 33.7925156, lon: -118.4089628, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'pv_bitrock_dive', name: 'Bit Rock — Palos Verdes (USGS bar)', lat: 33.7961266, lon: -118.4106295, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'pv_lunada_dive', name: 'Lunada Bay — Palos Verdes (USGS bay)', lat: 33.7700158, lon: -118.4250738, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'pv_abalonecove_dive', name: 'Abalone Cove — Palos Verdes (USGS bay)', lat: 33.7389061, lon: -118.3809061, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'pv_gardenspot_dive', name: 'Garden Spot — Abalone Cove SMCA', lat: 33.7372667, lon: -118.3861167, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'pv_marinelandplatform_dive', name: 'Marineland Platform — Terranea / Long Point', lat: 33.7358333, lon: -118.3906333, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'pv_camelback_dive', name: 'Camelback — Pt Vicente SMCA', lat: 33.7465167, lon: -118.41755, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_emerald_bay_dive', name: 'Emerald Bay — Catalina', lat: 33.46758333333333, lon: -118.52691666666666, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_eagle_reef_west_dive', name: 'Eagle Reef (west) — Catalina', lat: 33.4613, lon: -118.51145, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_bird_rock_dive', name: 'Bird Rock — Catalina', lat: 33.451, lon: -118.48616666666666, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_howlands_landing_dive', name: 'Howland\'s Landing — Catalina', lat: 33.462833333333336, lon: -118.5205, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_parsons_landing_dive', name: 'Parson\'s Landing — Catalina', lat: 33.474833333333336, lon: -118.55125, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_lion_head_dive', name: 'Lion Head — Catalina', lat: 33.45366666666666, lon: -118.5015, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_cherry_cove_dive', name: 'Cherry Cove — Catalina', lat: 33.4515, lon: -118.50183333333334, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_long_point_dive', name: 'Long Point (Pirate\'s Cove) — Catalina', lat: 33.40558333333333, lon: -118.3666, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_isthmus_cove_dive', name: 'Isthmus Cove — Catalina (Two Harbors)', lat: 33.44233333333333, lon: -118.495, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_casino_point_dive', name: 'Casino Point / Avalon Underwater Park — Catalina', lat: 33.349266666666665, lon: -118.32488333333333, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_seal_rocks_dive', name: 'Seal Rocks — Catalina', lat: 33.30283333333333, lon: -118.3041, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_farnsworth_banks_dive', name: 'Farnsworth Banks — Catalina', lat: 33.343666666666664, lon: -118.51653333333333, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_isthmus_high_spot_dive', name: 'Isthmus High Spot — Catalina', lat: 33.45483333333333, lon: -118.49, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_little_geiger_dive', name: 'Little Geiger — Catalina', lat: 33.45713333333333, lon: -118.51186666666666, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_harbor_reef_dive', name: 'Harbor Reef — Catalina', lat: 33.44833333333333, lon: -118.492, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_black_point_dive', name: 'Black Point — Catalina', lat: 33.47573333333333, lon: -118.58033333333333, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_pin_rock_dive', name: 'Pin Rock — Catalina (USGS)', lat: 33.425, lon: -118.506, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_whale_rock_dive', name: 'Whale Rock — Catalina (USGS)', lat: 33.4325, lon: -118.5606, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_little_farnsworth_dive', name: 'Little Farnsworth — Catalina', lat: 33.333783333333336, lon: -118.30763333333333, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'franko_sentinel_rock_dive', name: 'Sentinel Rock — Catalina (USGS)', lat: 33.3728, lon: -118.4856, face: 250, depth: 50, boat: true, userTrusted: true },
+    { id: 'dive_ver_churchrock', name: 'Church Rock — Catalina', lat: 33.29675, lon: -118.3269833, face: 250, depth: 50, boat: true, userTrusted: true }
   ];
 
   /** Pre-dive briefing — loaded from dive-briefings-data.js (sectioned { h, body[] } per site). */

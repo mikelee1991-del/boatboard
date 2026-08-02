@@ -1,6 +1,6 @@
 {
   "type": "pin-feature-groups",
-  "exportedAt": "2026-08-02T05:38:52.967Z",
+  "exportedAt": "2026-08-02T18:05:01.100Z",
   "note": "Explicit feature groups from pin-trust-review.html. Members keep published coords (never nudged). Live dive/fish grouping unions matched pins even when names do not normalize together.",
   "groups": [
     {
@@ -326,6 +326,169 @@
         }
       ],
       "updatedAt": "2026-08-02T05:37:42.856Z"
+    },
+    {
+      "groupId": "pfg_emerald_bay_m604",
+      "displayName": "Emerald Bay",
+      "members": [
+        {
+          "id": "franko_emerald_bay_fish",
+          "kind": "fish",
+          "name": "Emerald Bay — Catalina (fish)",
+          "lat": 33.46758333333333,
+          "lon": -118.52691666666666,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_indianrock",
+          "kind": "dive",
+          "name": "Indian Rock — Emerald Bay / Catalina",
+          "lat": 33.467997,
+          "lon": -118.526799,
+          "diveId": "indianrock"
+        },
+        {
+          "id": "fish_ver_indianrockemeraldbaycata",
+          "kind": "fish",
+          "name": "Indian Rock — Emerald Bay / Catalina",
+          "lat": 33.467997,
+          "lon": -118.526799,
+          "diveId": ""
+        }
+      ],
+      "updatedAt": "2026-08-02T16:29:03.844Z"
+    },
+    {
+      "groupId": "pfg_eagle_reef_fet2",
+      "displayName": "Eagle Reef",
+      "members": [
+        {
+          "id": "dive_ut_eaglereef_195",
+          "kind": "dive",
+          "name": "Eagle Reef",
+          "lat": 33.4603,
+          "lon": -118.5073,
+          "diveId": "ut_eaglereef_195"
+        },
+        {
+          "id": "fish_kml_199",
+          "kind": "fish",
+          "name": "Eagle Reef",
+          "lat": 33.4603,
+          "lon": -118.5073,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_westeaglereef",
+          "kind": "dive",
+          "name": "Eagle Reef (west) — Catalina",
+          "lat": 33.4613,
+          "lon": -118.51145,
+          "diveId": "westeaglereef"
+        },
+        {
+          "id": "franko_eagle_reef_west_fish",
+          "kind": "fish",
+          "name": "Eagle Reef (west) — Catalina (fish)",
+          "lat": 33.4613,
+          "lon": -118.51145,
+          "diveId": ""
+        }
+      ],
+      "updatedAt": "2026-08-02T17:49:46.191Z"
+    },
+    {
+      "groupId": "pfg_sentinel_rock_urxr",
+      "displayName": "Sentinel Rock",
+      "members": [
+        {
+          "id": "dive_ut_sentinelrock_356",
+          "kind": "dive",
+          "name": "Sentinel Rock",
+          "lat": 33.368,
+          "lon": -118.4883,
+          "diveId": "ut_sentinelrock_356"
+        },
+        {
+          "id": "fish_kml_live_289",
+          "kind": "fish",
+          "name": "Sentinel Rock",
+          "lat": 33.368,
+          "lon": -118.4883,
+          "diveId": ""
+        }
+      ],
+      "updatedAt": "2026-08-02T17:59:44.368Z"
+    },
+    {
+      "groupId": "pfg_long_point_wp1f",
+      "displayName": "Long Point",
+      "members": [
+        {
+          "id": "dive_ver_longpoint",
+          "kind": "dive",
+          "name": "Long Point — Catalina",
+          "lat": 33.4057667,
+          "lon": -118.3666667,
+          "diveId": "longpoint"
+        },
+        {
+          "id": "dive_ut_longpoint_278",
+          "kind": "dive",
+          "name": "Long Point",
+          "lat": 33.4063,
+          "lon": -118.3653,
+          "diveId": "ut_longpoint_278"
+        },
+        {
+          "id": "fish_kml_278",
+          "kind": "fish",
+          "name": "Long Point",
+          "lat": 33.4063,
+          "lon": -118.3653,
+          "diveId": ""
+        }
+      ],
+      "updatedAt": "2026-08-02T18:01:13.923Z"
+    },
+    {
+      "groupId": "pfg_seal_rocks_zjnc",
+      "displayName": "Seal Rocks",
+      "members": [
+        {
+          "id": "dive_ut_sealrocks_348",
+          "kind": "dive",
+          "name": "Seal Rocks",
+          "lat": 33.3062,
+          "lon": -118.3057,
+          "diveId": "ut_sealrocks_348"
+        },
+        {
+          "id": "fish_kml_live_287",
+          "kind": "fish",
+          "name": "Seal Rocks",
+          "lat": 33.3062,
+          "lon": -118.3057,
+          "diveId": ""
+        },
+        {
+          "id": "fish_kml_live_158",
+          "kind": "fish",
+          "name": "East End - Seal Rocks",
+          "lat": 33.3062,
+          "lon": -118.3033,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ut_eastendsealrocks_208",
+          "kind": "dive",
+          "name": "East End - Seal Rocks",
+          "lat": 33.3062,
+          "lon": -118.3033,
+          "diveId": "ut_eastendsealrocks_208"
+        }
+      ],
+      "updatedAt": "2026-08-02T18:03:26.904Z"
     }
   ]
 }
