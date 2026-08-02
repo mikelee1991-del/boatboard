@@ -21,8 +21,10 @@
 
   let opts = null;
   let map = null, mapInited = false, spotLayer = null, boatMarker = null;
+  let mapInitPromise = null;
   let lastRanked = null;
   let planDateOnly = null;
+  let lastPaintKey = '';
 
   function $(id){ return document.getElementById(id); }
   function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
@@ -496,54 +498,123 @@
       '<p class="prose" style="font-size:12px;margin-top:8px">Best windows blend night hours, moving tide, and calm seas — same model as the map colors.</p>';
   }
 
+  function markerHtml(rank, score, mode){
+    const col = scoreColor(score);
+    if(mode === 'dot'){
+      return '<div style="width:10px;height:10px;border-radius:50%;background:' + col +
+        ';border:1.5px solid #fff;opacity:0.9;box-shadow:0 0 4px rgba(0,0,0,.75)"></div>';
+    }
+    const sz = rank <= 6 ? 28 : 24;
+    const fs = rank <= 6 ? 12 : 10;
+    return '<div style="width:' + sz + 'px;height:' + sz + 'px;border-radius:50%;background:' + col +
+      ';border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono,ui-monospace,monospace);font-size:' +
+      fs + 'px;font-weight:700;color:#060a10;box-shadow:0 0 8px rgba(0,0,0,.85)">' + rank + '</div>';
+  }
+
   async function ensureMap(){
-    if(mapInited && map) return map;
-    if(!opts.loadLeaflet) throw new Error('Leaflet loader missing');
-    await opts.loadLeaflet();
-    const el = $('lobsterMap');
-    if(!el) return null;
-    el.innerHTML = '';
-    map = global.L.map(el, { zoomControl: true, attributionControl: true });
-    if(opts.planMapBaseLayer) await opts.planMapBaseLayer(map, { seafloorDem: true });
-    if(opts.addCoastOverlay) opts.addCoastOverlay(global.L.layerGroup().addTo(map));
-    spotLayer = global.L.layerGroup().addTo(map);
-    boatMarker = global.L.circleMarker([33.85, -118.4], {
-      radius: 7, color: '#3dd6f5', weight: 2, fillColor: '#3dd6f5', fillOpacity: 0.85
-    }).addTo(map);
-    mapInited = true;
-    if(opts.ensureMpaOverlay) await opts.ensureMpaOverlay(map, 'lobPlan');
-    return map;
+    if(mapInited && map){
+      try{ map.invalidateSize(true); }catch(e){ /* ignore */ }
+      return map;
+    }
+    if(mapInitPromise) return mapInitPromise;
+    mapInitPromise = (async () => {
+      if(!opts.loadLeaflet) throw new Error('Leaflet loader missing');
+      await opts.loadLeaflet();
+      if(!global.L) throw new Error('Leaflet missing');
+      const el = $('lobsterMap');
+      if(!el) return null;
+      if(mapInited && map) return map;
+
+      const bp = (opts.getPos && opts.getPos()) || { lat: 33.84817, lon: -118.39633 };
+      el.innerHTML = '';
+      try{ delete el._leaflet_id; }catch(e){ el._leaflet_id = undefined; }
+
+      /* setView before basemap — otherwise tile layers never request (black pane). */
+      const m = global.L.map(el, {
+        zoomControl: true,
+        attributionControl: true,
+        minZoom: 7,
+        maxZoom: 19
+      }).setView([bp.lat, bp.lon], 11);
+      map = m;
+
+      if(opts.planMapBaseLayer){
+        try{ await opts.planMapBaseLayer(m, { seafloorDem: true }); }
+        catch(e){ console.warn('lobster basemap', e); }
+      }
+      if(opts.addCoastOverlay){
+        try{ opts.addCoastOverlay(global.L.layerGroup().addTo(m)); }
+        catch(e){ console.warn('lobster coast', e); }
+      }
+      spotLayer = global.L.layerGroup().addTo(m);
+      boatMarker = global.L.marker([bp.lat, bp.lon], {
+        icon: global.L.divIcon({
+          className: 'boat-icon',
+          html: '<div style="font-size:24px;line-height:1;filter:drop-shadow(0 0 5px #3dd6f5)">▲</div>',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        }),
+        zIndexOffset: 1000
+      }).addTo(m);
+      mapInited = true;
+      if(opts.ensureMpaOverlay){
+        try{ await opts.ensureMpaOverlay(m, 'lobPlan'); }
+        catch(e){ console.warn('lobster MPA', e); }
+      }
+      try{ if(spotLayer.bringToFront) spotLayer.bringToFront(); }catch(e){ /* ignore */ }
+      setTimeout(() => { try{ m.invalidateSize(true); }catch(e){ /* ignore */ } }, 80);
+      return m;
+    })().catch(e => {
+      mapInitPromise = null;
+      mapInited = false;
+      map = null;
+      spotLayer = null;
+      boatMarker = null;
+      throw e;
+    });
+    return mapInitPromise;
   }
 
   function paintMap(ranked, bp){
-    if(!map || !spotLayer) return;
+    if(!map || !spotLayer || !boatMarker) return 0;
     spotLayer.clearLayers();
     boatMarker.setLatLng([bp.lat, bp.lon]);
     const local = ranked.filter(r => r.distNm <= LOBSTER_MAP_FIT_NM * 1.8);
-    local.slice(0, 80).forEach((r, i) => {
-      const col = scoreColor(r.score);
-      const marker = global.L.circleMarker([r.spot.lat, r.spot.lon], {
-        radius: i < 12 ? 9 : 6,
-        color: '#0a1520',
-        weight: 1.5,
-        fillColor: col,
-        fillOpacity: 0.92
+    const pins = local.slice(0, 80);
+    pins.forEach((r, i) => {
+      const rank = i + 1;
+      const mode = rank <= 20 ? 'rank' : 'dot';
+      const sz = mode === 'dot' ? 12 : (rank <= 6 ? 28 : 24);
+      const icon = global.L.divIcon({
+        className: 'lob-map-pin',
+        html: markerHtml(rank, r.score, mode === 'rank' ? 'rank' : 'dot'),
+        iconSize: [sz, sz],
+        iconAnchor: [sz / 2, sz / 2]
       });
       const depth = r.spot.depthFt && r.spot.depthFt.mid != null ? f0(r.spot.depthFt.mid) + ' ft' : (r.spot.depth || '—');
+      const marker = global.L.marker([r.spot.lat, r.spot.lon], {
+        icon,
+        zIndexOffset: 600 - i
+      });
       marker.bindPopup(
         '<strong>' + esc(r.spot.name) + '</strong><br>' +
         'Hunt ' + r.score + '/100 · ' + f1(r.distNm) + ' nm · ' + esc(String(depth)) + '<br>' +
         esc(r.spot.methods) +
         (r.spot.smcaWarn ? '<br><em>Verify SMCA take rules</em>' : '')
       );
-      if(i < 15){
-        marker.bindTooltip('#' + (i + 1), { permanent: i < 8, direction: 'center', className: 'lob-map-tip' });
-      }
       spotLayer.addLayer(marker);
     });
+    try{ if(spotLayer.bringToFront) spotLayer.bringToFront(); }catch(e){ /* ignore */ }
     const ang = LOBSTER_MAP_FIT_NM / 60;
     map.fitBounds([[bp.lat - ang, bp.lon - ang], [bp.lat + ang, bp.lon + ang]], { maxZoom: 12, animate: false });
-    setTimeout(() => { try { map.invalidateSize(true); } catch (e) { /* ignore */ } }, 80);
+    setTimeout(() => {
+      try{
+        map.invalidateSize(true);
+        if(spotLayer && spotLayer.bringToFront) spotLayer.bringToFront();
+      }catch(e){ /* ignore */ }
+    }, 80);
+    lastPaintKey = bp.lat.toFixed(4) + ',' + bp.lon.toFixed(4) + ':' + pins.length;
+    return pins.length;
   }
 
   function render(){
@@ -568,8 +639,17 @@
         '</div>';
     }
     ensureMap().then(() => {
-      paintMap(ranked, bp);
-      if(opts.ensureMpaOverlay) opts.ensureMpaOverlay(map, 'lobPlan');
+      const n = paintMap(ranked, bp);
+      if(opts.ensureMpaOverlay){
+        Promise.resolve(opts.ensureMpaOverlay(map, 'lobPlan')).then(() => {
+          try{ if(spotLayer && spotLayer.bringToFront) spotLayer.bringToFront(); }catch(e){ /* ignore */ }
+          /* Re-paint if a raced init left panes empty. */
+          if(n === 0 || (map && map.getPane && map.getPane('markerPane') &&
+              map.getPane('markerPane').children.length === 0)){
+            paintMap(ranked, bp);
+          }
+        }).catch(()=>{});
+      }
     }).catch(e => console.error('lobster map', e));
   }
 

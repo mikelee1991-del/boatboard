@@ -250,6 +250,7 @@ svg text{font-family:var(--font-mono)}
 .lob-windows{display:flex;flex-wrap:wrap;gap:8px}
 .lob-win{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;font-family:var(--mono)}
 .lob-map-tip{background:rgba(6,10,16,.85)!important;border:none!important;color:#e8ecf4!important;font-weight:700;font-size:10px}
+.lob-map-pin{background:transparent!important;border:none!important}
 #map,#swellMap{background:var(--bg)!important}
 .leaflet-container.ocean-map-dark{background:var(--bg)!important}
 .leaflet-container.ocean-map-dark .leaflet-tile-pane{filter:brightness(.9) contrast(1.06)}
@@ -1625,7 +1626,7 @@ function lobsterHabOutlook(){
 function ensureLobsterEngine(){
   if(window.BoatLobster) return Promise.resolve(window.BoatLobster);
   if(_lobsterEnginePromise) return _lobsterEnginePromise;
-  _lobsterEnginePromise = ensureDiveEngine().catch(()=>null).then(()=> loadScript('lobster-engine.js?v=1')).then(()=>{
+  _lobsterEnginePromise = ensureDiveEngine().catch(()=>null).then(()=> loadScript('lobster-engine.js?v=3')).then(()=>{
     if(!window.BoatLobster) throw new Error('BoatLobster missing');
     BoatLobster.init({
       getPos: () => boatPos(),
@@ -1639,6 +1640,8 @@ function ensureLobsterEngine(){
       classifyFishStyle,
       isOnLand,
       loadLeaflet,
+      /* Same BlueTopo+DEM stack as Fish/Dive Plan — do not also add ENC as a base
+         (layers control would drop BlueTopo; ENC minZoom 11 → black at plan zoom). */
       planMapBaseLayer: async (m, o) => {
         const opts = Object.assign({ seafloorDem: true }, o || {});
         try{ return await attachSeafloorPlanBasemap(m, opts); }
