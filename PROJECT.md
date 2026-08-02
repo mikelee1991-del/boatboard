@@ -16,11 +16,11 @@ BoatBoard consolidates Southern California marine forecasts, GPS position, AIS t
 | `socal-boat-dashboard.html` | Legacy bookmark redirect → `index.html` (GitHub Pages entry is `index.html`) |
 | `.nojekyll` | Required for GitHub Pages (disables Jekyll) |
 | `.github/workflows/pages.yml` | GitHub Actions Pages deploy on push to main/master |
-| `dive-engine.js` | Dive site library (**358 sites**), scoring (ported from DiveCast), Plan/On site rendering, dive maps, briefing UI |
+| `dive-engine.js` | Dive site library (**~412 sites**), scoring (ported from DiveCast), Plan/On site rendering, dive maps, briefing UI |
 | `dive-briefings-data.js` | Pre-dive briefing content — `window.__BOAT_DIVE_BRIEFINGS__` keyed by site id |
 | `dive-site-intel.js` | Extra dive intel helpers |
 | `fish-spot-intel.js` | Thin curated fish intel for high-value King Harbor day-trip marks |
-| `seafloor-render.js` | On-site Leaflet chart (BlueTopo + NCEI DEM + ENC + Ocean + kelp) |
+| `seafloor-render.js` | On site + ranked Plan BlueTopo/DEM basemap (+ ENC / Ocean / kelp) |
 | `coast-geo.js` | Audit-only high-res coastline (CScript pin tools). May contain phantom chords — not used by maps |
 | `coast-overlay-lite.js` | **Map display** shoreline (~100 ft, ~100 NM of slip). Loaded by dashboard |
 | `build-coast-overlay-lite.ps1` / `.js` | Rebuild overlay from OSM (`coast-osm.json`). **Do not** rebuild overlay from `coast-geo.js` |
@@ -77,7 +77,7 @@ BoatBoard consolidates Southern California marine forecasts, GPS position, AIS t
 
 ## Tabs and features
 
-Nav order: **Overview · Underway · Swell & Ocean · Plankton · Temperature · Cruise · Surf · Wildlife · AIS · Weather · Tides · Fish · Dive**
+Nav order: **Overview · Underway · AIS · Cruise · Swell & Ocean · Weather · Tides · SST · Plankton · Fish · Dive · Surf · Wildlife**
 
 ### Overview
 At-a-glance cards: GPS/slip status, travel heading, effective seas, tide, weather snippet, top dive/fish picks, plankton/wildlife takeaways, quick links to NOAA/CDFW.
@@ -105,7 +105,7 @@ Separate **AIS** and **Swell & Ocean** tabs remain for dedicated views.
 ### Plankton
 CoastWatch / ERDDAP chlorophyll-a WMS overlays (JSONP-friendly for `file://`). Map + point samples feed Overview marine-life takeaways. CDPH harvest advisories remain operator responsibility.
 
-### Temperature
+### SST (tab label; formerly Temperature)
 CoastWatch SST WMS layers (1-day / 3-day / MUR / Blended). Legacy `erdGHssta*` retired. Map centered on boat; metadata/cache under `boatCache:*`.
 
 ### Cruise
@@ -119,7 +119,7 @@ Relaxed cruising / anchor planning — **Windy.com primary map** (custom vector 
 **Windy hosts:**
 - **`file://` parent** — `embed.windy.com` **embed2** (waves). `embed2` has no `metricWave` URL param; wave height may follow **GeoIP** (often meters). Prefer an http(s) host for locked feet.
 - **http(s) parent** — `windy-waves-embed.html` Map Forecast API host with `metric_waves=ft` / store lock to feet.
-- Cache bust: `CRUISE_WINDY_EMBED_VER` (**10**) as `_v=` on embed URLs.
+- Cache bust: `CRUISE_WINDY_EMBED_VER` (**15**) as `_v=` on embed URLs.
 
 **Removed** (Jul 23, after persistent vector bugs):
 - Custom Leaflet cruise map (`#cruiseMap`)
@@ -181,18 +181,18 @@ Subtabs:
 - **On site** — spot picker, tactics, solunar/tide windows, seafloor render
 - **MPA map** — CDFW South Coast MPAs (GeoJSON), tap for rules; cached locally
 
-**Live counts (Jul 29, 2026):** **552** `FISH_SPOTS` — verified 55 · kml 413 · cdfg 126 · userTrusted 438 (flags overlap). GPS coords shown in list/popups via `fmtFishCoordsDepth`.
+**Live counts (Aug 2, 2026):** **~595** `FISH_SPOTS` (verified / kml / cdfg / userTrusted flags overlap). GPS coords shown in list/popups via `fmtFishCoordsDepth`. See **CONTEXT.md**.
 
-Map auto-fit / ranking radius: **`FISH_MAP_FIT_NM` = 10**. Ranked picker pool: **`FISH_PICKER_POOL` = 25**.
+Map auto-fit / ranking radius: **`FISH_MAP_FIT_NM` = 10**. Ranked picker pool: **`FISH_PICKER_POOL` = 25**. Plan map basemap = SeafloorRender BlueTopo+DEM (not split imagery).
 
 ### Dive
 Subtabs:
 - **Plan** — calendar date, ranked sites (shared **25**-site picker pool), map with numbered markers, 5-day outlook, factors; GPS + depth in list
 - **On site** — nearest-site dropdown, **pre-dive briefing**, site guide, seafloor bathymetry/kelp
 
-**Live counts (Jul 29, 2026):** **358** `DIVE_SITES` — verified 57 · kml 134 · cdfg 190 · userTrusted 358. `siteMapPos()` uses raw water-side GPS (no runtime `mapDisplayPos` push).
+**Live counts (Aug 2, 2026):** **~412** `DIVE_SITES`. `siteMapPos()` uses raw water-side GPS (no runtime `mapDisplayPos` push). See **CONTEXT.md**.
 
-Map auto-fit / ranking radius: **`DIVE_MAP_FIT_NM` = 10**. Ranked picker pool: **`SITE_PICKER_POOL` = 25**.
+Map auto-fit / ranking radius: **`DIVE_MAP_FIT_NM` = 10**. Ranked picker pool: **`SITE_PICKER_POOL` = 25**. Plan map basemap = SeafloorRender BlueTopo+DEM.
 
 **Pre-dive briefings** (On site tab):
 - Data in `dive-briefings-data.js` → loaded as `window.__BOAT_DIVE_BRIEFINGS__`
@@ -209,14 +209,13 @@ Displayed fish/dive pins use **published GPS only**. Do **not** nudge, mega-push
 
 **Default-trusted** (no pin-trust “yes” required):
 
-1. `verified-water-pins.json` (≥2 independent sources within ~0.2 NM) → `verified: true`  
-   - Log sizes (Jul 29, 2026): **fishKept 49**, **diveKept 57**
+1. `verified-water-pins.json` (≥2 independent sources within ~0.2 NM) → `verified: true` (log sizes change when synced)  
 2. CDFG Artificial Reef Appendix → `cdfgAppendix: true` (`cdfg-artificial-reefs.json`)
 3. `San Diego Fishing Spots.kml` → `kmlImported: true`
 
 **User no / unsure** in `pin-trust-review-results.json` (applied by `apply-pin-trust-yes.js`) **overrides** the above. Other confirmed yes verdicts → `userTrusted: true`.
 
-**Pin-trust summary (Jul 29, 2026):** yes **801** · no **8** · unsure **7** · pending **0**.
+**Pin-trust summary (Aug 2, 2026):** yes **894** · no **27** · unsure **7** · pending **1**. Franko/PV candidates require review before live promote.
 
 ### Pin-trust review workflow
 
@@ -235,21 +234,22 @@ Full enforceable rules: `.cursor/rules/water-pin-coords.mdc`.
 
 - **Library**: Leaflet 1.9.4 (CDN, lazy-loaded via `loadLeaflet()`)
 - **Base tiles**: Esri **World Imagery** (satellite); auto-fallback to World Topo after tile errors
-- **AIS / fish ranked / dive ranked**: **split basemap** — imagery on land, NOAA BlueTopo hillshade on water (`bluetopo/split-basemap.js`), shoreline mask from `coast-overlay-lite.js` (landward extrude + islands). Not Google Maps tiles (no API key); Esri imagery is the land layer.
+- **Fish / Dive Plan ranked maps**: SeafloorRender **BlueTopo + NCEI DEM** (same stack as On site / pin-trust).
+- **AIS** (and most other Leaflet tabs): **split basemap** — imagery on land, NOAA BlueTopo on water (`bluetopo/split-basemap.js`), shoreline mask from `coast-overlay-lite.js`.
 - **Theme**: `.ocean-map-dark` — dark background, slight brightness/contrast filter, gradient overlay
 - **Coast overlay**: Port Royal slip pin (yellow); breakwater/channel dashed lines **removed** from map overlay (GPS logic retains harbor polygons)
 - **Maps using base layer**: dive plan, fish plan, fish MPA, surf, swell, AIS, SST, plankton
 - **Cruise tab**: Windy iframe only (no Leaflet)
 - **Underway tab**: Esri tiles sampled into circular canvas (not Leaflet)
 
-### Seafloor (On site — dive & fish)
+### Seafloor (On site + ranked Plan maps)
 `SeafloorRender` in `seafloor-render.js` (Leaflet, lazy-loaded):
-- **On site default**: **BlueTopo relief** — NOAA NBS BlueTopo hillshade (nowCOAST WMTS, or self-hosted PMTiles via `bluetopo/config.json`) stacked over NCEI DEM. Undelivered BlueTopo cells are transparent. Layers also include NCEI DEM alone, NOAA ENC Online WMS, Esri Ocean Base, Satellite.
-- **Plan default**: Esri Ocean Base (no DEM/BlueTopo by default — fewer heavy requests).
+- **On site + Fish/Dive Plan ranked**: **BlueTopo relief** — NOAA NBS BlueTopo hillshade (nowCOAST WMTS, or self-hosted PMTiles via `bluetopo/config.json`) stacked over NCEI DEM. Undelivered BlueTopo cells are transparent. Layers also include NCEI DEM alone, NOAA ENC Online WMS, Esri Ocean Base, Satellite.
+- **Fish Plan vessel seafloor chart**: removed — only On site mark chart remains.
 - **Overlays**: OpenSeaMap seamarks; CDFW kelp; nearby spot pins (verbatim coords).
-- **Fit**: On site `ONSITE_FIT_FT = 1300` (~0.21 nm); Plan `PLAN_FIT_NM = 2.5`.
-- **Self-host**: `bluetopo/` Docker → PMTiles → Cloudflare R2 Worker (same one-time pattern as AIS). Smoke AOI = Palos Verdes (delivered tiles); day-trip AOI docs note sparse S3 delivery (e.g. King Harbor often undelivered).
-- **Honest limits**: Not for navigation. Hillshade visualizes real elevations; plotter/ENC for decisions. CUDEM mosaic empty at some SoCal AOIs.
+- **Fit**: On site `ONSITE_FIT_FT = 1300` (~0.21 nm); legacy Plan fit constant `PLAN_FIT_NM = 2.5` still in module.
+- **Self-host**: `bluetopo/` Docker → PMTiles → Cloudflare R2 Worker (same one-time pattern as AIS). Smoke AOI = Palos Verdes; King Harbor often undelivered.
+- **Honest limits**: Not for navigation. Hillshade visualizes real elevations; plotter/ENC for decisions.
 
 ## Data sources
 
@@ -263,7 +263,7 @@ Full enforceable rules: `.cursor/rules/water-pin-coords.mdc`.
 | MPAs | CDFW ArcGIS MarineProtectedAreas_WebMer (SCSR) | 90-day cache |
 | AIS | AISStream via Cloudflare Worker (`ais-relay-worker/`) or local `ais-relay.mjs` | live |
 | Coastline / shadow | `coast-overlay-lite.js` (OSM) + runtime `OBSTACLES` | static |
-| Bathymetry | BlueTopo (nowCOAST WMTS / optional PMTiles) + NCEI DEM on On site; AIS/fish/dive ranked use split imagery+BlueTopo | on tab open |
+| Bathymetry | BlueTopo + NCEI DEM on On site + Fish/Dive Plan ranked; AIS uses split imagery+BlueTopo | on tab open |
 | SST / chlorophyll | CoastWatch ERDDAP WMS (+ JSONP where needed) | tab/cache |
 | Cruise swell map | Windy embed (waves) | live iframe |
 | Underway radar imagery | Esri World Imagery tiles (same URL as plan maps) | cached per view |
@@ -380,10 +380,12 @@ HTTPS BoatBoard needs `wss://` (Worker URL or temporary cloudflared in front of 
 - **Underway shoreline outlines** → replaced with Esri satellite canvas (Jul 23 evening)
 - **Underway satellite blank** → canvas reuse on AIS refresh; render size cap; triple-tier zoom
 - **AIS underway markers** → dual-marker DR for all moving vessels; clarified age tiers and legend (Jul 24)
-- **Location portfolio** → Jul 24 scrub (209/244) later superseded by KML/CDFG/verified/pin-trust expansion (552 fish / 358 dive as of Jul 29, 2026)
+- **Location portfolio** → Jul 24 scrub later superseded by KML/CDFG/verified/pin-trust (+ Franko/PV) → **~595 fish / ~412 dive** (Aug 2, 2026)
 - **GPS toggle** → Use device GPS in Overview/Settings
 - **Map fit / picker defaults** → 10 nmi fit, 25-spot pools
 - **Windy feet** → Map Forecast host on http(s); embed2 caveat on `file://`
+- **Scores** → dive/bite recalibrated (typical 45–60, good ≥82); continuous colormap legends
+- **AIS Worker** → subscribe-after-client (mobile-safe)
 
 ## Running
 

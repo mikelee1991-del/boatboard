@@ -52,7 +52,7 @@ Notes:
 | `dive-engine.js` | `DIVE_SITES`, dive scoring, plan/on-site maps |
 | `dive-briefings-data.js` | Pre-dive briefing prose |
 | `dive-site-intel.js` | Extra dive intel helpers |
-| `seafloor-render.js` | On-site Leaflet chart + BlueTopo / NCEI DEM + kelp |
+| `seafloor-render.js` | On site + ranked Plan BlueTopo / NCEI DEM + kelp |
 | `bluetopo/` | BlueTopo AOIs, Docker→PMTiles pipeline, R2 Worker, split basemap |
 | `coast-overlay-lite.js` | Map shoreline (visual) |
 | `pin-feature-groups-data.js` | Feature-group metadata for fish/dive ranking |
@@ -64,16 +64,17 @@ Notes:
 
 ## Tabs (nav order)
 
-Overview · Underway · Swell & Ocean · Plankton · Temperature · Cruise · Surf · Wildlife · AIS · Weather · Tides · Fish · Dive
+Overview · Underway · AIS · Cruise · Swell & Ocean · Weather · Tides · SST · Plankton · Fish · Dive · Surf · Wildlife
 
 Highlights:
 
 - **Overview** — glance cards + **Use device GPS** toggle (slip / manual when off)
-- **Fish / Dive maps** — auto-fit / ranking radius **`FISH_MAP_FIT_NM` / `DIVE_MAP_FIT_NM` = 10 nmi**
-- **Cruise** — Windy waves overlay; sector comfort table (shadow model, 5 nm ahead)
-- **Temperature** — CoastWatch SST WMS (1-day / 3-day / MUR / Blended)
+- **Fish / Dive Plan maps** — BlueTopo+DEM (same On site stack); fit **`FISH_MAP_FIT_NM` / `DIVE_MAP_FIT_NM` = 10 nmi**
+- **Cruise** — Windy waves overlay; sector comfort table (shadow model, 5 nm ahead); shoreline bacteria default-on
+- **SST** — CoastWatch SST WMS (1-day / 3-day / MUR / Blended)
 - **Swell** — energy index **kJ = H² × T** (H ft, T s; proportional index, not SI flux)
-- **Tides** — NOAA **9410738** King Harbor
+- **Tides** — NOAA **9410738** King Harbor (plain fetch — mobile CORS-safe)
+- Session brief: **[CONTEXT.md](CONTEXT.md)**
 
 ## Water-pin GPS (never nudge)
 
@@ -109,18 +110,20 @@ Advisory: `audit-map-water-pins.js`.
 
 ## Hard-refresh notes
 
-- Cruise iframe cache bust: `CRUISE_WINDY_EMBED_VER` (currently **10**) on Windy URLs (`_v=`).
-- After bumping embed/host versions or changing `windy-waves-embed.html`, hard-refresh the dashboard (and clear site data if the iframe still shows meters).
+- Settings → **Hard refresh** (also in pin-trust UI) — clears SW/caches and reloads with `?_hr=`.
+- Cruise iframe cache bust: `CRUISE_WINDY_EMBED_VER` (currently **15**) on Windy URLs (`_v=`).
+- Lazy scripts use `?v=` (e.g. `seafloor-render.js?v=3`, `forecast-charts.js?v=2`, `bluetopo/split-basemap.js?v=2b`).
 - SST/chl metadata caches use `boatCache:*` keys in `localStorage`; refresh button or clear cache if overlays look stuck.
 
-## Live pin counts (Jul 29, 2026)
+## Live pin counts (Aug 2, 2026)
 
 | List | Pins | Notes |
 |------|------|--------|
-| `FISH_SPOTS` | **552** | verified 55 · kml 413 · cdfg 126 · userTrusted 438 (flags overlap) |
-| `DIVE_SITES` | **358** | verified 57 · kml 134 · cdfg 190 · userTrusted 358 |
-| `verified-water-pins.json` | diveKept 57 · fishKept 49 | |
-| Pin-trust results | yes 801 · no 8 · unsure 7 | |
+| `FISH_SPOTS` | **~595** | after Franko/PV pin-trust apply (flags overlap) |
+| `DIVE_SITES` | **~412** | same |
+| Pin-trust prior | yes 894 · no 27 · unsure 7 · pending 1 | see `pin-trust-review.json` |
+
+Full handoff: **[CONTEXT.md](CONTEXT.md)**.
 
 ## Docs
 
