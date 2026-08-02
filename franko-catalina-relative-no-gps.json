@@ -1,0 +1,61 @@
+{
+  "type": "franko-catalina-relative-no-gps",
+  "note": "Sites from Franko Catalina export with no concrete GPS (or range-only). Not placed on pin-trust map — no invented coordinates.",
+  "wgs84": "When GPS exists elsewhere in export, those pins are franko_* review candidates. Relative/range rows below have no map pin.",
+  "relativeNoGps": [
+    {
+      "name": "West Bathtub (Juicy Reef)",
+      "note": "Relative only — west of Lion Head / west of Bathtub Cove. No GPS provided.",
+      "depths": "15–40′",
+      "confidence": "Low – no GPS"
+    },
+    {
+      "name": "Bathtub Cove (Juicy Reef)",
+      "note": "Relative only — adjacent to West Bathtub. No GPS provided.",
+      "depths": "15–45′",
+      "confidence": "Low – no GPS"
+    },
+    {
+      "name": "Jake's Beach",
+      "note": "Relative only — near Sphinx Rock / Lion Head. No GPS provided.",
+      "depths": "0–30′",
+      "confidence": "Low – no GPS"
+    },
+    {
+      "name": "Catalina Harbor & Well's Beach",
+      "note": "Relative only — south isthmus. Clear on maps but no concrete GPS in export.",
+      "depths": "0–40′ (99 moorings)",
+      "confidence": "Medium – relative"
+    },
+    {
+      "name": "Lover's Cove",
+      "note": "Relative only — east of Avalon Bay. No GPS provided.",
+      "depths": "Shallow",
+      "confidence": "Medium – relative"
+    },
+    {
+      "name": "Pedestal Rock",
+      "note": "Relative only — backside / south-central map label. No GPS provided.",
+      "depths": "Variable",
+      "confidence": "Low – no GPS"
+    }
+  ],
+  "rangeNoMidpoint": [
+    {
+      "name": "Iron Bound Cove",
+      "note": "Range only — ~33°27.11–26.79′ N, 118°35.19–34.74′ W. No single trusted pin; do not invent midpoint.",
+      "confidence": "Medium – range"
+    },
+    {
+      "name": "Ben Weston Point",
+      "note": "Range only — ~33°21.375–21.408′ N, 118°29.84–29.33′ W. No single trusted pin; do not invent midpoint.",
+      "confidence": "Medium – range"
+    },
+    {
+      "name": "Ship Rock (range summary)",
+      "note": "Range 33°27.783′–27.95′ N, 118°29.285′–29.467′ W — queued as two endpoint candidates (alt A / alt B), no averaged pin.",
+      "confidence": "High – range handled as dual endpoints"
+    }
+  ],
+  "reviewTip": "In pin-trust-review.html search \"Franko\" or \"franko_\" to filter these candidates."
+}
