@@ -860,13 +860,6 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
             </div>
           </div>
         </div>
-        <div class="sec">Seafloor around the vessel</div>
-        <div class="card seafloor-card">
-          <div id="fishPlanSeafloorRender" class="seafloor-host" role="img" aria-label="Bathymetry chart around your position and top fishing picks">
-            <div class="seafloor-status">Loads ocean chart and kelp beds when you open Plan…</div>
-          </div>
-          <div class="seafloor-meta" id="fishPlanSeafloorMeta"></div>
-        </div>
         <div class="sec">Bite index — next 72 hours</div>
         <div class="card tide-chart-card">
           <h3>Bite index over time <span id="biteChartNow" class="tide-now-h">—</span></h3>
@@ -1450,11 +1443,25 @@ let _seafloorPromise = null;
 function ensureSeafloorRender(){
   if(window.SeafloorRender) return Promise.resolve(window.SeafloorRender);
   if(_seafloorPromise) return _seafloorPromise;
-  _seafloorPromise = loadScript('seafloor-render.js').then(()=>{
+  /* ?v=3 busts Pages CDN after ranked maps share On site BlueTopo+DEM stack. */
+  _seafloorPromise = loadScript('seafloor-render.js?v=3').then(()=>{
     if(window.SeafloorRender) SeafloorRender.init({ fetchJSON, loadLeaflet });
     return window.SeafloorRender;
   }).catch(e=>{ _seafloorPromise = null; throw e; });
   return _seafloorPromise;
+}
+/** BlueTopo + NCEI DEM (+ ENC/Ocean/Satellite toggles) — same stack as On site / pin-trust. */
+async function attachSeafloorPlanBasemap(map, opts){
+  opts = opts || {};
+  const SR = await ensureSeafloorRender();
+  if(!SR || typeof SR.attachBasemap !== 'function') throw new Error('SeafloorRender.attachBasemap missing');
+  if(window.L && !map.attributionControl){
+    L.control.attribution({ prefix:false, position:'bottomright' }).addTo(map);
+  }
+  return SR.attachBasemap(map, {
+    preferDem: opts.preferDem !== false,
+    layersPosition: opts.layersPosition || 'topright'
+  });
 }
 /** Nearby structure pins for on-site chart (coords verbatim — never nudged). */
 function seafloorNearbyFromFish(centerLat, centerLon, radiusNm, excludeLat, excludeLon){
@@ -1485,12 +1492,20 @@ function diveInitOpts(){
     loadLeaflet,
     openPlanCalendar: (initial, cb) => PlanCalendar.open(initial, cb),
     planMapBaseLayer: async (m, o) => {
-      const opts = Object.assign({ splitBlueTopo: true }, o || {});
-      if(opts.splitBlueTopo){
-        try{ await ensureBlueTopoSplitLib(); await loadCoastOverlayLite(); }
-        catch(e){ console.warn('BlueTopo split basemap', e); opts.splitBlueTopo = false; }
+      const opts = Object.assign({}, o || {});
+      if(opts.seafloorDem){
+        try{ return await attachSeafloorPlanBasemap(m, opts); }
+        catch(e){
+          console.warn('Seafloor plan basemap', e);
+          return planMapBaseLayer(m, opts);
+        }
       }
-      return planMapBaseLayer(m, opts);
+      const splitOpts = Object.assign({ splitBlueTopo: true }, opts);
+      if(splitOpts.splitBlueTopo){
+        try{ await ensureBlueTopoSplitLib(); await loadCoastOverlayLite(); }
+        catch(e){ console.warn('BlueTopo split basemap', e); splitOpts.splitBlueTopo = false; }
+      }
+      return planMapBaseLayer(m, splitOpts);
     },
     addCoastOverlay,
     isOnLand,
@@ -1516,7 +1531,7 @@ function ensureDiveEngine(){
     .then(()=> loadScript('dive-site-intel.js'))
     .then(()=> loadScript('briefing-synth.js'))
     .then(()=> ensureForecastCharts())
-    .then(()=> loadScript('dive-engine.js?v=2'))
+    .then(()=> loadScript('dive-engine.js?v=3'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
       return window.BoatDive;
@@ -2533,7 +2548,7 @@ const CRUISE_SECTOR_LABELS = [
   { label:'S', brg:180 }, { label:'SW', brg:225 }, { label:'W', brg:270 }, { label:'NW', brg:315 }
 ];
 let fishUtilSpotKey = null;
-let lastFishUtilRow = null, lastFishUtilCtx = null, lastFishPlanRanked = null;
+let lastFishUtilRow = null, lastFishUtilCtx = null;
 let seafloorRefreshTimer = null;
 let timers = {};
 let offline = false;
@@ -9372,7 +9387,6 @@ async function ensureFishMap(){
   try{
     await loadLeaflet();
     await loadCoastOverlayLite();
-    try{ await ensureBlueTopoSplitLib(); }catch(e){ console.warn('BlueTopo split', e); }
   }catch(e){ return false; }
   if(!window.L) return false;
   const host = $('fishMap');
@@ -9386,7 +9400,11 @@ async function ensureFishMap(){
   try{
     fishMap = L.map(host, { zoomControl:true, attributionControl:false, minZoom:7, maxZoom:19 })
       .setView([lat, lon], FISH_MAP_DEFAULT_ZOOM);
-    planMapBaseLayer(fishMap, { splitBlueTopo: true });
+    try{ await attachSeafloorPlanBasemap(fishMap); }
+    catch(e){
+      console.warn('Fish ranked seafloor basemap', e);
+      planMapBaseLayer(fishMap, {});
+    }
     addCoastOverlay(L.layerGroup().addTo(fishMap));
     ensureMpaLayerGroup(fishMap);
     fishSpotLayer = L.layerGroup().addTo(fishMap);
@@ -9978,36 +9996,9 @@ function scheduleSeafloorRefresh(){
     if(activeTab()==='dive' && activeSubtab('dive')==='onsite' && window.BoatDive?.refreshDiveSeafloor && window.BoatDive.currentSite){
       window.BoatDive.refreshDiveSeafloor(window.BoatDive.currentSite());
     }
-    if(activeTab()==='fishing' && activeSubtab('fishing')==='plan' && lastFishPlanRanked)
-      refreshFishPlanSeafloor(lastFishPlanRanked);
     if(activeTab()==='fishing' && activeSubtab('fishing')==='onsite' && lastFishUtilRow && lastFishUtilCtx)
       refreshFishSeafloor(lastFishUtilRow, lastFishUtilCtx);
   }, 600);
-}
-
-function refreshFishPlanSeafloor(ranked){
-  ensureSeafloorRender().then(SR=>{
-    if(!SR) return;
-    const bp = boatPos();
-    const top = ranked?.[0]?.spot;
-    const radiusNm = SR.PLAN_FIT_NM != null ? SR.PLAN_FIT_NM : 2.5;
-    const nearNm = SR.PLAN_NEAR_NM != null ? SR.PLAN_NEAR_NM : 1.0;
-    const focusLat = top?.lat ?? bp.lat;
-    const focusLon = top?.lon ?? bp.lon;
-    SR.update('fishPlanSeafloorRender', {
-      centerLat: bp.lat,
-      centerLon: bp.lon,
-      markLat: top?.lat,
-      markLon: top?.lon,
-      markLabel: top ? fishGroupListName(top) : undefined,
-      habitat: top ? ('Top pick · ' + (top.habitat || top.depth || '')) : '',
-      nearby: seafloorNearbyFromFish(focusLat, focusLon, nearNm, top?.lat, top?.lon),
-      radiusNm,
-      preferDem: false,
-      preferEnc: false,
-      metaEl: 'fishPlanSeafloorMeta'
-    });
-  }).catch(()=>{});
 }
 
 function refreshFishSeafloor(row, ctx){
@@ -10309,9 +10300,7 @@ function renderFishing(){
     }
     if(activeSubtab('fishing') === 'plan'){
       renderFishMap(synthRanked, allPinRanked, sol, tide, ctx);
-      lastFishPlanRanked = synthRanked;
       lastFishPlanAllRanked = allPinRanked;
-      refreshFishPlanSeafloor(synthRanked);
     }
     renderFishUtil(synthRanked, ctx, sw, sol);
 
@@ -14625,7 +14614,6 @@ function switchSubtab(section, name){
       if(activeTab()!=='fishing' || activeSubtab('fishing')!=='plan') return;
       try{ renderFishing(); }catch(e){ console.error(e); }
       initFishMapWithRetry(0);
-      if(lastFishPlanRanked) refreshFishPlanSeafloor(lastFishPlanRanked);
       setTimeout(() => { if(fishMap) fishMap.invalidateSize(true); }, 120);
       setTimeout(() => { if(fishMap) fishMap.invalidateSize(true); }, 350);
     });

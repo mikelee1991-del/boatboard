@@ -2119,7 +2119,7 @@
     const pos = defaultPos();
     diveMap = L.map(host, { zoomControl: true, attributionControl: false, minZoom: 7, maxZoom: 19 })
       .setView([pos.lat, pos.lon], 14);
-    if (planMapBaseLayerFn) await Promise.resolve(planMapBaseLayerFn(diveMap, { splitBlueTopo: true }));
+    if (planMapBaseLayerFn) await Promise.resolve(planMapBaseLayerFn(diveMap, { seafloorDem: true }));
     else {
       diveMap.getContainer().classList.add('ocean-map-dark');
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
