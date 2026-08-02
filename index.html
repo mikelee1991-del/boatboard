@@ -4633,7 +4633,7 @@ function renderOverview(){
       if(fishCtx.sol.active) lines.push('<strong>Solunar</strong> Active feeding window now');
       else if(fishCtx.sol.minutes <= 90) lines.push('<strong>Solunar</strong> Peak in ~'+Math.round(fishCtx.sol.minutes)+' min');
       const topFish = bestNearbyFishSpot(fishCtx);
-      if(topFish) lines.push('<strong>Fishing</strong> Best nearby: '+esc(spotShortName(topFish.spot.featureGroupName || topFish.spot.name))+' ('+topFish.score+'/100 · '+f1(topFish.distNm)+' nm)');
+      if(topFish) lines.push('<strong>Fishing</strong> Best nearby: '+esc(spotShortName(topFish.spot.featureGroupName || topFish.spot.name))+' (bite '+topFish.score+'/100 · '+esc(fishSiteFitLabel(topFish.siteDelta))+' · '+f1(topFish.distNm)+' nm)');
       if(aisN > 0) lines.push('<strong>Traffic</strong> '+aisN+' AIS target'+(aisN===1?'':'s')+' within 6 nm');
       brief.classList.remove('skel');
       brief.innerHTML = lines.map(l => '<li>'+l+'</li>').join('');
@@ -9230,33 +9230,49 @@ function renderBiteIndexChart(){
 }
 
 /**
- * Spot bite score = same fishBiteScore as Plan header, plus modest site-fit deltas.
- * Keeps markers/list on the recalibrated scale (typical day mid-40s–60s; good ≥82)
- * instead of an independent baseline (~50) that disagreed with the glance card.
+ * Spot bite display = pure fishBiteScore (same as Plan glance / bite chart at plan time).
+ * Site-fit (SST match, preferred tide/time, exposure) only drives rank order (fitScore)
+ * and secondary copy — it is NOT folded into the number/color shown on map/list.
+ * Recalibration unchanged: typical day mid-40s–60s; good ≥82.
  */
 function scoreFishSpot(spot, ctx){
   const distNm = haversineM(ctx.lat, ctx.lon, spot.lat, spot.lon) / NM;
   /* Distance selects the nearby pool in rankFishSpots (same as dive); not a score bonus here. */
-  const base = fishBiteScore(ctx).score;
+  const biteBase = fishBiteScore(ctx).score;
   let d = 0;
 
   if(ctx.sstF != null && spot.minSstF != null){
-    if(ctx.sstF < spot.minSstF) d -= 12;
-    else if(ctx.sstF >= spot.minSstF + 3) d += 4;
+    if(ctx.sstF < spot.minSstF) d -= 5;
+    else if(ctx.sstF >= spot.minSstF + 3) d += 3;
   }
 
   const period = dayPeriod(ctx.hour);
-  if(spot.bestTime === period || (spot.bestTime === 'dawn' && period === 'morning') || (spot.bestTime === 'morning' && period === 'dawn')) d += 6;
-  if(spot.bestTime === 'dawn' && (period === 'dusk' || period === 'night')) d -= 5;
+  if(spot.bestTime === period || (spot.bestTime === 'dawn' && period === 'morning') || (spot.bestTime === 'morning' && period === 'dawn')) d += 4;
+  if(spot.bestTime === 'dawn' && (period === 'dusk' || period === 'night')) d -= 3;
 
-  if(ctx.tide?.rising != null && spot.bestTide === 'incoming' && ctx.tide.rising) d += 5;
-  else if(ctx.tide?.rising === false && spot.bestTide === 'incoming') d -= 3;
-  if(spot.bestTide === 'either') d += 2;
+  if(ctx.tide?.rising != null && spot.bestTide === 'incoming' && ctx.tide.rising) d += 3;
+  else if(ctx.tide?.rising === false && spot.bestTide === 'incoming') d -= 2;
+  if(spot.bestTide === 'either') d += 1;
 
-  if(ctx.seas != null && ctx.seas > 3 && distNm > 5) d -= 12;
-  if(ctx.wind != null && ctx.wind >= 16 && /Catalina|Basin|Channel/.test(spot.name)) d -= 10;
+  if(ctx.seas != null && ctx.seas > 3 && distNm > 5) d -= 5;
+  if(ctx.wind != null && ctx.wind >= 16 && /Catalina|Basin|Channel/.test(spot.name)) d -= 4;
 
-  return { score: clamp(Math.round(base + d), 5, 98), distNm, biteBase: base, siteDelta: d };
+  const siteDelta = Math.round(d);
+  const fitScore = clamp(Math.round(biteBase + siteDelta), 5, 98);
+  return { score: biteBase, fitScore, distNm, biteBase, siteDelta };
+}
+
+function fishSiteFitLabel(siteDelta){
+  if(siteDelta == null || !isFinite(+siteDelta) || +siteDelta === 0) return 'even site fit';
+  const n = Math.round(+siteDelta);
+  return 'site fit '+(n > 0 ? '+'+n : String(n));
+}
+
+function fishSpotRankCmp(a, b){
+  const fa = a.fitScore != null ? a.fitScore : a.score;
+  const fb = b.fitScore != null ? b.fitScore : b.score;
+  if(fb !== fa) return fb - fa;
+  return a.distNm - b.distNm;
 }
 
 /** One entry per feature group — nearest member to (lat,lon). Pool size = groups, not raw pins. */
@@ -9279,14 +9295,14 @@ function fishNearestGroups(lat, lon, n, maxNm){
 /**
  * Rank feature groups (default) or every pin (opts.everyPin for map sibling dots).
  * Same pipeline as dive: nearest groups within FISH_MAP_FIT_NM (capped at pool),
- * then sort by bite score. Group score = best bite among members; representative =
- * that best member (nearest-to-boat breaks ties). Lists/picker use groups, not raw pins.
+ * then sort by fitScore (bite + site-fit). Displayed score stays pure bite (= glance).
+ * Group rep = best fit among members; nearer pin breaks ties. Lists/picker use groups.
  */
 function rankFishSpots(ctx, opts){
   const everyPin = opts && opts.everyPin;
   if(everyPin){
     return FISH_SPOTS.map(sp => ({ spot: sp, ...scoreFishSpot(sp, ctx) }))
-      .sort((a, b) => b.score - a.score);
+      .sort(fishSpotRankCmp);
   }
   const limit = (opts && opts.limit != null) ? opts.limit : FISH_PICKER_POOL;
   const groupPool = fishNearestGroups(ctx.lat, ctx.lon, limit || FISH_FEATURE_GROUP_COUNT, limit ? FISH_MAP_FIT_NM : null);
@@ -9304,12 +9320,11 @@ function rankFishSpots(ctx, opts){
     for(const raw of members){
       const r = scoreFishSpot(raw, ctx);
       const row = { spot: raw, ...r };
-      if(!best || r.score > best.score || (r.score === best.score && r.distNm < best.distNm))
-        best = row;
+      if(!best || fishSpotRankCmp(row, best) < 0) best = row;
     }
     ranked.push(best);
   }
-  ranked.sort((a, b) => b.score - a.score);
+  ranked.sort(fishSpotRankCmp);
   return ranked;
 }
 
@@ -9425,7 +9440,9 @@ function scoreRampLegendHtml(kind){
       '<div class="score-ramp-ticks" aria-hidden="true"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>' +
     '</div>' +
     '<p class="score-ramp-note">Fill color tracks the numeric ' + (kind === 'dive' ? 'dive' : 'bite') +
-      ' score continuously — not Great/Good/Fair/Poor buckets. Dashed line marks good (≥' + goodAt + ').</p>' +
+      ' score continuously — not Great/Good/Fair/Poor buckets' +
+      (kind === 'dive' ? '' : ' · fish Plan fill matches the glance bite (site-fit only ranks order)') +
+      '. Dashed line marks good (≥' + goodAt + ').</p>' +
     '</div>';
 }
 window.BoatScoreColor = {
@@ -9598,7 +9615,10 @@ function spotTimeline24h(spot, baseCtx, sol, stepH){
       moonIllum: solAt.illum,
       planWhen: t
     };
-    slots.push({ t, score: scoreFishSpot(spot, ctx).score, label: h === 0 ? 'trip' : fmtTime(at) });
+    /* Hourly bars use fitScore so preferred tide/time still shapes peaks per spot;
+       plan-time list/map Bite number stays pure fishBiteScore (= glance). */
+    const r = scoreFishSpot(spot, ctx);
+    slots.push({ t, score: r.fitScore, bite: r.score, siteDelta: r.siteDelta, label: h === 0 ? 'trip' : fmtTime(at) });
   }
   return slots;
 }
@@ -9662,24 +9682,24 @@ function renderFishTopPicks(ranked, ctx, sol){
   const scoreLbl = isNowTrip ? 'now' : 'at trip time';
   const picks = ranked.slice(0, 10);
   if(!picks.length){ box.innerHTML = '<div class="skel">No spots ranked</div>'; return; }
-  box.innerHTML = picks.map(({ spot, score, distNm }, i) => {
+  box.innerHTML = picks.map(({ spot, score, distNm, siteDelta }, i) => {
     const cls = score >= BITE_GOOD_AT ? 'hot' : score >= BITE_FAIR_AT ? 'warm' : '';
     const tl = spotTimeline24h(spot, ctx, sol, 2);
     const peak = spotBestPeak(tl);
-    const peakTxt = peak ? 'Peak '+fmtDayTime(new Date(peak.t))+' ('+peak.score+'/100)' : '';
+    const peakTxt = peak ? 'Peak '+fmtDayTime(new Date(peak.t))+' ('+peak.score+'/100 fit)' : '';
     const label = fishGroupListName(spot);
     const modNote = spot.featureGroupSize > 1 ? ' · best module: '+spot.name : '';
     return '<div class="fish-pick '+cls+'">'+
       '<span class="rank">#'+(i+1)+'</span>'+
       '<div class="body">'+
         '<b>'+esc(label)+'</b>'+fishStyleBadgeHtml(spot)+
-        '<div class="meta">'+score+'/100 '+scoreLbl+' · '+f1(distNm)+' nm · '+esc(fmtFishCoordsDepth(spot))+esc(modNote)+'</div>'+
+        '<div class="meta">Bite '+score+'/100 '+scoreLbl+' · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm · '+esc(fmtFishCoordsDepth(spot))+esc(modNote)+'</div>'+
         '<div class="rec">'+esc(spotConditionRec(spot, score, ctx))+(peakTxt ? ' · '+esc(peakTxt) : '')+'</div>'+
         '<div class="rec"><strong>Bait:</strong> '+esc(spotBaitLine(spot))+'</div>'+
         '<div class="rec"><strong>Gear:</strong> '+esc(spotGearLine(spot))+'</div>'+
       '</div></div>';
   }).join('') +
-  '<p class="plan-note" style="margin-top:8px">Ranked by the same bite model as the Plan glance (plus modest site-fit) among nearest <strong>'+FISH_PICKER_POOL+'</strong> groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> spots · <strong>'+FISH_SPOTS.length+'</strong> pins). Map numbers top '+FISH_MAP_MAX_MARKERS+'; same-reef modules count once.</p>';
+  '<p class="plan-note" style="margin-top:8px">Bite numbers match the Plan glance (same model at trip time). Order uses modest site-fit among nearest <strong>'+FISH_PICKER_POOL+'</strong> groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> spots · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill color = bite · top '+FISH_MAP_MAX_MARKERS+'; same-reef modules count once.</p>';
 }
 
 function fishPlanVisible(){
@@ -9815,14 +9835,14 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
   const bounds = L.latLngBounds([[lat, lon]]);
   let plotted = 0;
 
-  featured.forEach(({ spot, score, distNm, comfort }, i) => {
+  featured.forEach(({ spot, score, distNm, comfort, siteDelta }, i) => {
     const rank = i + 1;
     const mpos = fishMapPos(spot);
     if(distNm <= FISH_MAP_FIT_NM) bounds.extend([mpos.lat, mpos.lon]);
     plotted++;
     const tl = spotTimeline24h(spot, baseCtx, sol, 2);
     const peak = spotBestPeak(tl);
-    const peakTxt = peak ? fmtDayTime(new Date(peak.t))+' · '+peak.score+'/100' : '—';
+    const peakTxt = peak ? fmtDayTime(new Date(peak.t))+' · '+peak.score+'/100 fit' : '—';
     const sz = rank <= 6 ? 28 : 24;
     const style = classifyFishStyle(spot);
     const icon = L.divIcon({
@@ -9841,14 +9861,14 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     L.marker([mpos.lat, mpos.lon], { icon, zIndexOffset: 500 - i })
       .bindPopup('<b>#'+rank+' '+esc(label)+'</b>'+styleLine+'<br>'+
         '<span style="font-family:var(--font-mono);font-size:12px;font-weight:500">'+fmtFishCoordsDepth(spot)+'</span><br>'+
-        'Bite: <strong>'+score+'/100</strong> · '+f1(distNm)+' nm'+modLine+'<br>'+
+        'Bite: <strong>'+score+'/100</strong> (same as glance) · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm'+modLine+'<br>'+
         'Peak today: '+peakTxt+'<br>'+
         '<strong>Bait:</strong> '+esc(spotBaitLine(spot))+comfortBlock+'<br>'+
         esc(spot.species.slice(0,4).join(', ')))
       .addTo(fishSpotLayer);
   });
 
-  secondary.forEach(({ spot, score, distNm, comfort }) => {
+  secondary.forEach(({ spot, score, distNm, comfort, siteDelta }) => {
     const mpos = fishMapPos(spot);
     if(distNm <= FISH_MAP_FIT_NM) bounds.extend([mpos.lat, mpos.lon]);
     plotted++;
@@ -9863,7 +9883,7 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     L.marker([mpos.lat, mpos.lon], { icon, zIndexOffset: 50 })
       .bindPopup('<b>'+esc(label)+'</b>'+(style === 'surface' ? '<br><span style="opacity:.9">◆ Surface / troll</span>' : '')+'<br>'+
         '<span style="font-family:var(--font-mono);font-size:12px;font-weight:500">'+fmtFishCoordsDepth(spot)+'</span><br>'+
-        'Bite '+score+'/100 · '+f1(distNm)+' nm'+(spot.regional ? ' · regional run' : '')+
+        'Bite '+score+'/100 (same as glance) · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm'+(spot.regional ? ' · regional run' : '')+
         (spot.featureGroupSize > 1 ? '<br><span style="opacity:.85">Best module: '+esc(spot.name)+'</span>' : '')+'<br>'+
         (comfort ? 'Comfort '+comfort.bump+' · combined '+comfort.combined+'/100<br>' : '')+
         '<strong>Bait:</strong> '+esc(spotBaitLine(spot)))
@@ -9871,7 +9891,7 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
   });
 
   const siblings = (allPinRanked || []).filter(r => !repNames.has(r.spot.name));
-  siblings.forEach(({ spot, score, distNm }) => {
+  siblings.forEach(({ spot, score, distNm, siteDelta }) => {
     const mpos = fishMapPos(spot);
     if(distNm <= FISH_MAP_FIT_NM) bounds.extend([mpos.lat, mpos.lon]);
     plotted++;
@@ -9885,7 +9905,7 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     L.marker([mpos.lat, mpos.lon], { icon, zIndexOffset: 40 })
       .bindPopup('<b>'+esc(spot.name)+'</b>'+(style === 'surface' ? '<br><span style="opacity:.9">◆ Surface / troll</span>' : '')+'<br>'+
         '<span style="font-family:var(--font-mono);font-size:12px;font-weight:500">'+fmtFishCoordsDepth(spot)+'</span><br>'+
-        'Bite '+score+'/100 · '+f1(distNm)+' nm'+(spot.cdfgAppendix ? '<br>CDFG appendix' : '')+
+        'Bite '+score+'/100 (same as glance) · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm'+(spot.cdfgAppendix ? '<br>CDFG appendix' : '')+
         (spot.featureGroupSize > 1 ? '<br><span style="opacity:.85">Part of '+esc(spot.featureGroupName || fishFeatureDisplayName(spot.name))+'</span>' : ''))
       .addTo(fishSpotLayer);
   });
@@ -9899,7 +9919,7 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     scoreRampLegendHtml('bite')+
     '<span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ink3);vertical-align:middle;margin-right:3px"></i> Structure / bottom</span>'+
     '<span><i style="display:inline-block;width:8px;height:8px;transform:rotate(45deg);background:var(--ink3);vertical-align:middle;margin:0 4px 0 2px"></i> Surface / troll</span>'+
-    '<span># = top '+Math.min(FISH_MAP_MAX_MARKERS, ranked.length)+' spots · '+plotted+' pins · ~'+FISH_MAP_FIT_NM+' nm ('+localGroups+' spots / '+localPins.length+' pins)</span>'+
+    '<span># = rank (site-fit order) · fill = bite (= glance) · top '+Math.min(FISH_MAP_MAX_MARKERS, ranked.length)+' · '+plotted+' pins · ~'+FISH_MAP_FIT_NM+' nm ('+localGroups+' spots / '+localPins.length+' pins)</span>'+
     '<span>Basemap: imagery (land) · BlueTopo (water)</span>'+
     MPA_LEGEND_HTML;
 }
@@ -10276,8 +10296,8 @@ function fishAdviceWithPicks(ctx, bite, ranked, synthRanked){
   let text = fishAdviceSummary(ctx, bite);
   const top = ranked.slice(0, 3);
   if(top.length){
-    const names = top.map(({ spot, score, distNm }) =>
-      spotShortName(spot.featureGroupName || fishFeatureDisplayName(spot.name) || spot.name)+' ('+score+'/100, '+f1(distNm)+' nm)'
+    const names = top.map(({ spot, score, distNm, siteDelta }) =>
+      spotShortName(spot.featureGroupName || fishFeatureDisplayName(spot.name) || spot.name)+' (bite '+score+'/100, '+fishSiteFitLabel(siteDelta)+', '+f1(distNm)+' nm)'
     ).join('; ');
     text += ' Best bite: '+names+'.';
   }
@@ -10465,7 +10485,7 @@ function renderFishSpotBriefing(spot, distNm){
 function renderFishUtilDetail(row, ctx, sw, sol){
   const hero = $('fishUtilHero'), bathy = $('fishUtilBathy');
   if(!row || !hero) return;
-  const { spot, score, distNm, comfort } = row;
+  const { spot, score, distNm, comfort, siteDelta } = row;
   const tl = spotTimeline24h(spot, ctx, sol, 2);
   const peak = spotBestPeak(tl);
   const runHdg = bearing(ctx.lat, ctx.lon, spot.lat, spot.lon);
@@ -10481,6 +10501,7 @@ function renderFishUtilDetail(row, ctx, sw, sol){
     '<div class="fish-verdict" style="font-size:14px;margin-bottom:10px">'+esc(spot.tactics)+'</div>'+
     '<div class="util-kv">'+
       '<div><span>'+(ctx.planWhen == null || Math.abs(ctx.planWhen - Date.now()) < 3600000 ? 'Bite now' : 'Bite at trip')+'</span><b style="color:'+fishScoreColor(score)+'">'+score+'/100</b></div>'+
+      '<div><span>Site fit</span><b>'+esc(fishSiteFitLabel(siteDelta))+'</b></div>'+
       '<div><span>Combined pick</span><b style="color:'+comfortColor(comfort.combined)+'">'+comfort.combined+'/100</b></div>'+
       '<div><span>Run heading</span><b>'+fmtDir(runHdg)+'</b></div>'+
       '<div><span>Distance</span><b>'+f1(distNm)+' nm</b></div>'+
@@ -10492,7 +10513,7 @@ function renderFishUtilDetail(row, ctx, sw, sol){
     '<div class="sec" style="margin-top:12px">Tackle &amp; bait</div>'+
     '<p class="fish-verdict" style="font-size:13px"><strong>Bait:</strong> '+esc(spotBaitLine(spot))+'<br><strong>Gear:</strong> '+esc(spotGearLine(spot))+'</p>'+
     '<div class="tags" style="margin-top:8px">'+spot.species.map(s=>'<span class="chip a">'+esc(s)+'</span>').join('')+'</div>'+
-    (peak ? '<p class="mono" style="font-size:12px;color:var(--good);margin-top:8px">Best bite window today: '+esc(fmtDayTime(new Date(peak.t)))+' ('+peak.score+'/100)</p>' : '')+
+    (peak ? '<p class="mono" style="font-size:12px;color:var(--good);margin-top:8px">Best window today (bite + site fit): '+esc(fmtDayTime(new Date(peak.t)))+' ('+peak.score+'/100)</p>' : '')+
     '<div class="sec" style="margin-top:12px">Swell at this mark</div>'+
     '<p class="mono" style="font-size:12px;color:var(--ink2);line-height:1.5">'+swLines+'</p>'+
     '<p class="mono" style="font-size:12px;color:var(--ink2);margin-top:6px"><strong>Run:</strong> '+esc(comfort.runWhy)+'<br><strong>Drifting here:</strong> '+esc(comfort.atWhy)+'</p>'+
@@ -10612,13 +10633,13 @@ function renderFishing(){
       /* Same score-ranked nearby pool as the map (#1–25), not re-sorted by distance alone. */
       const nearestDetail = synthRanked.slice(0, FISH_PICKER_POOL);
       const scoreLbl = isNowTrip ? 'now' : 'at trip';
-      spotBox.innerHTML = nearestDetail.map(({ spot, score, distNm, comfort })=>{
+      spotBox.innerHTML = nearestDetail.map(({ spot, score, distNm, comfort, siteDelta })=>{
         const cls = score >= BITE_GOOD_AT ? 'hot' : score >= BITE_FAIR_AT ? 'warm' : '';
         const species = spot.species.slice(0, 5).map(s=>'<span class="chip a">'+esc(s)+'</span>').join('');
         const tl = spotTimeline24h(spot, ctx, sol, 2);
         const peak = spotBestPeak(tl);
         const whenTxt = peak
-          ? 'Best today: '+fmtDayTime(new Date(peak.t))+' ('+peak.score+'/100)'
+          ? 'Best today: '+fmtDayTime(new Date(peak.t))+' ('+peak.score+'/100 fit)'
           : '';
         const comfortTxt = comfort && !spot.regional
           ? '<div class="spot-rec" style="color:'+comfortColor(comfort.passenger)+'">'+esc(comfort.bump)+
@@ -10626,7 +10647,7 @@ function renderFishing(){
           : '';
         const label = fishGroupListName(spot);
         const modNote = spot.featureGroupSize > 1 ? ' · best module: '+spot.name : '';
-        return '<div class="fish-spot '+cls+'"><div class="spot-h"><span><b>'+esc(label)+'</b>'+fishStyleBadgeHtml(spot)+'</span><span>'+f1(distNm)+' nm · '+score+'/100 '+scoreLbl+'</span></div>'+
+        return '<div class="fish-spot '+cls+'"><div class="spot-h"><span><b>'+esc(label)+'</b>'+fishStyleBadgeHtml(spot)+'</span><span>Bite '+score+'/100 '+scoreLbl+' · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm</span></div>'+
           '<div class="spot-coords mono" style="font-size:11px;color:var(--ink3);margin:2px 0 6px">'+esc(fmtFishCoordsDepth(spot))+esc(modNote)+'</div>'+
           '<div class="tags">'+species+'</div>'+
           (whenTxt ? '<div class="spot-when">'+esc(whenTxt)+'</div>' : '')+
@@ -10636,7 +10657,7 @@ function renderFishing(){
           spotMiniBarHtml(tl)+
           '<div class="note"><strong>'+esc(spot.habitat)+'</strong> · '+esc(spot.depth)+'<br>'+esc(spot.tactics)+'</div></div>';
       }).join('') +
-      '<p class="plan-note" style="margin-top:8px"><strong>'+nearestDetail.length+'</strong> spots ranked by the same bite model as the glance (plus site-fit) among nearest groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> feature groups · <strong>'+FISH_SPOTS.length+'</strong> pins). Map numbers top '+FISH_MAP_MAX_MARKERS+'; other pins are unnumbered dots.</p>';
+      '<p class="plan-note" style="margin-top:8px"><strong>'+nearestDetail.length+'</strong> spots — Bite matches the glance at trip time; order uses site-fit among nearest groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> feature groups · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill = bite · top '+FISH_MAP_MAX_MARKERS+'; other pins are unnumbered dots.</p>';
     }
 
     const cards = [
