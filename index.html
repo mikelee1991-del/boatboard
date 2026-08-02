@@ -237,7 +237,7 @@ svg text{font-family:var(--font-mono)}
 .leaflet-container.ocean-map-dark{background:var(--bg)!important}
 .leaflet-container.ocean-map-dark .leaflet-tile-pane{filter:brightness(.9) contrast(1.06)}
 .leaflet-container.bt-split-basemap .leaflet-tile-pane{filter:brightness(.94) contrast(1.04) saturate(1.02)}
-.leaflet-container.bt-split-basemap .leaflet-blueTopoPane{filter:brightness(.96) contrast(1.08) saturate(1.05)}
+.leaflet-container.bt-split-basemap .leaflet-blueTopoPane{filter:brightness(.96) contrast(1.08) saturate(1.05);z-index:360!important}
 .leaflet-container.ocean-map-dark::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,10,16,.03),rgba(8,16,28,.07));pointer-events:none;z-index:350}
 .leaflet-container.bt-split-basemap.ocean-map-dark::after{z-index:250}
 #chlMap.leaflet-container.ocean-map-dark::after,#sstMap.leaflet-container.ocean-map-dark::after{display:none}

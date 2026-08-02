@@ -4,11 +4,15 @@ Self-host (or stream) **real NOAA BlueTopo** seafloor relief. Depths are never i
 
 ## Split basemap (AIS · fish ranked · dive ranked)
 
-`split-basemap.js` stacks **Esri World Imagery** under a **masked BlueTopo** WMTS pane. The mask paints land from OSM coast lines in `coast-overlay-lite.js` (landward extrude + island polygons + King Harbor land). Water keeps BlueTopo; land keeps satellite imagery.
+`split-basemap.js` **v2** stacks **Esri World Imagery** under a **masked** water stack (NCEI DEM + BlueTopo WMTS).
+
+**Prior failure (`207e5ee`):** a 90 km landward extrude from every coast segment painted most of the ocean as “land”, and the CSS mask used luminance while the canvas was opaque black/white (alpha≈1 everywhere). Result: BlueTopo was clipped away → maps looked like imagery-only.
+
+**Fix:** alpha mask (opaque = water layers, transparent = land) + east-of-shoreline row punch + islands/inland boxes. DEM underlay keeps water distinct even where BlueTopo cells are undelivered (King Harbor).
 
 Wire-up: `planMapBaseLayer(map, { splitBlueTopo: true })` after `ensureBlueTopoSplitLib()`.
 
-**Limits:** Mask follows the ~100 ft visual coast overlay (not survey-grade). A few harbor/peninsula edges can mis-clip by a pixel or two. BlueTopo is still sparse near King Harbor (transparent → imagery shows on water there too). Not for navigation.
+**Limits:** Mask follows the ~100 ft visual coast overlay (not survey-grade). Peninsulas west of the easternmost shoreline at a lat can briefly show water layers on land. No Google Maps tiles in-repo (needs API key) — Esri World Imagery is the land layer. Not for navigation.
 
 ## On site architecture
 
