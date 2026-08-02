@@ -741,7 +741,6 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <div class="tide-chart-meta" id="diveScoreChartMeta"></div>
           <p id="diveScoreChartNote" class="tide-rate-note"></p>
         </div>
-        <div id="diveTrends"></div>
         <div class="sec">5-day outlook — 7 AM · noon · 5 PM</div>
         <div class="card"><div id="diveOutlook" class="dive-outlook"><div class="skel">Outlook loads with site data…</div></div></div>
         <div class="sec">Rating factors</div>
@@ -756,6 +755,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         <div class="sec">Site intel</div>
         <div id="diveSiteIntel"><div class="skel">Entry headings, logistics, and hazards load with site data…</div></div>
         <div id="diveSiteGuide"><div class="skel">Select a site above — exposure details and charts load here.</div></div>
+        <div id="diveTrends"></div>
         <div class="sec">Seafloor around the vessel</div>
         <div class="card seafloor-card">
           <div id="diveSeafloorRender" class="seafloor-host" role="img" aria-label="Bathymetry chart around your position">
@@ -1189,17 +1189,17 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
   <nav class="tabs" id="tabBar">
     <button class="tab active" data-tab="overview"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>Overview</button>
     <button class="tab" data-tab="underway"><svg viewBox="0 0 24 24"><path d="M12 2l7 18h-4l-1.5-4h-5L7 20H3L12 2z"/><circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none"/></svg>Underway</button>
-    <button class="tab" data-tab="swell"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="M2 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>Swell &amp; Ocean</button>
-    <button class="tab" data-tab="chlorophyll"><svg viewBox="0 0 24 24"><path d="M12 22c-4-3-8-7-8-12a8 8 0 0116 0c0 5-4 9-8 12z"/><path d="M12 10v6M9 13h6"/></svg>Plankton</button>
-    <button class="tab" data-tab="temperature"><svg viewBox="0 0 24 24"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg>SST</button>
-    <button class="tab" data-tab="cruise"><svg viewBox="0 0 24 24"><path d="M4 18c2-3 5-5 8-5s6 2 8 5"/><path d="M6 14l2-4h8l2 4"/><circle cx="12" cy="9" r="2"/><path d="M2 20h20"/></svg>Cruise</button>
-    <button class="tab" data-tab="surf"><svg viewBox="0 0 24 24"><path d="M2 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M2 18c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>Surf</button>
-    <button class="tab" data-tab="wildlife"><svg viewBox="0 0 24 24"><path d="M4 14c2-3 5-4 8-4s6 1 8 4"/><path d="M6 10c1-2 3-3 6-3s5 1 6 3"/><circle cx="9" cy="9" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.2" fill="currentColor" stroke="none"/><path d="M2 18c3-2 6-3 10-3s7 1 10 3"/></svg>Wildlife</button>
     <button class="tab" data-tab="ais"><svg viewBox="0 0 24 24"><path d="M12 2L4 20h16L12 2z"/><circle cx="12" cy="14" r="2"/></svg>AIS</button>
-    <button class="tab" data-tab="weather"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Weather</button>
-    <button class="tab" data-tab="tides"><svg viewBox="0 0 24 24"><path d="M4 16c2-4 4-6 8-6s6 2 8 6"/><path d="M4 20h16"/></svg>Tides</button>
+    <button class="tab" data-tab="cruise"><svg viewBox="0 0 24 24"><path d="M4 18c2-3 5-5 8-5s6 2 8 5"/><path d="M6 14l2-4h8l2 4"/><circle cx="12" cy="9" r="2"/><path d="M2 20h20"/></svg>Cruise</button>
     <button class="tab" data-tab="fishing"><svg viewBox="0 0 24 24"><path d="M12 2v4M8 6h8"/><path d="M7 10c0 4 2 8 5 12 3-4 5-8 5-12"/></svg>Fish</button>
     <button class="tab" data-tab="dive"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20c0-4 2.7-7 6-7s6 3 6 7"/></svg>Dive</button>
+    <button class="tab" data-tab="surf"><svg viewBox="0 0 24 24"><path d="M2 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M2 18c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>Surf</button>
+    <button class="tab" data-tab="swell"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="M2 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>Swell &amp; Ocean</button>
+    <button class="tab" data-tab="weather"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Weather</button>
+    <button class="tab" data-tab="tides"><svg viewBox="0 0 24 24"><path d="M4 16c2-4 4-6 8-6s6 2 8 6"/><path d="M4 20h16"/></svg>Tides</button>
+    <button class="tab" data-tab="temperature"><svg viewBox="0 0 24 24"><path d="M14 14.76V3.5a2.5 2.5 0 00-5 0v11.26a4.5 4.5 0 105 0z"/></svg>SST</button>
+    <button class="tab" data-tab="chlorophyll"><svg viewBox="0 0 24 24"><path d="M12 22c-4-3-8-7-8-12a8 8 0 0116 0c0 5-4 9-8 12z"/><path d="M12 10v6M9 13h6"/></svg>Plankton</button>
+    <button class="tab" data-tab="wildlife"><svg viewBox="0 0 24 24"><path d="M4 14c2-3 5-4 8-4s6 1 8 4"/><path d="M6 10c1-2 3-3 6-3s5 1 6 3"/><circle cx="9" cy="9" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.2" fill="currentColor" stroke="none"/><path d="M2 18c3-2 6-3 10-3s7 1 10 3"/></svg>Wildlife</button>
   </nav>
 </div>
 
@@ -8643,7 +8643,8 @@ const FISH_SPOTS = [
     species: ['calico bass', 'sheephead', 'rockfish', 'white seabass'],
     depth: '40-60 ft', habitat: 'Pt Vicente pinnacles (SMCA nearby)',
     tactics: 'Confirm no-take boundaries; boat the lee of the point with live bait on kelp high spots.',
-    bestTide: 'either', bestTime: 'morning', minSstF: 58 },
+    bestTide: 'either', bestTime: 'morning', minSstF: 58 }
+,
   /* —— Pin-trust yes fish promotes —— */
   { name: 'Malaga Cove — Palos Verdes (USGS bay) (fish)', lat: 33.8041823, lon: -118.3945183, userTrusted: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
@@ -14783,6 +14784,9 @@ function switchSubtab(section, name){
       if(BD.renderDiveBriefing) BD.renderDiveBriefing(BD.currentSite?.());
       if(BD.renderSiteGuide) BD.renderSiteGuide();
       const site = BD.currentSite?.();
+      if(site && BD.renderTrends){
+        try{ BD.renderTrends(site, new Date()); }catch(e){ console.error(e); }
+      }
       if(site && BD.refreshDiveSeafloor) BD.refreshDiveSeafloor(site);
       else {
         const bp = boatPos();
