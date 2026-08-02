@@ -1825,6 +1825,8 @@
       const daily = (typeof window.tideSunDailyForRange === 'function')
         ? window.tideSunDailyForRange(series.tMin, series.tMax)
         : null;
+      const planWhen = readDiveWhen();
+      const highlightMs = planWhen && isFinite(+planWhen) ? +planWhen : null;
       charts.renderScoreChart({
         host,
         nowEl: $('diveScoreChartNow'),
@@ -1842,6 +1844,8 @@
         daily,
         dayNightBands: typeof window.wxChartDayNightBands === 'function' ? window.wxChartDayNightBands : null,
         sunMarkers: typeof window.wxChartSunMarkers === 'function' ? window.wxChartSunMarkers : null,
+        highlightMs,
+        highlightLabel: 'PLAN',
         note: diveScoreHonestyNote(site, series.coverage),
         CHART: window.CHART,
         WX_C: window.WX_C,

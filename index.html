@@ -1853,9 +1853,10 @@ const OCEAN_ATTR_FALLBACK = 'Tiles © Esri';
 
 let _blueTopoSplitPromise = null;
 function ensureBlueTopoSplitLib(){
-  if(window.BlueTopoSplit) return Promise.resolve(window.BlueTopoSplit);
+  if(window.BlueTopoSplit && window.BlueTopoSplit.version === '2') return Promise.resolve(window.BlueTopoSplit);
   if(_blueTopoSplitPromise) return _blueTopoSplitPromise;
-  _blueTopoSplitPromise = loadScript('bluetopo/split-basemap.js').then(()=>{
+  /* ?v=2 busts Pages CDN cache after split-basemap rewrite (DEM underlay + alpha mask). */
+  _blueTopoSplitPromise = loadScript('bluetopo/split-basemap.js?v=2').then(()=>{
     if(!window.BlueTopoSplit) throw new Error('BlueTopoSplit missing');
     return window.BlueTopoSplit;
   }).catch(e=>{ _blueTopoSplitPromise = null; throw e; });
@@ -8961,6 +8962,8 @@ function renderBiteIndexChart(){
     const daily = typeof tideSunDailyForRange === 'function'
       ? tideSunDailyForRange(series.tMin, series.tMax)
       : null;
+    const planWhen = fishPlanDateOnly ? getFishPlanWhen() : null;
+    const highlightMs = planWhen && isFinite(+planWhen) ? +planWhen : null;
     api.renderScoreChart({
       host,
       nowEl: $('biteChartNow'),
@@ -8978,6 +8981,8 @@ function renderBiteIndexChart(){
       daily,
       dayNightBands: typeof wxChartDayNightBands === 'function' ? wxChartDayNightBands : null,
       sunMarkers: typeof wxChartSunMarkers === 'function' ? wxChartSunMarkers : null,
+      highlightMs,
+      highlightLabel: 'PLAN',
       note: biteIndexHonestyNote(series.coverage),
       CHART, WX_C, HR, clamp, f0, f1, esc, fmtDayTime
     });

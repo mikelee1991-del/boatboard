@@ -48,6 +48,9 @@
    * @param {number} [opts.goodAt] default 75
    * @param {number} [opts.fairAt] default 55
    * @param {boolean} [opts.markPeaks]
+   * @param {number|null} [opts.highlightMs] plan-time instant to mark (hide when null/out of window)
+   * @param {string} [opts.highlightLabel] default "PLAN"
+   * @param {string} [opts.highlightColor] default cyan (distinct from NOW)
    */
   function renderScoreChart(opts) {
     opts = opts || {};
@@ -100,22 +103,26 @@
     }
 
     const now = opts.nowMs != null ? opts.nowMs : Date.now();
-    let nowV = null;
-    for (let i = 0; i < pts.length - 1; i++) {
-      if (now >= pts[i].t && now <= pts[i + 1].t) {
-        const r = (now - pts[i].t) / (pts[i + 1].t - pts[i].t || 1);
-        nowV = pts[i].v + r * (pts[i + 1].v - pts[i].v);
-        break;
+    function valueAt(t) {
+      let v = null;
+      for (let i = 0; i < pts.length - 1; i++) {
+        if (t >= pts[i].t && t <= pts[i + 1].t) {
+          const r = (t - pts[i].t) / (pts[i + 1].t - pts[i].t || 1);
+          v = pts[i].v + r * (pts[i + 1].v - pts[i].v);
+          break;
+        }
       }
-    }
-    if (nowV == null) {
-      let best = pts[0], bd = Math.abs(pts[0].t - now);
-      for (const p of pts) {
-        const d = Math.abs(p.t - now);
-        if (d < bd) { best = p; bd = d; }
+      if (v == null) {
+        let best = pts[0], bd = Math.abs(pts[0].t - t);
+        for (const p of pts) {
+          const d = Math.abs(p.t - t);
+          if (d < bd) { best = p; bd = d; }
+        }
+        if (bd <= 1.5 * HR) v = best.v;
       }
-      if (bd <= 1.5 * HR) nowV = best.v;
+      return v;
     }
+    const nowV = valueAt(now);
     if (nowEl) {
       nowEl.textContent = nowV != null ? 'Now ' + f0(nowV) + '/100' : '—';
     }
@@ -204,6 +211,28 @@
       svg += '<text x="' + nx + '" y="' + (padT - 4) + '" text-anchor="middle" font-size="11" fill="' + CHART.now + '" font-weight="bold">NOW</text>';
     }
 
+    /* Plan-time cursor — same geometry as NOW; distinct color/label so both can coexist */
+    const hlRaw = opts.highlightMs;
+    const hl = (hlRaw != null && isFinite(+hlRaw)) ? +hlRaw : null;
+    const hlLabel = opts.highlightLabel || 'PLAN';
+    const hlColor = opts.highlightColor || CHART.feel || '#56d4e9';
+    let hlShown = false;
+    if (hl != null && hl >= tMin && hl <= tMax) {
+      const hlV = valueAt(hl);
+      if (hlV != null) {
+        hlShown = true;
+        const hx = xS(hl), hy = yS(hlV);
+        let labelY = padT - 4;
+        /* Nudge label if it would sit on top of NOW */
+        if (now >= tMin && now <= tMax && Math.abs(hx - xS(now)) < 28) labelY = padT - 16;
+        svg += '<line x1="' + hx + '" y1="' + padT + '" x2="' + hx + '" y2="' + (padT + plotH) +
+          '" stroke="' + hlColor + '" stroke-width="2" opacity="0.95"/>';
+        svg += '<circle cx="' + hx + '" cy="' + hy + '" r="6" fill="' + hlColor + '" stroke="var(--card)" stroke-width="2"/>';
+        svg += '<text x="' + hx + '" y="' + labelY + '" text-anchor="middle" font-size="11" fill="' + hlColor +
+          '" font-weight="bold">' + esc(hlLabel) + '</text>';
+      }
+    }
+
     svg += '<text x="' + padL + '" y="' + (padT - 18) + '" font-size="10" fill="var(--ink3)" font-weight="600">' + esc(yLabel) + '</text>';
     svg += '</svg>';
     host.innerHTML = svg;
@@ -211,6 +240,7 @@
     if (metaEl) {
       metaEl.innerHTML =
         '<span><i style="background:' + CHART.now + '"></i> Now</span>' +
+        (hlShown ? '<span><i style="background:' + hlColor + '"></i> ' + esc(hlLabel) + '</span>' : '') +
         '<span><i style="background:' + CHART.good + '"></i> ≥' + goodAt + ' hot</span>' +
         '<span><i style="background:' + CHART.fair + '"></i> ≥' + fairAt + ' fair</span>' +
         '<span><i style="background:' + WX_C.day + '"></i> Day</span>' +
