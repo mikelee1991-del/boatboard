@@ -330,8 +330,8 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 
 .tide-chart-card h3{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px}
 .tide-now-h{font-family:var(--mono);font-size:14px;color:var(--accent);font-weight:600}
-.tide-chart{width:100%;overflow:hidden;margin-top:4px;min-height:180px;position:relative}
-.tide-chart svg{display:block;width:100%;height:auto;min-height:160px;touch-action:pan-x}
+.tide-chart{width:100%;overflow:hidden;margin-top:4px;min-height:190px;position:relative}
+.tide-chart svg{display:block;width:100%;height:auto;min-height:170px;overflow:visible;touch-action:pan-x}
 .tide-chart.tide-rate-chart{min-height:140px;margin-top:6px}
 .tide-chart.tide-rate-chart svg{min-height:120px}
 .tide-chart .tide-hl-hit{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
@@ -1385,11 +1385,19 @@ const store = {
 
 /* ============ lazy script loading (file:// safe) ============ */
 const _scriptLoads = {};
+/** Append page `_hr` (hard-refresh) so dynamically injected scripts bypass CDN/browser cache. */
+function scriptCacheUrl(src){
+  try{
+    const hr = new URLSearchParams(location.search || '').get('_hr');
+    if(!hr) return src;
+    return src + (src.indexOf('?') >= 0 ? '&' : '?') + '_hr=' + encodeURIComponent(hr);
+  }catch(e){ return src; }
+}
 function loadScript(src){
   if(_scriptLoads[src]) return _scriptLoads[src];
   _scriptLoads[src] = new Promise((resolve, reject)=>{
     const s = document.createElement('script');
-    s.src = src;
+    s.src = scriptCacheUrl(src);
     s.onload = ()=> resolve();
     s.onerror = ()=> reject(new Error(src+' failed to load'));
     document.head.appendChild(s);
@@ -1490,7 +1498,8 @@ let _forecastChartsPromise = null;
 function ensureForecastCharts(){
   if(window.BoatForecastCharts) return Promise.resolve(window.BoatForecastCharts);
   if(_forecastChartsPromise) return _forecastChartsPromise;
-  _forecastChartsPromise = loadScript('forecast-charts.js').then(()=> window.BoatForecastCharts)
+  /* ?v=2 busts Pages CDN after PLAN marker landed (hard-refresh alone did not reload this lazy script). */
+  _forecastChartsPromise = loadScript('forecast-charts.js?v=2').then(()=> window.BoatForecastCharts)
     .catch(e=>{ _forecastChartsPromise = null; throw e; });
   return _forecastChartsPromise;
 }
@@ -1503,7 +1512,7 @@ function ensureDiveEngine(){
     .then(()=> loadScript('dive-site-intel.js'))
     .then(()=> loadScript('briefing-synth.js'))
     .then(()=> ensureForecastCharts())
-    .then(()=> loadScript('dive-engine.js'))
+    .then(()=> loadScript('dive-engine.js?v=2'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
       return window.BoatDive;
@@ -2994,11 +3003,17 @@ function setPlanWhen(dateId, timeId, when){
 function bindPlanWhen(dateId, timeId, onChange){
   if(dateId){
     const de = $(dateId);
-    if(de) de.addEventListener('change', onChange);
+    if(de){
+      de.addEventListener('change', onChange);
+      de.addEventListener('input', onChange);
+    }
   }
   if(timeId){
     const te = $(timeId);
-    if(te) te.addEventListener('change', onChange);
+    if(te){
+      te.addEventListener('change', onChange);
+      te.addEventListener('input', onChange);
+    }
   }
 }
 
@@ -8897,8 +8912,14 @@ function biteIndexSeries(opts){
   const stepHr = opts.stepHr != null ? opts.stepHr : 1;
   const now = opts.nowMs != null ? opts.nowMs : Date.now();
   const { lat, lon } = boatPos();
-  const tMin = now - backHr * HR;
-  const tMax = now + fwdHr * HR;
+  let tMin = now - backHr * HR;
+  let tMax = now + fwdHr * HR;
+  const planMs = opts.planMs != null && isFinite(+opts.planMs) ? +opts.planMs : null;
+  /* Keep selected trip time on-chart (default window is wall-clock −18h/+72h). */
+  if(planMs != null){
+    if(planMs < tMin) tMin = planMs - Math.min(backHr, 6) * HR;
+    if(planMs > tMax) tMax = planMs + Math.min(12, fwdHr) * HR;
+  }
   const pts = [];
   let usedMarine = 0, usedWx = 0, usedTide = 0, n = 0;
   for(let t = tMin; t <= tMax + 1; t += stepHr * HR){
@@ -8958,12 +8979,13 @@ function renderBiteIndexChart(){
       host.innerHTML = '<div class="skel">Chart module failed to load</div>';
       return;
     }
-    const series = biteIndexSeries();
+    if(!fishPlanDateOnly) initFishPlanWhen();
+    const planWhen = getFishPlanWhen();
+    const highlightMs = planWhen && isFinite(+planWhen) ? +planWhen : null;
+    const series = biteIndexSeries({ planMs: highlightMs });
     const daily = typeof tideSunDailyForRange === 'function'
       ? tideSunDailyForRange(series.tMin, series.tMax)
       : null;
-    const planWhen = fishPlanDateOnly ? getFishPlanWhen() : null;
-    const highlightMs = planWhen && isFinite(+planWhen) ? +planWhen : null;
     api.renderScoreChart({
       host,
       nowEl: $('biteChartNow'),
@@ -8983,6 +9005,7 @@ function renderBiteIndexChart(){
       sunMarkers: typeof wxChartSunMarkers === 'function' ? wxChartSunMarkers : null,
       highlightMs,
       highlightLabel: 'PLAN',
+      highlightColor: '#56d4e9',
       note: biteIndexHonestyNote(series.coverage),
       CHART, WX_C, HR, clamp, f0, f1, esc, fmtDayTime
     });

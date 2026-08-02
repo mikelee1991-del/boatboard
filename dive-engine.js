@@ -1771,8 +1771,13 @@
     const fwdHr = opts.fwdHr != null ? opts.fwdHr : (typeof window.TIDE_CHART_FWD_HR === 'number' ? window.TIDE_CHART_FWD_HR : 72);
     const stepHr = opts.stepHr != null ? opts.stepHr : 1;
     const now = opts.nowMs != null ? opts.nowMs : Date.now();
-    const tMin = now - backHr * HR;
-    const tMax = now + fwdHr * HR;
+    let tMin = now - backHr * HR;
+    let tMax = now + fwdHr * HR;
+    const planMs = opts.planMs != null && isFinite(+opts.planMs) ? +opts.planMs : null;
+    if (planMs != null) {
+      if (planMs < tMin) tMin = planMs - Math.min(backHr, 6) * HR;
+      if (planMs > tMax) tMax = planMs + Math.min(12, fwdHr) * HR;
+    }
     const pts = [];
     let used = 0, n = 0, missingTide = 0;
     for (let t = tMin; t <= tMax + 1; t += stepHr * HR) {
@@ -1817,7 +1822,10 @@
         host.innerHTML = '<div class="skel">Chart module failed to load</div>';
         return;
       }
-      const series = diveScoreSeries(site);
+      if (!userPlanWhen) setDiveWhen(new Date());
+      const planWhen = readDiveWhen();
+      const highlightMs = planWhen && isFinite(+planWhen) ? +planWhen : null;
+      const series = diveScoreSeries(site, { planMs: highlightMs });
       if (series.pts.length < 2) {
         host.innerHTML = '<div class="skel">Need marine/weather data for dive score forecast</div>';
         return;
@@ -1825,8 +1833,6 @@
       const daily = (typeof window.tideSunDailyForRange === 'function')
         ? window.tideSunDailyForRange(series.tMin, series.tMax)
         : null;
-      const planWhen = readDiveWhen();
-      const highlightMs = planWhen && isFinite(+planWhen) ? +planWhen : null;
       charts.renderScoreChart({
         host,
         nowEl: $('diveScoreChartNow'),
@@ -1846,6 +1852,7 @@
         sunMarkers: typeof window.wxChartSunMarkers === 'function' ? window.wxChartSunMarkers : null,
         highlightMs,
         highlightLabel: 'PLAN',
+        highlightColor: '#56d4e9',
         note: diveScoreHonestyNote(site, series.coverage),
         CHART: window.CHART,
         WX_C: window.WX_C,
@@ -2439,7 +2446,10 @@
       if (btn && userPlanWhen) btn.textContent = formatPlanDate(userPlanWhen);
     }
 
-    if (te) te.addEventListener('change', applyPlanWhenChange);
+    if (te) {
+      te.addEventListener('change', applyPlanWhenChange);
+      te.addEventListener('input', applyPlanWhenChange);
+    }
     const btnDate = $('divePlanDateBtn');
     if (btnDate) btnDate.addEventListener('click', openDiveDatePicker);
     const btnCal = $('diveBtnCal');

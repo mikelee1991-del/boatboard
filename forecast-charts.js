@@ -127,7 +127,8 @@
       nowEl.textContent = nowV != null ? 'Now ' + f0(nowV) + '/100' : '—';
     }
 
-    const W = 860, H = 268, padL = 46, padR = 14, padT = 36, padB = 40;
+    /* Extra top pad so NOW + PLAN labels can stack without clipping (.tide-chart overflow:hidden). */
+    const W = 860, H = 280, padL = 46, padR = 14, padT = 48, padB = 40;
     const plotW = W - padL - padR, plotH = H - padT - padB;
     let vMin = 0, vMax = 100;
     const xS = t => padL + (t - tMin) / (tMax - tMin) * plotW;
@@ -211,22 +212,31 @@
       svg += '<text x="' + nx + '" y="' + (padT - 4) + '" text-anchor="middle" font-size="11" fill="' + CHART.now + '" font-weight="bold">NOW</text>';
     }
 
-    /* Plan-time cursor — same geometry as NOW; distinct color/label so both can coexist */
+    /* Plan-time cursor — same geometry as NOW; cyan dashed so it reads even when near NOW */
     const hlRaw = opts.highlightMs;
     const hl = (hlRaw != null && isFinite(+hlRaw)) ? +hlRaw : null;
     const hlLabel = opts.highlightLabel || 'PLAN';
     const hlColor = opts.highlightColor || CHART.feel || '#56d4e9';
     let hlShown = false;
     if (hl != null && hl >= tMin && hl <= tMax) {
-      const hlV = valueAt(hl);
+      let hlV = valueAt(hl);
+      /* In-window plan must always paint — sparse forecast gaps can miss the 1.5h nearest rule */
+      if (hlV == null && pts.length) {
+        let best = pts[0], bd = Math.abs(pts[0].t - hl);
+        for (let i = 1; i < pts.length; i++) {
+          const d = Math.abs(pts[i].t - hl);
+          if (d < bd) { best = pts[i]; bd = d; }
+        }
+        hlV = best.v;
+      }
       if (hlV != null) {
         hlShown = true;
         const hx = xS(hl), hy = yS(hlV);
-        let labelY = padT - 4;
-        /* Nudge label if it would sit on top of NOW */
-        if (now >= tMin && now <= tMax && Math.abs(hx - xS(now)) < 28) labelY = padT - 16;
+        let labelY = padT - 6;
+        /* Stack above NOW when cursors collide */
+        if (now >= tMin && now <= tMax && Math.abs(hx - xS(now)) < 36) labelY = padT - 20;
         svg += '<line x1="' + hx + '" y1="' + padT + '" x2="' + hx + '" y2="' + (padT + plotH) +
-          '" stroke="' + hlColor + '" stroke-width="2" opacity="0.95"/>';
+          '" stroke="' + hlColor + '" stroke-width="2.5" stroke-dasharray="7 4" opacity="0.95"/>';
         svg += '<circle cx="' + hx + '" cy="' + hy + '" r="6" fill="' + hlColor + '" stroke="var(--card)" stroke-width="2"/>';
         svg += '<text x="' + hx + '" y="' + labelY + '" text-anchor="middle" font-size="11" fill="' + hlColor +
           '" font-weight="bold">' + esc(hlLabel) + '</text>';
