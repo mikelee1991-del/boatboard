@@ -20,8 +20,27 @@ header {
   display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center;
 }
 header h1 { margin: 0; font-size: 15px; font-weight: 650; letter-spacing: -0.02em; }
-.stats { font-size: 12px; color: var(--ink2); }
+.stats { font-size: 12px; color: var(--ink2); flex: 1; min-width: 140px; }
 .stats strong { color: var(--ink); }
+header .hdr-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-left: auto; }
+#btnHardRefresh {
+  background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+  min-height: 40px; touch-action: manipulation; white-space: nowrap;
+}
+#btnHardRefresh:disabled { opacity: .65; cursor: wait; }
+.hard-refresh-block {
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
+}
+.hard-refresh-block p {
+  margin: 0 0 8px; font-size: 11px; color: var(--ink3); line-height: 1.45;
+}
+.hard-refresh-block button {
+  width: 100%; min-height: 44px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink); cursor: pointer; font-weight: 600; font-size: 12px;
+  touch-action: manipulation;
+}
+.hard-refresh-block button:disabled { opacity: .65; cursor: wait; }
 .layout {
   display: grid; grid-template-columns: minmax(320px, 380px) 1fr;
   height: calc(100% - var(--hdr, 56px));
@@ -210,6 +229,9 @@ aside {
 <header id="hdr">
   <h1>Pin Trust Review</h1>
   <div class="stats" id="stats">Loading…</div>
+  <div class="hdr-actions">
+    <button type="button" id="btnHardRefresh" title="Clears cached app files and reloads (keeps your yes/no/unsure answers and groups)">Hard refresh</button>
+  </div>
 </header>
 <div class="layout">
   <aside>
@@ -895,8 +917,14 @@ aside {
       'it does not wipe your decisions or re-queue no/unsure as pending.</li>' +
       '<li><strong>After apply:</strong> Commit updated lists + results; run water-pin audits. ' +
       'Still never nudge coords to silence audits.</li>' +
+      '<li><strong>Stale map/scripts:</strong> Use <strong>Hard refresh</strong> (header or below) after deploys — ' +
+      'clears cached files and reloads. Keeps your yes/no/unsure answers and feature groups.</li>' +
       '</ol>' +
       '</details>' +
+      '<div class="hard-refresh-block">' +
+      '<p>Clears cached app files and reloads (keeps your review answers &amp; groups).</p>' +
+      '<button type="button" id="btnHardRefreshPanel">Hard refresh</button>' +
+      '</div>' +
       '<div class="export-row">' +
       '<button type="button" id="btnExport">Download trust JSON</button>' +
       '<button type="button" id="btnExportGroups">Download groups JSON</button>' +
@@ -930,6 +958,8 @@ aside {
     document.getElementById('btnExportGroupsJs').onclick = exportGroupsJs;
     document.getElementById('btnCopy').onclick = copyForChat;
     document.getElementById('btnClear').onclick = clearResults;
+    var hrPanel = document.getElementById('btnHardRefreshPanel');
+    if (hrPanel) hrPanel.onclick = function () { hardRefreshReview(hrPanel); };
     document.getElementById('importFile').onchange = importFile;
     document.querySelector('.export-row label').onclick = function () {
       document.getElementById('importFile').click();
@@ -1233,6 +1263,53 @@ aside {
   document.getElementById('filterPri').onchange = renderList;
   document.getElementById('filterKind').onchange = renderList;
   document.getElementById('search').oninput = renderList;
+
+  /**
+   * Same idea as main Settings → Hard refresh: unregister SW, clear Cache Storage +
+   * session scratch, then reload with ?_hr= cache-bust. Keeps pin-trust answers + groups.
+   */
+  async function hardRefreshReview(btnEl) {
+    var btns = [document.getElementById('btnHardRefresh'), document.getElementById('btnHardRefreshPanel')];
+    btns.forEach(function (b) {
+      if (!b) return;
+      b.disabled = true;
+      b.textContent = 'Refreshing…';
+    });
+    if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Refreshing…'; }
+    try {
+      if (navigator.serviceWorker) {
+        var regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(function (r) { return r.unregister().catch(function () { return false; }); }));
+      }
+    } catch (e) { /* ignore */ }
+    try {
+      if (typeof caches !== 'undefined' && caches.keys) {
+        var keys = await caches.keys();
+        await Promise.all(keys.map(function (k) { return caches.delete(k).catch(function () { return false; }); }));
+      }
+    } catch (e) { /* ignore */ }
+    try {
+      if (typeof sessionStorage !== 'undefined') sessionStorage.clear();
+    } catch (e) { /* ignore */ }
+    try {
+      /* Drop ephemeral boatboard caches only — never wipe review answers / groups. */
+      var drop = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (!k) continue;
+        if (k === STORAGE_KEY || k === GROUPS_KEY) continue;
+        if (k.indexOf('boatCache:') === 0 || k === 'habCharmLast' || k.indexOf('boatFib') === 0) drop.push(k);
+      }
+      drop.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } });
+    } catch (e) { /* ignore */ }
+    var url = new URL(location.href);
+    url.searchParams.set('_hr', String(Date.now()));
+    location.replace(url.pathname + url.search + (url.hash || ''));
+  }
+
+  document.getElementById('btnHardRefresh').onclick = function () {
+    hardRefreshReview(document.getElementById('btnHardRefresh'));
+  };
 
   document.addEventListener('keydown', function (e) {
     if (e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
