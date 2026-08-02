@@ -206,6 +206,24 @@ aside {
   width: 8px; height: 8px; border-radius: 50%; background: transparent;
   border: 1.5px dashed rgba(125, 211, 252, .85); box-sizing: border-box;
 }
+.map-legend .lg-box {
+  width: 10px; height: 8px; border-radius: 1px; background: transparent;
+  border: 1.5px dashed rgba(78, 196, 224, .95); box-sizing: border-box;
+  vertical-align: middle; margin-right: 4px;
+}
+.uncert-label {
+  background: transparent !important; border: none !important;
+  font: 10px/1.2 var(--mono, ui-monospace, Consolas, monospace);
+  color: var(--cyan); text-shadow: 0 0 4px rgba(0,0,0,.9), 0 1px 2px rgba(0,0,0,.8);
+  white-space: nowrap; pointer-events: none;
+}
+.uncert-label span {
+  display: inline-block; padding: 2px 5px; border-radius: 4px;
+  background: rgba(8,12,18,.82); border: 1px solid rgba(78,196,224,.45);
+}
+.uncert-label.amber span {
+  color: var(--amber); border-color: rgba(255,200,87,.4);
+}
 /* Context underlay: dive diamonds (fish use canvas circleMarkers) */
 .ctx-marker { background: transparent !important; border: none !important; }
 .ctx-dive-diamond {
@@ -262,8 +280,10 @@ aside {
       <div><span style="background:#7dd3fc"></span>Nearby live pin</div>
       <div><span style="background:#c4b5fd"></span>In group selection</div>
       <div><span class="lg-ring"></span>Nearby search radius</div>
+      <div><span class="lg-box"></span>Position uncertainty (focus)</div>
       <div><span class="lg-sq" style="border-radius:50%;background:#8b95a5"></span>All fish (context)</div>
       <div><span class="lg-diamond"></span>All dive (context)</div>
+      <div class="lg-meta" id="mapLegendUncert" hidden></div>
       <div class="lg-meta" id="mapLegendMeta">BlueTopo / NCEI DEM · local fit</div>
     </div>
     <div class="panel" id="panel">
@@ -485,6 +505,308 @@ aside {
 
   function pinKey(p) {
     return (p.kind || '') + '|' + Number(p.lat).toFixed(6) + '|' + Number(p.lon).toFixed(6);
+  }
+
+  /*
+   * Position-uncertainty half-width from stated/source coordinate precision.
+   * Visualization only — never nudge stored lat/lon.
+   *
+   * Mapping (half-width ≈ last significant digit of the stated value):
+   *   decimal degrees:
+   *     1 dp → ~1e-1°  (~6 nm / ~36,000 ft)
+   *     2 dp → ~1e-2°  (~0.6 nm / ~3,600 ft)
+   *     3 dp → ~1e-3°  (~360 ft)
+   *     4 dp → ~1e-4°  (~36 ft)
+   *     5 dp → ~1e-5°  (~3.6 ft)
+   *   DMS decimal-minutes (DM.m…):
+   *     0.1′   → 0.1/60°   (~600 ft)
+   *     0.01′  → 0.01/60°  (~60 ft)
+   *     0.001′ → 0.001/60° (~6 ft)
+   *   DMS seconds:
+   *     1″ → 1/3600° (~101 ft); 0.1″ → ~10 ft
+   * Prefer sourceDetail / coordText / explicit precision over float digit inference
+   * (Franko often stores full float from DMS conversion).
+   */
+  var FT_PER_DEG_LAT = 364000; /* ≈ 60 nm × 6076 ft */
+  var UNCERT_HALF_MIN = 5e-6;  /* ~1.8 ft — avoid zero-size boxes */
+  var UNCERT_HALF_MAX = 0.15;  /* cap huge boxes (~9 nm) */
+
+  function degHalfToFt(halfDeg, lat) {
+    /* Report lat-axis feet (readable scale); lon half-width shrinks with cos(lat) in the box. */
+    return halfDeg * FT_PER_DEG_LAT;
+  }
+
+  function clampHalf(h) {
+    if (!isFinite(h) || h <= 0) return UNCERT_HALF_MIN;
+    return Math.min(UNCERT_HALF_MAX, Math.max(UNCERT_HALF_MIN, h));
+  }
+
+  function fmtFt(ft) {
+    if (ft >= 5280) return (ft / 5280).toFixed(ft >= 52800 ? 0 : 1) + ' mi';
+    if (ft >= 1000) return Math.round(ft).toLocaleString() + ' ft';
+    if (ft >= 100) return Math.round(ft) + ' ft';
+    if (ft >= 10) return (Math.round(ft * 10) / 10) + ' ft';
+    return (Math.round(ft * 10) / 10) + ' ft';
+  }
+
+  function fracDigitsFromMatch(frac) {
+    if (frac == null || frac === '') return 0;
+    return String(frac).length;
+  }
+
+  /** Infer meaningful decimal places from a stored float (round / DMS-residue aware). */
+  function inferFloatDecimalPlaces(n) {
+    if (!isFinite(n)) return 5;
+    var abs = Math.abs(n);
+    var whole = Math.floor(abs);
+    var frac = abs - whole;
+    if (frac < 1e-12) return 0;
+
+    /* Prefer the coarsest k where n is essentially a k-dp round number. */
+    var k;
+    for (k = 0; k <= 7; k++) {
+      var scale = Math.pow(10, k);
+      var rounded = Math.round(abs * scale) / scale;
+      if (Math.abs(abs - rounded) < 1e-9 + 5e-12 * scale) {
+        /* Reject pure float noise that only matches at very fine k when coarser also fits
+         * after stripping classic DMS conversion tails (…3333 / …6666). */
+        return k;
+      }
+    }
+
+    /* Long tails from minutes/60 (e.g. 33.48458333333333 ← 29.075′). */
+    var s = abs.toFixed(12).replace(/0+$/, '');
+    var m = s.match(/\.(\d+?)(?:(\d)\2{3,}|$)/);
+    if (m) {
+      var digs = m[1];
+      /* If remainder looks like repeating 3/6 after a short stem, stem length is source dp. */
+      var stem = digs.replace(/([36])\1+$/, '');
+      if (stem.length >= 1 && stem.length <= 7 && stem.length < digs.length) return stem.length;
+      return Math.min(7, digs.length);
+    }
+    return 5;
+  }
+
+  function halfFromDecimalPlaces(dp) {
+    dp = Math.max(0, Math.min(7, dp | 0));
+    return clampHalf(Math.pow(10, -dp));
+  }
+
+  function halfFromMinuteDecimals(dp) {
+    dp = Math.max(0, Math.min(5, dp | 0));
+    return clampHalf(Math.pow(10, -dp) / 60);
+  }
+
+  function halfFromSecondDecimals(dp) {
+    dp = Math.max(0, Math.min(3, dp | 0));
+    return clampHalf(Math.pow(10, -dp) / 3600);
+  }
+
+  function polishDmLabel(mdp) {
+    if (mdp <= 0) return "1'";
+    return '0.' + (mdp === 1 ? '1' : new Array(mdp).join('0') + '1') + '′';
+  }
+
+  /**
+   * Parse one coordinate token from source text → { halfDeg, label, kind }.
+   * Supports DM.mmm, D°M'S", and decimal degrees (with or without °).
+   */
+  function parseOneCoordToken(raw) {
+    if (!raw) return null;
+    var t = String(raw).replace(/\u2032/g, "'").replace(/\u2033/g, '"')
+      .replace(/\u2019/g, "'").replace(/\u00B0/g, '°').trim();
+
+    /* D°M'S.s" — require minutes mark so D°M.mmm′ is not misread as seconds. */
+    var dms = t.match(/(-?\d+)\s*°\s*(\d+)\s*['′]\s*(\d+(?:\.\d+)?)\s*["″]?/);
+    if (dms) {
+      var secFrac = dms[3].indexOf('.') >= 0 ? dms[3].split('.')[1] : '';
+      var sdp = fracDigitsFromMatch(secFrac);
+      return {
+        halfDeg: halfFromSecondDecimals(sdp),
+        label: sdp > 0 ? (sdp + ' dp sec') : '1″',
+        kind: 'dms-sec'
+      };
+    }
+
+    /* D°M.mmm′  (Franko / diver.net / USC DM) */
+    var dm = t.match(/(-?\d+)\s*°\s*(\d+)(?:\.(\d+))?\s*['′]?/);
+    if (dm) {
+      var mdp = fracDigitsFromMatch(dm[3]);
+      return {
+        halfDeg: halfFromMinuteDecimals(mdp),
+        label: polishDmLabel(mdp),
+        kind: 'dm'
+      };
+    }
+
+    /* Plain or °-suffixed decimal degrees */
+    var dec = t.match(/(-?\d+)\.(\d+)\s*°?/);
+    if (dec) {
+      var ddp = fracDigitsFromMatch(dec[2].replace(/0+$/, '') || '0');
+      /* Keep stated trailing zeros when source wrote them (e.g. 33.4514 / -118.4870). */
+      var stated = fracDigitsFromMatch(dec[2]);
+      var use = /0$/.test(dec[2]) ? stated : (ddp || stated);
+      return {
+        halfDeg: halfFromDecimalPlaces(use),
+        label: use + ' dp',
+        kind: 'decimal'
+      };
+    }
+
+    var whole = t.match(/(-?\d+)\s*°?\s*$/);
+    if (whole) {
+      return { halfDeg: halfFromDecimalPlaces(0), label: '0 dp', kind: 'decimal' };
+    }
+    return null;
+  }
+
+  function parseSourceCoordPrecision(text) {
+    if (!text || /not verified|verbatim|default-trusted|already live|excluded from live/i.test(text)) {
+      return null;
+    }
+    var s = String(text).replace(/\u2032/g, "'").replace(/\u2033/g, '"')
+      .replace(/\u2019/g, "'").replace(/\u00B0/g, '°');
+
+    /* Prefer the DMS/DM portion before "→ decimal …" (Franko sourceDetail). */
+    var head = s.split(/\u2192|->|→/)[0];
+
+    var tokens = [];
+    var reDms = /(-?\d+\s*°\s*\d+\s*['′]\s*\d+(?:\.\d+)?\s*["″]?)/g;
+    var reDm = /(-?\d+\s*°\s*\d+(?:\.\d+)?\s*['′]?)/g;
+    var reDecDeg = /(-?\d+\.\d+)\s*°/g;
+    var rePlainPair = /(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/;
+    var m;
+
+    /* DMS first (requires minutes mark + seconds). DM.mmm′ won't match that shape. */
+    while ((m = reDms.exec(head))) tokens.push(parseOneCoordToken(m[1]));
+    if (!tokens.length) {
+      while ((m = reDm.exec(head))) tokens.push(parseOneCoordToken(m[1]));
+    }
+    if (!tokens.length) {
+      while ((m = reDecDeg.exec(head))) tokens.push(parseOneCoordToken(m[1] + '°'));
+    }
+    if (!tokens.length) {
+      m = rePlainPair.exec(head);
+      if (m) {
+        tokens.push(parseOneCoordToken(m[1]));
+        tokens.push(parseOneCoordToken(m[2]));
+      }
+    }
+
+    tokens = tokens.filter(Boolean);
+    if (!tokens.length) return null;
+
+    var halfLat = tokens[0].halfDeg;
+    var halfLon = tokens.length > 1 ? tokens[1].halfDeg : tokens[0].halfDeg;
+    var label = tokens[0].label;
+    if (tokens[0].kind === 'dm') {
+      var md = 0;
+      var mm = head.match(/°\s*\d+\.(\d+)/);
+      if (mm) md = mm[1].length;
+      label = polishDmLabel(md);
+    }
+    return {
+      halfDegLat: halfLat,
+      halfDegLon: halfLon,
+      label: label,
+      source: 'stated'
+    };
+  }
+
+  function precisionFromExplicit(p) {
+    var meta = p.coordPrecision || p.precision;
+    if (!meta) return null;
+    if (typeof meta === 'number' && isFinite(meta) && meta > 0) {
+      return {
+        halfDegLat: clampHalf(meta),
+        halfDegLon: clampHalf(meta),
+        label: 'meta',
+        source: 'meta'
+      };
+    }
+    if (typeof meta === 'object') {
+      var hLat = meta.halfDegLat != null ? meta.halfDegLat
+        : (meta.halfDeg != null ? meta.halfDeg
+          : (meta.decimalPlaces != null ? halfFromDecimalPlaces(meta.decimalPlaces)
+            : (meta.minuteDecimals != null ? halfFromMinuteDecimals(meta.minuteDecimals) : null)));
+      var hLon = meta.halfDegLon != null ? meta.halfDegLon : hLat;
+      if (hLat == null) return null;
+      return {
+        halfDegLat: clampHalf(hLat),
+        halfDegLon: clampHalf(hLon != null ? hLon : hLat),
+        label: meta.label || (meta.minuteDecimals != null ? polishDmLabel(meta.minuteDecimals)
+          : (meta.decimalPlaces != null ? meta.decimalPlaces + ' dp' : 'meta')),
+        source: 'meta'
+      };
+    }
+    return null;
+  }
+
+  function resolvePinPrecision(p) {
+    if (!p) return null;
+    var ex = precisionFromExplicit(p);
+    if (ex) return ex;
+
+    var text = p.coordText || p.sourceDetail || '';
+    var fromText = parseSourceCoordPrecision(text);
+    if (fromText) return fromText;
+
+    /* Float fallback: independent axes; watch for DMS-conversion residue. */
+    var dpLat = inferFloatDecimalPlaces(Number(p.lat));
+    var dpLon = inferFloatDecimalPlaces(Number(p.lon));
+    return {
+      halfDegLat: halfFromDecimalPlaces(dpLat),
+      halfDegLon: halfFromDecimalPlaces(dpLon),
+      label: Math.min(dpLat, dpLon) + ' dp',
+      source: 'float'
+    };
+  }
+
+  function precisionLegendText(prec, lat) {
+    if (!prec) return '';
+    var half = Math.max(prec.halfDegLat, prec.halfDegLon);
+    var ft = degHalfToFt(half, lat);
+    return '\u00b1~' + fmtFt(ft) + ' (' + prec.label + ')';
+  }
+
+  function drawUncertaintyBox(p, opts) {
+    opts = opts || {};
+    var prec = resolvePinPrecision(p);
+    if (!prec) return null;
+    var dLat = prec.halfDegLat;
+    var dLon = prec.halfDegLon;
+    var color = opts.color || '#4ec4e0';
+    var weight = opts.weight != null ? opts.weight : 1.5;
+    var fillOpacity = opts.fillOpacity != null ? opts.fillOpacity : 0.05;
+    var rect = L.rectangle(
+      [[p.lat - dLat, p.lon - dLon], [p.lat + dLat, p.lon + dLon]],
+      {
+        color: color,
+        weight: weight,
+        dashArray: opts.dashArray || '5 4',
+        fillColor: color,
+        fillOpacity: fillOpacity,
+        opacity: opts.opacity != null ? opts.opacity : 0.95,
+        interactive: false,
+        bubblingMouseEvents: false
+      }
+    ).addTo(pinLayer);
+
+    if (opts.withLabel) {
+      var txt = precisionLegendText(prec, p.lat);
+      L.marker([p.lat + dLat, p.lon], {
+        icon: L.divIcon({
+          className: 'uncert-label' + (opts.labelClass ? ' ' + opts.labelClass : ''),
+          html: '<span>' + txt + '</span>',
+          iconSize: [150, 16],
+          iconAnchor: [75, 18]
+        }),
+        interactive: false,
+        keyboard: false,
+        zIndexOffset: 600
+      }).addTo(pinLayer);
+    }
+    return prec;
   }
 
   function verdictOf(id) {
@@ -898,7 +1220,9 @@ aside {
       '<li><strong>Map:</strong> Same BlueTopo relief / NCEI DEM / ENC / Ocean / Satellite stack as Fish &amp; Dive ' +
       '<em>On site</em> (layers control, top-left). View fits locally (~' +
       Math.round(REVIEW_FIT_NM * ((SR && SR.FT_PER_NM) || 6076)) +
-      ' ft) so nearby pins and seafloor structure are readable — not bay-wide.</li>' +
+      ' ft) so nearby pins and seafloor structure are readable — not bay-wide. ' +
+      'Dashed cyan box = stated coordinate precision (size from DMS digits / decimal places); ' +
+      'label shows \u00b1~feet. Coords are never nudged.</li>' +
       '<li><strong>Review:</strong> Check pin vs relief / ENC / satellite — water ok vs land / pier / parking (reject). ' +
       '<strong>Yes</strong> = trust as-is · <strong>No</strong> = omit from live maps · ' +
       '<strong>Unsure</strong> = omit until re-reviewed. Optional note helps later.</li>' +
@@ -935,9 +1259,11 @@ aside {
       '</div>';
 
     document.querySelector('#panel h2').textContent = c.name;
+    var prec = resolvePinPrecision(c);
     document.querySelector('#panel .coords').textContent =
       Number(c.lat).toFixed(7) + ', ' + Number(c.lon).toFixed(7) +
-      (c.currentlyDisplayed === false ? ' · NOT currently on map' : ' · on map');
+      (c.currentlyDisplayed === false ? ' · NOT currently on map' : ' · on map') +
+      (prec ? ' · ' + precisionLegendText(prec, c.lat) : '');
     document.querySelector('#panel .why').innerHTML = '<strong>Why review</strong><br>' + esc(c.reason || '');
     document.querySelector('#panel .about').innerHTML =
       '<strong>About</strong><br>' + esc(c.about || c.description || 'No site brief available.');
@@ -1060,6 +1386,19 @@ aside {
       interactive: false
     }).addTo(pinLayer);
 
+    /* Lat/lon-aligned uncertainty boxes for close nearby candidates (cheap; no labels). */
+    nearby.forEach(function (row) {
+      if (row.distNm > REVIEW_FIT_NM) return;
+      if (!row.pin || !row.pin.isCandidate) return;
+      drawUncertaintyBox(row.pin, {
+        color: '#ffc857',
+        weight: 1,
+        fillOpacity: 0.03,
+        opacity: 0.7,
+        withLabel: false
+      });
+    });
+
     nearby.forEach(function (row) {
       var p = row.pin;
       var inSel = !!groupSel[p.key];
@@ -1090,9 +1429,31 @@ aside {
       }).bindPopup(esc(m.name) + ' (selected)').addTo(pinLayer);
     });
 
+    /* Focus uncertainty box + one-line label (cyan dashed, lat/lon aligned). */
+    var focusPrec = drawUncertaintyBox(c, {
+      color: '#4ec4e0',
+      weight: 1.75,
+      fillOpacity: 0.07,
+      withLabel: true
+    });
+    var uncertMeta = document.getElementById('mapLegendUncert');
+    if (uncertMeta) {
+      if (focusPrec) {
+        uncertMeta.hidden = false;
+        uncertMeta.textContent = 'Focus unc. ' + precisionLegendText(focusPrec, c.lat) +
+          (focusPrec.source === 'stated' ? ' · from source text'
+            : (focusPrec.source === 'meta' ? ' · from metadata' : ' · inferred from float'));
+      } else {
+        uncertMeta.hidden = true;
+        uncertMeta.textContent = '';
+      }
+    }
+
     L.circleMarker([c.lat, c.lon], {
       radius: 11, color: '#fff', fillColor: '#ff6b4a', fillOpacity: 0.98, weight: 2.5
-    }).bindPopup('<b>' + esc(c.name) + '</b><br>Focus · ' + c.kind).addTo(pinLayer);
+    }).bindPopup('<b>' + esc(c.name) + '</b><br>Focus · ' + c.kind +
+      (focusPrec ? '<br>' + precisionLegendText(focusPrec, c.lat) : '')
+    ).addTo(pinLayer);
 
     /* Local fit: at least On site–near (~0.32 nm), expand to nearby radius up to ~0.55 nm
      * so the search ring stays in view — never fit to 1–2 nm (bay-wide clutter). */
