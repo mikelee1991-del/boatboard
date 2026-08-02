@@ -960,7 +960,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         <div class="plan-split-map">
           <div class="plan-mapbox">
             <h3>Lobster habitat — ranked</h3>
-            <p>Structure from Fish + Dive pins · # = hunt rank · red MPA = no-take (excluded when known)</p>
+            <p>Fish + Dive modules · # = group rank (same-reef once) · dots = other pins · red MPA = no-take</p>
             <div id="lobsterMap"><div class="skel" style="padding:20px">Map loads with rankings…</div></div>
             <div class="plan-map-legend" id="lobsterMapLegend"></div>
             <div class="card" id="lobPlanMpaDetail" style="margin:0;border-radius:0 0 10px 10px;border-top:1px solid var(--line2)">
@@ -1626,7 +1626,9 @@ function lobsterHabOutlook(){
 function ensureLobsterEngine(){
   if(window.BoatLobster) return Promise.resolve(window.BoatLobster);
   if(_lobsterEnginePromise) return _lobsterEnginePromise;
-  _lobsterEnginePromise = ensureDiveEngine().catch(()=>null).then(()=> loadScript('lobster-engine.js?v=3')).then(()=>{
+  _lobsterEnginePromise = ensureDiveEngine().catch(()=>null)
+    .then(()=> typeof ensureFishFeatureGroups === 'function' ? ensureFishFeatureGroups() : null)
+    .then(()=> loadScript('lobster-engine.js?v=4')).then(()=>{
     if(!window.BoatLobster) throw new Error('BoatLobster missing');
     BoatLobster.init({
       getPos: () => boatPos(),

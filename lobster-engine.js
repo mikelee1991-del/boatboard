@@ -192,6 +192,36 @@
     return false;
   }
 
+  function pfgLookup(lat, lon){
+    const groups = (global.PIN_FEATURE_GROUPS && global.PIN_FEATURE_GROUPS.groups) || [];
+    if(!groups.length || lat == null || lon == null) return null;
+    const key = (+lat).toFixed(5) + ',' + (+lon).toFixed(5);
+    for(let i = 0; i < groups.length; i++){
+      const g = groups[i];
+      const members = g.members || [];
+      for(let j = 0; j < members.length; j++){
+        const m = members[j];
+        if(m == null || m.lat == null || m.lon == null) continue;
+        if((+m.lat).toFixed(5) + ',' + (+m.lon).toFixed(5) === key){
+          return { id: g.groupId || ('pfg_' + i), name: g.displayName || g.groupId, size: members.length };
+        }
+      }
+    }
+    return null;
+  }
+
+  function groupKey(spot){
+    if(spot.pfgId) return 'pfg:' + spot.pfgId;
+    if(spot.featureGroup) return String(spot.sourceKind || spot.kind || 'x') + ':' + spot.featureGroup;
+    return 'pin:' + spot.lat.toFixed(5) + ',' + spot.lon.toFixed(5);
+  }
+
+  function groupListName(spot){
+    const base = spot.featureGroupName || spot.name;
+    const n = spot.featureGroupSize || 1;
+    return n > 1 ? base + ' (' + n + ')' : base;
+  }
+
   function buildSpotPool(){
     const out = [];
     const seen = Object.create(null);
@@ -199,16 +229,30 @@
       if(!isLobsterCandidate(spot, kind)) return;
       if(inNoTakeMpa(spot.lat, spot.lon)) return;
       const key = spot.lat.toFixed(5) + ',' + spot.lon.toFixed(5);
+      const pfg = pfgLookup(spot.lat, spot.lon);
       if(seen[key]){
-        if(kind === 'dive' && seen[key].kind === 'fish'){
-          seen[key].kind = 'both';
-          seen[key].methods = 'hoop · scuba · freedive';
+        const prev = seen[key];
+        if(kind === 'dive' && prev.kind === 'fish'){
+          prev.kind = 'both';
+          prev.methods = 'hoop · scuba · freedive';
+        }
+        if(pfg && (!prev.pfgId || (pfg.size || 0) > (prev.featureGroupSize || 0))){
+          prev.pfgId = pfg.id;
+          prev.featureGroupName = pfg.name;
+          prev.featureGroupSize = Math.max(prev.featureGroupSize || 1, pfg.size || 1);
+        }
+        if((spot.featureGroupSize || 1) > (prev.featureGroupSize || 1)){
+          prev.featureGroup = spot.featureGroup || prev.featureGroup;
+          prev.featureGroupName = spot.featureGroupName || prev.featureGroupName;
+          prev.featureGroupSize = spot.featureGroupSize;
         }
         return;
       }
       const depth = parseDepthFt(spot);
       const text = blobText(spot);
       const smcaWarn = SMCA_WARN_RE.test(text);
+      const fgName = (pfg && pfg.name) || spot.featureGroupName || spot.name;
+      const fgSize = Math.max(spot.featureGroupSize || 1, (pfg && pfg.size) || 1);
       const row = {
         id: 'lob_' + kind + '_' + (spot.id || key.replace(/[^\d.-]/g, '_')),
         name: spot.name,
@@ -224,6 +268,10 @@
         sourceKind: kind,
         methods: kind === 'dive' ? 'scuba · freedive' : 'hoop · scuba · freedive',
         smcaWarn: smcaWarn,
+        pfgId: pfg ? pfg.id : null,
+        featureGroup: spot.featureGroup || null,
+        featureGroupName: fgName,
+        featureGroupSize: fgSize,
         srcSpot: spot
       };
       seen[key] = row;
@@ -375,14 +423,24 @@
     const bp = opts.getPos ? opts.getPos() : { lat: 33.84817, lon: -118.39633 };
     const ctx = buildCtx(when);
     const pool = buildSpotPool();
-    const ranked = pool.map(spot => {
+    const allPins = pool.map(spot => {
       const distNm = haversineM(bp.lat, bp.lon, spot.lat, spot.lon) / NM;
       const score = scoreLobsterSpot(spot, ctx);
-      return { spot, score, distNm, ctx };
-    }).filter(r => !r.spot.srcSpot || !r.spot.srcSpot.regional || r.distNm <= 35)
-      .sort((a, b) => b.score - a.score || a.distNm - b.distNm);
+      return { spot, score, distNm, ctx, groupKey: groupKey(spot) };
+    }).filter(r => !r.spot.srcSpot || !r.spot.srcSpot.regional || r.distNm <= 35);
+
+    /* One rank entry per Fish/Dive/PIN feature group — best hunt score; nearer breaks ties. */
+    const byGroup = new Map();
+    for(let i = 0; i < allPins.length; i++){
+      const row = allPins[i];
+      const prev = byGroup.get(row.groupKey);
+      if(!prev || row.score > prev.score || (row.score === prev.score && row.distNm < prev.distNm)){
+        byGroup.set(row.groupKey, row);
+      }
+    }
+    const ranked = [...byGroup.values()].sort((a, b) => b.score - a.score || a.distNm - b.distNm);
     lastRanked = ranked;
-    return { ranked, ctx, bp };
+    return { ranked, allPins, ctx, bp };
   }
 
   function bannerHtml(ctx){
@@ -443,17 +501,23 @@
     if(!top.length) return '<p class="prose">No structure pins in range.</p>';
     return top.map((r, i) => {
       const d = r.spot.depthFt && r.spot.depthFt.mid != null ? f0(r.spot.depthFt.mid) + ' ft' : (r.spot.depth || '—');
+      const label = groupListName(r.spot);
+      const modNote = (r.spot.featureGroupSize > 1 && r.spot.name && r.spot.name !== r.spot.featureGroupName)
+        ? ' · best module: ' + r.spot.name
+        : '';
       return '<div class="lob-row" data-id="' + esc(r.spot.id) + '">' +
         '<span class="lob-rank" style="background:' + scoreColor(r.score) + '">#' + (i + 1) + '</span>' +
         '<div class="lob-row-body">' +
-          '<div class="lob-name">' + esc(r.spot.name) + '</div>' +
+          '<div class="lob-name">' + esc(label) + '</div>' +
           '<div class="lob-meta">' + f1(r.distNm) + ' nm · ' + esc(String(d)) + ' · ' + esc(r.spot.methods) +
+            esc(modNote) +
             (r.spot.smcaWarn ? ' · <span class="lob-warn">check SMCA</span>' : '') +
           '</div>' +
         '</div>' +
         '<b style="color:' + scoreColor(r.score) + '">' + r.score + '</b>' +
       '</div>';
-    }).join('');
+    }).join('') +
+      '<p class="plan-note" style="margin-top:8px">Same-reef modules from Fish + Dive count once · # = hunt rank · best module shown when grouped.</p>';
   }
 
   function tipsHtml(){
@@ -575,35 +639,65 @@
     return mapInitPromise;
   }
 
-  function paintMap(ranked, bp){
+  function paintMap(ranked, allPins, bp){
     if(!map || !spotLayer || !boatMarker) return 0;
     spotLayer.clearLayers();
     boatMarker.setLatLng([bp.lat, bp.lon]);
-    const local = ranked.filter(r => r.distNm <= LOBSTER_MAP_FIT_NM * 1.8);
-    const pins = local.slice(0, 80);
-    pins.forEach((r, i) => {
+    const localGroups = ranked.filter(r => r.distNm <= LOBSTER_MAP_FIT_NM * 1.8);
+    const featured = localGroups.slice(0, 40);
+    const featuredIds = new Set(featured.map(r => r.spot.id));
+    /* Other modules of ranked groups + unranked pins — unnumbered dots (Fish/Dive pattern). */
+    const siblingDots = (allPins || []).filter(r =>
+      r.distNm <= LOBSTER_MAP_FIT_NM * 1.8 && !featuredIds.has(r.spot.id)
+    ).slice(0, 80);
+
+    featured.forEach((r, i) => {
       const rank = i + 1;
-      const mode = rank <= 20 ? 'rank' : 'dot';
-      const sz = mode === 'dot' ? 12 : (rank <= 6 ? 28 : 24);
+      const sz = rank <= 6 ? 28 : 24;
       const icon = global.L.divIcon({
         className: 'lob-map-pin',
-        html: markerHtml(rank, r.score, mode === 'rank' ? 'rank' : 'dot'),
+        html: markerHtml(rank, r.score, 'rank'),
         iconSize: [sz, sz],
         iconAnchor: [sz / 2, sz / 2]
       });
       const depth = r.spot.depthFt && r.spot.depthFt.mid != null ? f0(r.spot.depthFt.mid) + ' ft' : (r.spot.depth || '—');
+      const label = groupListName(r.spot);
+      const modLine = (r.spot.featureGroupSize > 1)
+        ? '<br><span style="opacity:.85">Best module: ' + esc(r.spot.name) + '</span>'
+        : '';
       const marker = global.L.marker([r.spot.lat, r.spot.lon], {
         icon,
-        zIndexOffset: 600 - i
+        zIndexOffset: 700 - i
       });
       marker.bindPopup(
-        '<strong>' + esc(r.spot.name) + '</strong><br>' +
+        '<strong>' + esc(label) + '</strong>' + modLine + '<br>' +
         'Hunt ' + r.score + '/100 · ' + f1(r.distNm) + ' nm · ' + esc(String(depth)) + '<br>' +
         esc(r.spot.methods) +
         (r.spot.smcaWarn ? '<br><em>Verify SMCA take rules</em>' : '')
       );
       spotLayer.addLayer(marker);
     });
+
+    siblingDots.forEach((r, i) => {
+      const icon = global.L.divIcon({
+        className: 'lob-map-pin',
+        html: markerHtml(0, r.score, 'dot'),
+        iconSize: [12, 12],
+        iconAnchor: [6, 6]
+      });
+      const depth = r.spot.depthFt && r.spot.depthFt.mid != null ? f0(r.spot.depthFt.mid) + ' ft' : (r.spot.depth || '—');
+      const marker = global.L.marker([r.spot.lat, r.spot.lon], {
+        icon,
+        zIndexOffset: 40
+      });
+      marker.bindPopup(
+        '<strong>' + esc(r.spot.name) + '</strong><br>' +
+        (r.spot.featureGroupName ? '<span style="opacity:.85">Part of ' + esc(r.spot.featureGroupName) + '</span><br>' : '') +
+        'Hunt ' + r.score + '/100 · ' + f1(r.distNm) + ' nm · ' + esc(String(depth))
+      );
+      spotLayer.addLayer(marker);
+    });
+
     try{ if(spotLayer.bringToFront) spotLayer.bringToFront(); }catch(e){ /* ignore */ }
     const ang = LOBSTER_MAP_FIT_NM / 60;
     map.fitBounds([[bp.lat - ang, bp.lon - ang], [bp.lat + ang, bp.lon + ang]], { maxZoom: 12, animate: false });
@@ -613,13 +707,13 @@
         if(spotLayer && spotLayer.bringToFront) spotLayer.bringToFront();
       }catch(e){ /* ignore */ }
     }, 80);
-    lastPaintKey = bp.lat.toFixed(4) + ',' + bp.lon.toFixed(4) + ':' + pins.length;
-    return pins.length;
+    lastPaintKey = bp.lat.toFixed(4) + ',' + bp.lon.toFixed(4) + ':' + featured.length;
+    return featured.length;
   }
 
   function render(){
     const when = getPlanWhen();
-    const { ranked, ctx, bp } = rankSpots(when);
+    const { ranked, allPins, ctx, bp } = rankSpots(when);
     const banner = $('lobBanner');
     if(banner) banner.innerHTML = bannerHtml(ctx);
     const glance = $('lobGlance');
@@ -635,18 +729,17 @@
       legend.innerHTML = rampLegendHtml() +
         '<div class="legend" style="margin-top:8px;font-size:11px">' +
           (opts && opts.mpaLegendHtml ? opts.mpaLegendHtml() : '') +
-          '<span style="margin-left:8px">Structure pins from Fish + Dive · no-take excluded when known</span>' +
+          '<span style="margin-left:8px">Fish + Dive feature groups · same-reef modules once · no-take excluded when known</span>' +
         '</div>';
     }
     ensureMap().then(() => {
-      const n = paintMap(ranked, bp);
+      const n = paintMap(ranked, allPins, bp);
       if(opts.ensureMpaOverlay){
         Promise.resolve(opts.ensureMpaOverlay(map, 'lobPlan')).then(() => {
           try{ if(spotLayer && spotLayer.bringToFront) spotLayer.bringToFront(); }catch(e){ /* ignore */ }
-          /* Re-paint if a raced init left panes empty. */
           if(n === 0 || (map && map.getPane && map.getPane('markerPane') &&
               map.getPane('markerPane').children.length === 0)){
-            paintMap(ranked, bp);
+            paintMap(ranked, allPins, bp);
           }
         }).catch(()=>{});
       }
