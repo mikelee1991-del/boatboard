@@ -81,9 +81,22 @@ aside {
 .badge.pending { background: rgba(110,128,148,.15); color: var(--ink3); }
 .badge.fish { background: rgba(78,196,224,.12); color: var(--cyan); }
 .badge.dive { background: rgba(196,181,253,.15); color: var(--group); }
+.badge.dual { background: rgba(61,255,154,.12); color: var(--good); }
 .badge.live { background: rgba(125,211,252,.12); color: var(--near); }
 .badge.cand { background: rgba(255,200,87,.1); color: var(--amber); }
 .badge.off { background: rgba(255,107,74,.12); color: var(--bad); }
+.dual-banner {
+  margin: 8px 0; padding: 8px 10px; border-radius: 8px;
+  border: 1px solid rgba(61,255,154,.35); background: rgba(61,255,154,.08);
+  font-size: 12px; color: var(--ink2); line-height: 1.45;
+}
+.dual-banner strong { color: var(--good); }
+.dual-banner .dual-ids { font-family: var(--mono); font-size: 10px; color: var(--ink3); margin-top: 4px; }
+.dual-banner button {
+  margin-top: 6px; background: var(--bg); color: var(--ink2); border: 1px solid var(--line);
+  border-radius: 6px; padding: 6px 10px; font-size: 11px; cursor: pointer;
+  min-height: 36px; touch-action: manipulation;
+}
 .map-wrap { position: relative; min-height: 0; }
 #map { height: 100%; min-height: 360px; background: #0b2a33; }
 #map.seafloor-leaflet { background: #0a1520 !important; }
@@ -308,13 +321,18 @@ aside {
 
   var STORAGE_KEY = 'pinTrustReviewResults_v1';
   var GROUPS_KEY = 'pinFeatureGroups_v1';
+  var DUAL_UNLINK_KEY = 'pinTrustReviewDualUnlink_v1';
   var SR = window.SeafloorRender || null;
   /* Local review view — slightly wider than On site 1300 ft fit so nearby pins read clearly. */
   var REVIEW_FIT_NM = (SR && SR.ONSITE_NEAR_NM != null) ? SR.ONSITE_NEAR_NM : 0.32; /* ~1944 ft */
   var REVIEW_FIT_MAX_ZOOM = 17;
+  /* Exact-or-tiny float epsilon for “same physical coords” fish+dive duals (Franko pairs). */
+  var DUAL_COORD_EPS = 1e-9;
   var results = {};
   var featureGroups = [];
   var groupSel = {}; /* pinKey -> pin snapshot */
+  var dualOf = {}; /* candidateId -> twin candidate object */
+  var dualUnlinked = {}; /* candidateId -> true when user split joint review */
   /* Default 0.5 nm — enough for duplicates/clusters without bay clutter (On site near ≈ 0.32 nm). */
   var nearbyRadiusNm = 0.5;
   var editingGroupId = null;
@@ -381,6 +399,164 @@ aside {
     } catch (e2) { /* keep bundled */ }
   }
   seedGroups();
+
+  /*
+   * Fish+dive duals: same physical coords (exact / tiny eps), esp. same-source Franko stems.
+   * One map review covers both ids; export still writes per-id verdicts.
+   */
+  function coordsEqualDual(a, b) {
+    if (!a || !b || a.lat == null || b.lat == null || a.lon == null || b.lon == null) return false;
+    return Math.abs(Number(a.lat) - Number(b.lat)) <= DUAL_COORD_EPS &&
+      Math.abs(Number(a.lon) - Number(b.lon)) <= DUAL_COORD_EPS;
+  }
+
+  function frankoStem(id) {
+    var m = String(id || '').match(/^franko_(.+)_(dive|fish)$/i);
+    return m ? m[1].toLowerCase() : null;
+  }
+
+  function dualCoordKey(c) {
+    return Number(c.lat).toFixed(9) + ',' + Number(c.lon).toFixed(9);
+  }
+
+  function sameSourceHint(a, b) {
+    if (!a || !b) return false;
+    if (a.source && b.source && a.source === b.source) return true;
+    var sa = frankoStem(a.id), sb = frankoStem(b.id);
+    if (sa && sb && sa === sb) return true;
+    var ra = String(a.reason || ''), rb = String(b.reason || '');
+    if (/Fish dual|same coords as dive/i.test(ra) || /Fish dual|same coords as dive/i.test(rb)) return true;
+    return false;
+  }
+
+  function linkDualPair(a, b) {
+    if (!a || !b || a.id === b.id || dualOf[a.id] || dualOf[b.id]) return;
+    if (a.kind === b.kind) return;
+    if (!coordsEqualDual(a, b)) return;
+    dualOf[a.id] = b;
+    dualOf[b.id] = a;
+  }
+
+  function buildDualIndex() {
+    dualOf = {};
+    var cands = DATA.candidates || [];
+    var byStem = {};
+    cands.forEach(function (c) {
+      var stem = frankoStem(c.id);
+      if (!stem) return;
+      if (!byStem[stem]) byStem[stem] = {};
+      byStem[stem][c.kind] = c;
+    });
+    Object.keys(byStem).forEach(function (stem) {
+      var d = byStem[stem].dive;
+      var f = byStem[stem].fish;
+      if (d && f) linkDualPair(d, f);
+    });
+    var byCoord = {};
+    cands.forEach(function (c) {
+      if (!c || c.lat == null || dualOf[c.id]) return;
+      var k = dualCoordKey(c);
+      if (!byCoord[k]) byCoord[k] = [];
+      byCoord[k].push(c);
+    });
+    Object.keys(byCoord).forEach(function (k) {
+      var arr = byCoord[k];
+      var fish = [];
+      var dive = [];
+      arr.forEach(function (c) {
+        if (dualOf[c.id]) return;
+        if (c.kind === 'fish') fish.push(c);
+        else if (c.kind === 'dive') dive.push(c);
+      });
+      dive.forEach(function (d) {
+        if (dualOf[d.id]) return;
+        var best = null;
+        var bestScore = -1;
+        fish.forEach(function (f) {
+          if (dualOf[f.id]) return;
+          var score = sameSourceHint(d, f) ? 3 : 1;
+          if (score > bestScore) {
+            bestScore = score;
+            best = f;
+          }
+        });
+        if (best) linkDualPair(d, best);
+      });
+    });
+  }
+  buildDualIndex();
+
+  try {
+    var rawUnlink = localStorage.getItem(DUAL_UNLINK_KEY);
+    if (rawUnlink) {
+      var parsedUnlink = JSON.parse(rawUnlink);
+      if (parsedUnlink && typeof parsedUnlink === 'object') dualUnlinked = parsedUnlink;
+    }
+  } catch (eUn) { /* ignore */ }
+
+  function saveDualUnlink() {
+    try {
+      localStorage.setItem(DUAL_UNLINK_KEY, JSON.stringify(dualUnlinked));
+    } catch (eSu) { /* ignore */ }
+  }
+
+  function isDualLinked(c) {
+    if (!c || !dualOf[c.id]) return false;
+    var twin = dualOf[c.id];
+    if (dualUnlinked[c.id] || dualUnlinked[twin.id]) return false;
+    return true;
+  }
+
+  function getDualTwin(c) {
+    return isDualLinked(c) ? dualOf[c.id] : null;
+  }
+
+  /** List/nav representative for a linked dual (one row). Prefer kind filter match, else dive. */
+  function dualListRep(c) {
+    var twin = getDualTwin(c);
+    if (!twin) return c;
+    var kind = document.getElementById('filterKind').value;
+    if (kind === 'fish' || kind === 'dive') {
+      if (c.kind === kind) return c;
+      if (twin.kind === kind) return twin;
+    }
+    if (c.kind === 'dive') return c;
+    if (twin.kind === 'dive') return twin;
+    return c.id <= twin.id ? c : twin;
+  }
+
+  function dualSiteLabel(c, twin) {
+    var n = String(c.name || '');
+    n = n.replace(/\s*\(fish\)\s*$/i, '').replace(/\s*[—–-]\s*Catalina\s*\(fish\)\s*$/i, ' — Catalina');
+    if (twin) {
+      var tn = String(twin.name || '').replace(/\s*\(fish\)\s*$/i, '');
+      if (tn && tn.toLowerCase() !== n.toLowerCase() &&
+          tn.toLowerCase().indexOf(n.toLowerCase().replace(/\s*[—–-].*$/, '').trim()) < 0) {
+        return n + ' + ' + tn + ' (fish + dive)';
+      }
+    }
+    return n + ' (fish + dive)';
+  }
+
+  function unlinkDual(c) {
+    if (!c || !dualOf[c.id]) return;
+    var twin = dualOf[c.id];
+    dualUnlinked[c.id] = true;
+    dualUnlinked[twin.id] = true;
+    saveDualUnlink();
+    toast('Split fish+dive — review separately');
+    selectCand(c.id);
+  }
+
+  function relinkDual(c) {
+    if (!c || !dualOf[c.id]) return;
+    var twin = dualOf[c.id];
+    delete dualUnlinked[c.id];
+    delete dualUnlinked[twin.id];
+    saveDualUnlink();
+    toast('Re-linked fish+dive dual');
+    selectCand(c.id);
+  }
 
   var hdr = document.getElementById('hdr');
   function syncHdr() { document.documentElement.style.setProperty('--hdr', hdr.offsetHeight + 'px'); }
@@ -858,25 +1034,40 @@ aside {
   }
 
   function renderList() {
-    filtered = DATA.candidates.filter(matchesFilter);
+    filtered = DATA.candidates.filter(matchesFilter).filter(function (c) {
+      return dualListRep(c).id === c.id;
+    });
     var list = document.getElementById('list');
     list.innerHTML = '';
     filtered.forEach(function (c) {
+      var twin = getDualTwin(c);
       var v = verdictOf(c.id);
+      if (twin) {
+        var tv = verdictOf(twin.id);
+        /* Show worst/pending if split state somehow differs */
+        if (v === 'pending' && tv !== 'pending') v = tv;
+        else if (v !== 'pending' && tv === 'pending') { /* keep v */ }
+        else if (v !== tv && tv !== 'pending') v = v; /* focus id wins for badge */
+      }
       var k = pinKey(c);
       var div = document.createElement('div');
-      div.className = 'item' + (c.id === activeId ? ' active' : '') + (groupSel[k] ? ' in-sel' : '');
+      div.className = 'item' + (c.id === activeId || (twin && twin.id === activeId) ? ' active' : '') +
+        (groupSel[k] ? ' in-sel' : '');
       div.innerHTML =
         '<div><span class="badge ' + c.priority + '">' + c.priority + '</span>' +
         '<span class="badge ' + v + '">' + v + '</span>' +
-        '<span class="badge ' + c.kind + '">' + c.kind + '</span>' +
-        (c.currentlyDisplayed === false ? '<span class="badge off">off map</span>' : '') +
+        (twin
+          ? '<span class="badge dual">fish+dive</span>'
+          : '<span class="badge ' + c.kind + '">' + c.kind + '</span>') +
+        (c.currentlyDisplayed === false && (!twin || twin.currentlyDisplayed === false)
+          ? '<span class="badge off">off map</span>' : '') +
         (groupSel[k] ? '<span class="badge" style="color:var(--group)">sel</span>' : '') +
         '</div>' +
         '<div class="nm"></div><div class="meta"></div>';
-      div.querySelector('.nm').textContent = c.name;
+      div.querySelector('.nm').textContent = twin ? dualSiteLabel(c, twin) : c.name;
       div.querySelector('.meta').textContent =
         Number(c.lat).toFixed(5) + ', ' + Number(c.lon).toFixed(5) +
+        (twin ? ' · joint' : '') +
         (c.shoreDistM != null ? ' · shore~' + Math.round(c.shoreDistM) + 'm' : '');
       div.onclick = function () { selectCand(c.id); };
       list.appendChild(div);
@@ -884,12 +1075,8 @@ aside {
     updateStats();
   }
 
-  function setVerdict(id, verdict) {
-    var c = DATA.candidates.find(function (x) { return x.id === id; });
-    if (!c) return;
-    var noteEl = document.getElementById('noteBox');
-    var note = noteEl ? noteEl.value : '';
-    results[id] = {
+  function writeVerdictRow(c, verdict, note, jointWithId) {
+    var row = {
       id: c.id,
       kind: c.kind,
       name: c.name,
@@ -905,6 +1092,25 @@ aside {
       note: note,
       reviewedAt: new Date().toISOString()
     };
+    if (jointWithId) {
+      row.jointReviewWith = jointWithId;
+      row.jointReview = true;
+    }
+    results[c.id] = row;
+  }
+
+  function setVerdict(id, verdict, opts) {
+    opts = opts || {};
+    var c = DATA.candidates.find(function (x) { return x.id === id; });
+    if (!c) return;
+    var noteEl = document.getElementById('noteBox');
+    var note = noteEl ? noteEl.value : '';
+    var twin = opts.solo ? null : getDualTwin(c);
+    writeVerdictRow(c, verdict, note, twin ? twin.id : null);
+    if (twin) {
+      writeVerdictRow(twin, verdict, note, c.id);
+      toast(verdict + ' → fish + dive dual');
+    }
     save();
     renderList();
     showPanel(c);
@@ -950,9 +1156,12 @@ aside {
   function findNearby(focus) {
     if (!focus) return [];
     var univ = allPinsUniverse();
+    var twin = getDualTwin(focus);
+    var twinKey = twin ? pinKey(twin) : null;
     var rows = [];
     univ.forEach(function (p) {
       if (p.key === pinKey(focus)) return;
+      if (twinKey && p.key === twinKey) return; /* same physical mark — joint dual */
       var d = haversineNm(focus.lat, focus.lon, p.lat, p.lon);
       if (d <= nearbyRadiusNm) {
         rows.push({ pin: p, distNm: d });
@@ -1130,8 +1339,14 @@ aside {
   }
 
   function showPanel(c) {
+    var twin = getDualTwin(c);
+    var splitTwin = (!twin && dualOf[c.id]) ? dualOf[c.id] : null;
     var v = verdictOf(c.id);
-    var prev = results[c.id] || {};
+    if (twin && v === 'pending') {
+      var tv0 = verdictOf(twin.id);
+      if (tv0 !== 'pending') v = tv0;
+    }
+    var prev = results[c.id] || (twin && results[twin.id]) || {};
     var srcHtml = esc(c.source);
     if (c.sourceUrl) srcHtml += '<br><a href="' + escAttr(c.sourceUrl) + '" target="_blank" rel="noopener">Open source ↗</a>';
     var nearby = findNearby(c);
@@ -1163,20 +1378,46 @@ aside {
       });
     }
 
+    var dualHtml = '';
+    if (twin) {
+      dualHtml =
+        '<div class="dual-banner" id="dualBanner">' +
+        '<strong>Fish + dive dual</strong> — same physical coords / source. ' +
+        'One Yes / No / Unsure covers both ids (export still records each).' +
+        '<div class="dual-ids">' + esc(c.id) + ' · ' + esc(twin.id) + '</div>' +
+        '<div style="margin-top:4px;font-size:11px;color:var(--ink3)">' +
+        esc(c.kind) + ': ' + esc(c.name) + '<br>' +
+        esc(twin.kind) + ': ' + esc(twin.name) + '</div>' +
+        '<button type="button" id="btnUnlinkDual">Split — review fish &amp; dive separately</button>' +
+        '</div>';
+    } else if (splitTwin) {
+      dualHtml =
+        '<div class="dual-banner" id="dualBanner" style="border-color:rgba(255,200,87,.4);background:rgba(255,200,87,.08)">' +
+        '<strong style="color:var(--amber)">Split dual</strong> — reviewing this ' + esc(c.kind) +
+        ' alone. Twin: ' + esc(splitTwin.id) +
+        '<div class="dual-ids">Same coords — optional re-link for joint verdict</div>' +
+        '<button type="button" id="btnRelinkDual">Re-link fish + dive dual</button>' +
+        '</div>';
+    }
+
     document.getElementById('panel').innerHTML =
       '<h2></h2>' +
       '<div class="coords"></div>' +
+      dualHtml +
       '<div class="why"></div>' +
       '<div class="about"></div>' +
       '<div class="src"><strong>Source</strong><br>' + srcHtml +
       (c.sourceDetail ? '<br><span style="color:var(--ink3)">' + esc(c.sourceDetail) + '</span>' : '') + '</div>' +
       (inGroup ? '<p class="sel-chip">In feature group: ' + esc(inGroup.displayName) + ' (' + (inGroup.members || []).length + ' modules)</p>' : '') +
-      '<label class="note-lab">Optional note</label>' +
+      '<label class="note-lab">Optional note' + (twin ? ' (applies to both)' : '') + '</label>' +
       '<textarea id="noteBox" placeholder="e.g. pin is on the pier deck / looks good on kelp edge"></textarea>' +
       '<div class="btns">' +
-      '<button type="button" class="yes' + (v === 'yes' ? ' active-yes' : '') + '" data-v="yes">Yes — trust</button>' +
-      '<button type="button" class="no' + (v === 'no' ? ' active-no' : '') + '" data-v="no">No — reject</button>' +
-      '<button type="button" class="unsure' + (v === 'unsure' ? ' active-unsure' : '') + '" data-v="unsure">Unsure</button>' +
+      '<button type="button" class="yes' + (v === 'yes' ? ' active-yes' : '') + '" data-v="yes">Yes — trust' +
+      (twin ? ' both' : '') + '</button>' +
+      '<button type="button" class="no' + (v === 'no' ? ' active-no' : '') + '" data-v="no">No — reject' +
+      (twin ? ' both' : '') + '</button>' +
+      '<button type="button" class="unsure' + (v === 'unsure' ? ' active-unsure' : '') + '" data-v="unsure">Unsure' +
+      (twin ? ' both' : '') + '</button>' +
       '</div>' +
       '<div class="nav">' +
       '<button type="button" id="btnPrev">← Prev</button>' +
@@ -1217,6 +1458,9 @@ aside {
       '<ol>' +
       '<li><strong>Purpose:</strong> Trust or reject published fish/dive coords on bathymetry + imagery. ' +
       '<span class="warn">Never nudge or invent GPS</span> — Yes / No / Unsure only.</li>' +
+      '<li><strong>Fish + dive duals:</strong> Same physical coords (exact / tiny epsilon), especially ' +
+      'same-source Franko <code>_dive</code>/<code>_fish</code> pairs, are one map review. ' +
+      'One verdict stamps both ids in the export. Split only if you need different answers.</li>' +
       '<li><strong>Map:</strong> Same BlueTopo relief / NCEI DEM / ENC / Ocean / Satellite stack as Fish &amp; Dive ' +
       '<em>On site</em> (layers control, top-left). View fits locally (~' +
       Math.round(REVIEW_FIT_NM * ((SR && SR.FT_PER_NM) || 6076)) +
@@ -1258,19 +1502,29 @@ aside {
       '<button type="button" id="btnClear">Clear local answers</button>' +
       '</div>';
 
-    document.querySelector('#panel h2').textContent = c.name;
+    document.querySelector('#panel h2').textContent = twin ? dualSiteLabel(c, twin) : c.name;
     var prec = resolvePinPrecision(c);
     document.querySelector('#panel .coords').textContent =
       Number(c.lat).toFixed(7) + ', ' + Number(c.lon).toFixed(7) +
+      (twin ? ' · fish+dive same mark' : '') +
       (c.currentlyDisplayed === false ? ' · NOT currently on map' : ' · on map') +
       (prec ? ' · ' + precisionLegendText(prec, c.lat) : '');
-    document.querySelector('#panel .why').innerHTML = '<strong>Why review</strong><br>' + esc(c.reason || '');
+    document.querySelector('#panel .why').innerHTML = '<strong>Why review</strong><br>' + esc(c.reason || '') +
+      (twin && twin.reason && twin.reason !== c.reason
+        ? '<br><span style="color:var(--ink3)">' + esc(twin.kind) + ': ' + esc(twin.reason) + '</span>'
+        : '');
     document.querySelector('#panel .about').innerHTML =
-      '<strong>About</strong><br>' + esc(c.about || c.description || 'No site brief available.');
+      '<strong>About</strong><br>' + esc(c.about || c.description || 'No site brief available.') +
+      (twin
+        ? '<br><span style="color:var(--ink3)">' + esc(twin.kind) + ': ' +
+          esc(twin.about || twin.description || '') + '</span>'
+        : '');
     var noteBox = document.getElementById('noteBox');
     noteBox.value = prev.note || '';
     noteBox.oninput = function () {
-      if (results[c.id]) { results[c.id].note = noteBox.value; save(); }
+      if (results[c.id]) { results[c.id].note = noteBox.value; }
+      if (twin && results[twin.id]) { results[twin.id].note = noteBox.value; }
+      save();
     };
 
     Array.prototype.forEach.call(document.querySelectorAll('.btns button'), function (btn) {
@@ -1301,6 +1555,10 @@ aside {
     document.getElementById('btnClearSel').onclick = clearSel;
     var delBtn = document.getElementById('btnDeleteGroup');
     if (delBtn) delBtn.onclick = function () { deleteGroup(editingGroupId); };
+    var unlinkBtn = document.getElementById('btnUnlinkDual');
+    if (unlinkBtn) unlinkBtn.onclick = function () { unlinkDual(c); };
+    var relinkBtn = document.getElementById('btnRelinkDual');
+    if (relinkBtn) relinkBtn.onclick = function () { relinkDual(c); };
 
     Array.prototype.forEach.call(document.querySelectorAll('#nearList .near-row'), function (rowEl, idx) {
       var row = nearby[idx];
@@ -1451,7 +1709,8 @@ aside {
 
     L.circleMarker([c.lat, c.lon], {
       radius: 11, color: '#fff', fillColor: '#ff6b4a', fillOpacity: 0.98, weight: 2.5
-    }).bindPopup('<b>' + esc(c.name) + '</b><br>Focus · ' + c.kind +
+    }).bindPopup('<b>' + esc(getDualTwin(c) ? dualSiteLabel(c, getDualTwin(c)) : c.name) + '</b><br>Focus · ' +
+      (getDualTwin(c) ? 'fish+dive dual' : c.kind) +
       (focusPrec ? '<br>' + precisionLegendText(focusPrec, c.lat) : '')
     ).addTo(pinLayer);
 
@@ -1476,7 +1735,10 @@ aside {
   function selectCand(id) {
     var c = DATA.candidates.find(function (x) { return x.id === id; });
     if (!c) return;
-    activeId = id;
+    /* Prefer list representative so fish twin of a dual opens the joint dive row */
+    var kindFilter = document.getElementById('filterKind').value;
+    if (kindFilter === 'all' && getDualTwin(c)) c = dualListRep(c);
+    activeId = c.id;
     showPanel(c);
     drawFocus(c);
     renderList();
@@ -1491,10 +1753,19 @@ aside {
   }
 
   function nextPending() {
-    var start = filtered.findIndex(function (c) { return c.id === activeId; });
+    var start = filtered.findIndex(function (c) {
+      return c.id === activeId || (getDualTwin(c) && getDualTwin(c).id === activeId);
+    });
     for (var i = 1; i <= filtered.length; i++) {
-      var c = filtered[(start + i) % filtered.length];
-      if (verdictOf(c.id) === 'pending') { selectCand(c.id); return; }
+      var c = filtered[(Math.max(start, 0) + i) % filtered.length];
+      if (verdictOf(c.id) === 'pending') {
+        var twin = getDualTwin(c);
+        /* Twin already decided (joint or prior) — treat this dual as covered */
+        if (twin && verdictOf(twin.id) !== 'pending') continue;
+        selectCand(c.id);
+        return;
+      }
+      /* Also skip when focus id pending but twin covered — already handled above */
     }
     var allPending = 0;
     DATA.candidates.forEach(function (c) {
@@ -1658,7 +1929,7 @@ aside {
       for (var i = 0; i < localStorage.length; i++) {
         var k = localStorage.key(i);
         if (!k) continue;
-        if (k === STORAGE_KEY || k === GROUPS_KEY) continue;
+        if (k === STORAGE_KEY || k === GROUPS_KEY || k === DUAL_UNLINK_KEY) continue;
         if (k.indexOf('boatCache:') === 0 || k === 'habCharmLast' || k.indexOf('boatFib') === 0) drop.push(k);
       }
       drop.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } });
