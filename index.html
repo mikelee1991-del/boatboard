@@ -232,7 +232,24 @@ svg text{font-family:var(--font-mono)}
 }
 .plan-split-map{min-width:0}
 .plan-split-map .plan-mapbox{margin-bottom:0}
-#divePlanMap,#fishMap,#surfMap,#wildMap,#chlMap,#sstMap,#bactMap{aspect-ratio:1/1;width:100%;height:auto;min-height:220px;max-height:min(62vh,460px);background:var(--bg);position:relative;z-index:1}
+#divePlanMap,#fishMap,#lobsterMap,#surfMap,#wildMap,#chlMap,#sstMap,#bactMap{aspect-ratio:1/1;width:100%;height:auto;min-height:220px;max-height:min(62vh,460px);background:var(--bg);position:relative;z-index:1}
+.lob-banner{padding:10px 12px;border-radius:10px;border:1px solid var(--line);margin:0 0 10px;font-size:13px;line-height:1.45;color:var(--ink)}
+.lob-banner a{color:var(--accent)}
+.lob-banner-closed{background:rgba(255,68,102,.12);border-color:rgba(255,68,102,.45)}
+.lob-banner-open{background:rgba(61,255,154,.08);border-color:rgba(61,255,154,.35)}
+.lob-banner-hab{background:rgba(255,176,32,.12);border-color:rgba(255,176,32,.45)}
+.lob-banner-info{background:rgba(78,196,224,.08);border-color:rgba(78,196,224,.3);color:var(--ink2);font-size:12px}
+.lob-row{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line2)}
+.lob-rank{flex:0 0 36px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#060a10}
+.lob-row-body{flex:1;min-width:0}
+.lob-name{font-size:13px;font-weight:600}
+.lob-meta{font-size:11px;color:var(--ink3);font-family:var(--mono)}
+.lob-warn{color:var(--amber)}
+.lob-tips{margin:0;padding-left:1.2em;font-size:13px;color:var(--ink2);line-height:1.5}
+.lob-tips li{margin:0 0 8px}
+.lob-windows{display:flex;flex-wrap:wrap;gap:8px}
+.lob-win{background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;font-family:var(--mono)}
+.lob-map-tip{background:rgba(6,10,16,.85)!important;border:none!important;color:#e8ecf4!important;font-weight:700;font-size:10px}
 #map,#swellMap{background:var(--bg)!important}
 .leaflet-container.ocean-map-dark{background:var(--bg)!important}
 .leaflet-container.ocean-map-dark .leaflet-tile-pane{filter:brightness(.9) contrast(1.06)}
@@ -919,6 +936,46 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
       </div>
     </section>
 
+    <section class="tabpanel" id="tab-lobster" data-tab="lobster">
+      <div id="lobBanner"><div class="skel">Checking season &amp; advisories…</div></div>
+      <div class="plan-row">
+        <label>Hunt date</label>
+        <div class="plan-date-wrap">
+          <button type="button" class="plan-date-btn" id="lobPlanDateBtn" aria-label="Pick lobster hunt date">Pick date…</button>
+          <button type="button" class="iconbtn plan-cal-btn" id="lobBtnCal" title="Open calendar" aria-label="Open calendar">&#128197;</button>
+        </div>
+        <label for="lobPlanTime">Time</label>
+        <input type="time" id="lobPlanTime" aria-label="Lobster hunt time">
+        <button class="iconbtn" id="lobPlanNow" title="Now">Now</button>
+        <span id="lobPlanLabel" class="dive-updated"></span>
+        <span class="plan-note">Ranks rocky/kelp/reef structure for hoop net, scuba, and freedive — night windows score highest.</span>
+      </div>
+      <div class="grid3" id="lobGlance"><div class="skel">Loading lobster intel…</div></div>
+      <div class="plan-split">
+        <div class="plan-split-list">
+          <div class="sec">Top structure — hunt score</div>
+          <div class="card" id="lobTopPicks"><div class="skel">Ranking structure pins…</div></div>
+        </div>
+        <div class="plan-split-map">
+          <div class="plan-mapbox">
+            <h3>Lobster habitat — ranked</h3>
+            <p>Structure from Fish + Dive pins · # = hunt rank · red MPA = no-take (excluded when known)</p>
+            <div id="lobsterMap"><div class="skel" style="padding:20px">Map loads with rankings…</div></div>
+            <div class="plan-map-legend" id="lobsterMapLegend"></div>
+            <div class="card" id="lobPlanMpaDetail" style="margin:0;border-radius:0 0 10px 10px;border-top:1px solid var(--line2)">
+              <h3 id="lobPlanMpaDetailTitle">Marine protected areas</h3>
+              <p id="lobPlanMpaDetailHint" class="prose" style="font-size:13px;color:var(--ink2);margin:0">Tap any colored zone for protection level — SMR / no-take means no lobster. Not for legal navigation.</p>
+              <div id="lobPlanMpaDetailBody" hidden></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sec">Best windows — next 24 hours</div>
+      <div class="card" id="lobWindows"><div class="skel">—</div></div>
+      <div class="sec">How to hunt</div>
+      <div class="card" id="lobTips"><div class="skel">—</div></div>
+    </section>
+
     <section class="tabpanel uw-tab" id="tab-underway" data-tab="underway">
       <div class="uw-fixed">
         <p class="prose" style="margin-bottom:8px"><strong>Heading-up</strong> — bow on top. Log-scaled range spreads nearby AIS; pinch or ± to zoom (0.6–12 nm).</p>
@@ -1209,6 +1266,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
     <button class="tab" data-tab="chlorophyll"><svg viewBox="0 0 24 24"><path d="M12 22c-4-3-8-7-8-12a8 8 0 0116 0c0 5-4 9-8 12z"/><path d="M12 10v6M9 13h6"/></svg>Plankton</button>
     <button class="tab" data-tab="fishing"><svg viewBox="0 0 24 24"><path d="M12 2v4M8 6h8"/><path d="M7 10c0 4 2 8 5 12 3-4 5-8 5-12"/></svg>Fish</button>
     <button class="tab" data-tab="dive"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20c0-4 2.7-7 6-7s6 3 6 7"/></svg>Dive</button>
+    <button class="tab" data-tab="lobster"><svg viewBox="0 0 24 24"><path d="M4 14c2-1 4-3 8-3s6 2 8 3"/><path d="M7 11c1-3 3-5 5-5s4 2 5 5"/><path d="M9 14v4M12 14v5M15 14v4"/><circle cx="8" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="16" cy="10" r="1" fill="currentColor" stroke="none"/></svg>Lobster</button>
     <button class="tab" data-tab="surf"><svg viewBox="0 0 24 24"><path d="M2 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/><path d="M2 18c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>Surf</button>
     <button class="tab" data-tab="wildlife"><svg viewBox="0 0 24 24"><path d="M4 14c2-3 5-4 8-4s6 1 8 4"/><path d="M6 10c1-2 3-3 6-3s5 1 6 3"/><circle cx="9" cy="9" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="9" r="1.2" fill="currentColor" stroke="none"/><path d="M2 18c3-2 6-3 10-3s7 1 10 3"/></svg>Wildlife</button>
   </nav>
@@ -1446,7 +1504,7 @@ function onCoastOverlayReady(){
   applyResolvedPosition(pos.rawLat, pos.rawLon, pos.spd || 0);
   if(changed) scheduleGpsUiRefresh();
 }
-const OVERLAY_TABS = new Set(['swell','cruise','underway','ais','fishing','dive','surf','wildlife','chlorophyll','temperature']);
+const OVERLAY_TABS = new Set(['swell','cruise','underway','ais','fishing','dive','lobster','surf','wildlife','chlorophyll','temperature']);
 function prefetchCoastOverlayForTab(tab){
   if(OVERLAY_TABS.has(tab)) loadCoastOverlayLite().catch(()=>{});
 }
@@ -1491,6 +1549,7 @@ function seafloorNearbyFromFish(centerLat, centerLon, radiusNm, excludeLat, excl
   return out.slice(0, limit);
 }
 let _diveEnginePromise = null;
+let _lobsterEnginePromise = null;
 function diveInitOpts(){
   return {
     getPos: () => boatPos(),
@@ -1548,6 +1607,55 @@ function ensureDiveEngine(){
       return window.BoatDive;
     }).catch(e=>{ _diveEnginePromise = null; throw e; });
   return _diveEnginePromise;
+}
+function lobsterHabOutlook(){
+  try{
+    const bp = typeof boatPos === 'function' ? boatPos() : null;
+    const hab = typeof ovReadCachedHab === 'function'
+      ? ovReadCachedHab(bp && bp.lat, bp && bp.lon)
+      : null;
+    if(hab && typeof ovHabTakeaway === 'function'){
+      const t = ovHabTakeaway(hab, null);
+      if(t && t.cls === 'tk-poor') return { level: 'elevated', text: t.text };
+      if(t && t.cls === 'tk-warn') return { level: 'watch', text: t.text };
+    }
+  }catch(e){ /* ignore */ }
+  return null;
+}
+function ensureLobsterEngine(){
+  if(window.BoatLobster) return Promise.resolve(window.BoatLobster);
+  if(_lobsterEnginePromise) return _lobsterEnginePromise;
+  _lobsterEnginePromise = ensureDiveEngine().catch(()=>null).then(()=> loadScript('lobster-engine.js?v=1')).then(()=>{
+    if(!window.BoatLobster) throw new Error('BoatLobster missing');
+    BoatLobster.init({
+      getPos: () => boatPos(),
+      getMarine: () => marine,
+      getWx: () => wx,
+      getTides: () => tides,
+      getFishSpots: () => FISH_SPOTS,
+      getDiveSites: () => (window.BoatDive && BoatDive.DIVE_SITES) || [],
+      getMpaGeoJson: () => (window.BoatMpa && BoatMpa.getGeoJson && BoatMpa.getGeoJson()) || window.__BOAT_MPA_GEOJSON__ || null,
+      getHabOutlook: lobsterHabOutlook,
+      classifyFishStyle,
+      isOnLand,
+      loadLeaflet,
+      planMapBaseLayer: async (m, o) => {
+        const opts = Object.assign({ seafloorDem: true }, o || {});
+        try{ return await attachSeafloorPlanBasemap(m, opts); }
+        catch(e){
+          console.warn('Lobster seafloor basemap', e);
+          return planMapBaseLayer(m, opts);
+        }
+      },
+      addCoastOverlay,
+      ensureMpaOverlay,
+      mpaLegendHtml: () => MPA_LEGEND_HTML,
+      openPlanCalendar: (initial, cb) => PlanCalendar.open(initial, cb),
+      linkHtml
+    });
+    return window.BoatLobster;
+  }).catch(e=>{ _lobsterEnginePromise = null; throw e; });
+  return _lobsterEnginePromise;
 }
 /** ?debug=1 only — loads audit coast-geo.js + location-audit-core.js (never in normal use). */
 function scheduleLocationAudit(){
@@ -2891,6 +2999,9 @@ function onGps(posObj){
   }
   if(moved && window.BoatDive && BoatDive.invalidatePlanMap) BoatDive.invalidatePlanMap();
   if(moved && (activeTab()==='dive' || activeTab()==='fishing')) scheduleSeafloorRefresh();
+  if(moved && window.BoatLobster && activeTab()==='lobster'){
+    try{ BoatLobster.render(); }catch(e){ console.error(e); }
+  }
   if(activeTab()==='ais' || activeTab()==='underway') updateAisBbox();
   if(window.BoatDive && moved) BoatDive.onGps({ lat: bp.lat, lon: bp.lon });
 }
@@ -3332,6 +3443,9 @@ async function refreshForecasts(force){
       if(window.BoatDive && activeTab() === 'dive'){
         ensureDiveEngine().then(BD=>{ if(BD) BD.syncRecommendations(marine, wx, tides); }).catch(()=>{});
       }
+      if(window.BoatLobster && activeTab() === 'lobster'){
+        try{ BoatLobster.render(); }catch(e){ console.error(e); }
+      }
       if(activeTab()==='swell') renderSwellTab();
       if(activeTab()==='underway') renderUnderwayTab();
       if(activeTab()==='overview') scheduleOverviewTakeaways(false);
@@ -3365,6 +3479,9 @@ async function refreshForecasts(force){
   if(activeTab()==='cruise') try{ renderCruise(); }catch(e){ console.error('renderCruise', e); }
   if(window.BoatDive && activeTab() === 'dive'){
     ensureDiveEngine().then(BD=>{ if(BD) BD.syncRecommendations(marine, wx, tides); }).catch(()=>{});
+  }
+  if(window.BoatLobster && activeTab() === 'lobster'){
+    try{ BoatLobster.render(); }catch(e){ console.error(e); }
   }
   if(activeTab()==='swell') renderSwellTab();
   if(activeTab()==='underway') renderUnderwayTab();
@@ -9431,7 +9548,7 @@ function scoreRampGradientCss(){
 }
 function scoreRampLegendHtml(kind){
   const goodAt = typeof BITE_GOOD_AT !== 'undefined' ? BITE_GOOD_AT : 82;
-  const label = kind === 'dive' ? 'Dive score' : 'Bite score';
+  const label = kind === 'dive' ? 'Dive score' : (kind === 'lobster' ? 'Lobster hunt score' : 'Bite score');
   return '<div class="score-ramp-legend">' +
     '<div class="score-ramp-title">' + label + ' — continuous marker color (0–100) · good ≥' + goodAt + '</div>' +
     '<div class="score-ramp-track">' +
@@ -9439,9 +9556,9 @@ function scoreRampLegendHtml(kind){
       '<span class="score-ramp-good-mark" style="left:' + goodAt + '%" title="Good ≥' + goodAt + '"></span>' +
       '<div class="score-ramp-ticks" aria-hidden="true"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>' +
     '</div>' +
-    '<p class="score-ramp-note">Fill color tracks the numeric ' + (kind === 'dive' ? 'dive' : 'bite') +
+    '<p class="score-ramp-note">Fill color tracks the numeric ' + (kind === 'dive' ? 'dive' : kind === 'lobster' ? 'hunt' : 'bite') +
       ' score continuously — not Great/Good/Fair/Poor buckets' +
-      (kind === 'dive' ? '' : ' · fish Plan fill matches the glance bite (site-fit only ranks order)') +
+      (kind === 'dive' ? '' : kind === 'lobster' ? ' · night + structure + calm seas score highest; out-of-season scores are capped' : ' · fish Plan fill matches the glance bite (site-fit only ranks order)') +
       '. Dashed line marks good (≥' + goodAt + ').</p>' +
     '</div>';
 }
@@ -9996,7 +10113,10 @@ function mpaCentroid(geom){
 async function loadMpaGeoJson(force){
   if(!force){
     const cached = loadCache('mpa-scsr', MPA_CACHE_MAX_AGE);
-    if(cached?.data?.features?.length) return cached.data;
+    if(cached?.data?.features?.length){
+      window.__BOAT_MPA_GEOJSON__ = cached.data;
+      return cached.data;
+    }
   }
   try{
     const r = await fetch(MPA_GEO_URL);
@@ -10004,10 +10124,14 @@ async function loadMpaGeoJson(force){
     const gj = await r.json();
     if(!gj.features?.length) throw new Error('No MPA features returned');
     cacheData('mpa-scsr', gj);
+    window.__BOAT_MPA_GEOJSON__ = gj;
     return gj;
   }catch(e){
     const stale = loadCache('mpa-scsr', Infinity);
-    if(stale?.data?.features?.length) return stale.data;
+    if(stale?.data?.features?.length){
+      window.__BOAT_MPA_GEOJSON__ = stale.data;
+      return stale.data;
+    }
     throw e;
   }
 }
@@ -10102,7 +10226,12 @@ async function ensureMpaOverlay(map, detailPrefix, forceFetch){
   }
 }
 
-window.BoatMpa = { ensureOverlay: ensureMpaOverlay, initLayer: ensureMpaLayerGroup, legendHtml: () => MPA_LEGEND_HTML };
+window.BoatMpa = {
+  ensureOverlay: ensureMpaOverlay,
+  initLayer: ensureMpaLayerGroup,
+  legendHtml: () => MPA_LEGEND_HTML,
+  getGeoJson: () => window.__BOAT_MPA_GEOJSON__ || null
+};
 
 function renderFishTimeline(ranked, sol, baseCtx){
   const host = $('fishTimeline'), meta = $('fishTlMeta'), nowEl = $('fishTlNow');
@@ -14997,6 +15126,14 @@ function switchTab(name){
       setTimeout(()=>{ if(BD.ensurePlanMap) BD.ensurePlanMap(); }, 200);
     }).catch(e=>console.error('dive tab', e));
     ensureFibData(false);
+  }
+  if(name==='lobster'){
+    ensureLobsterEngine().then(BL=>{
+      if(!BL) return;
+      BL.onTabShow();
+      setTimeout(()=>{ if(BL.invalidateMap) BL.invalidateMap(); }, 200);
+    }).catch(e=>console.error('lobster tab', e));
+    loadMpaGeoJson(false).catch(()=>{});
   }
   if(name==='ais'){
     if(!mapInited) setTimeout(()=>initMap(), 50);
