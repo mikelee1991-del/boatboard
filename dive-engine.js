@@ -562,17 +562,20 @@
   }
   /**
    * Continuous score colormap (0–100) — same stops as index.html fishScoreColor.
-   * Wider hue arc (HSL lerp): red→orange→amber→yellow→lime→green→teal→mint.
+   * Wide hue arc (HSL lerp): deep red → orange → yellow → chartreuse → green → teal → cyan → blue.
    */
   const DIVE_SCORE_COLOR_STOPS = [
-    [0, '#ff6644'],
-    [16, '#ff8f2e'],
-    [32, '#ffb020'],
-    [48, '#f0d020'],
-    [62, '#c8e020'],
-    [76, '#4ad45a'],
-    [88, '#2ecfb0'],
-    [100, '#3dff9a']
+    [0, '#d62828'],
+    [10, '#f04e2e'],
+    [20, '#ff7a1a'],
+    [30, '#ffaa00'],
+    [40, '#f5d000'],
+    [50, '#c8e600'],
+    [60, '#7adf28'],
+    [70, '#2ed95a'],
+    [82, '#1ed4a8'],
+    [90, '#28c8e8'],
+    [100, '#6eb5ff']
   ];
   function diveScoreHexToRgb(hex) {
     const h = String(hex || '').replace('#', '');
@@ -646,14 +649,23 @@
     }
     return stops[stops.length - 1][1];
   }
+  function diveScoreRampGradientCss() {
+    return 'linear-gradient(90deg,' + DIVE_SCORE_COLOR_STOPS.map(([p, c]) => c + ' ' + p + '%').join(',') + ')';
+  }
   function diveScoreRampLegendHtml() {
     if (window.BoatScoreColor && typeof window.BoatScoreColor.legendHtml === 'function') {
-      return window.BoatScoreColor.legendHtml();
+      return window.BoatScoreColor.legendHtml('dive');
     }
-    return '<span class="score-ramp" title="Marker fill tracks dive score 0–100">' +
-      '<i class="score-ramp-bar" aria-hidden="true"></i>' +
-      '<span class="score-ramp-ends"><b>0</b> poor · fair · good · great <b>100</b></span>' +
-      '</span>';
+    const goodAt = DIVE_GOOD_AT || 82;
+    return '<div class="score-ramp-legend">' +
+      '<div class="score-ramp-title">Dive score — continuous marker color (0–100) · good ≥' + goodAt + '</div>' +
+      '<div class="score-ramp-track">' +
+        '<i class="score-ramp-bar" style="background:' + diveScoreRampGradientCss() + '" aria-hidden="true"></i>' +
+        '<span class="score-ramp-good-mark" style="left:' + goodAt + '%" title="Good ≥' + goodAt + '"></span>' +
+        '<div class="score-ramp-ticks" aria-hidden="true"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>' +
+      '</div>' +
+      '<p class="score-ramp-note">Fill color tracks the numeric dive score continuously — not Great/Good/Fair/Poor buckets. Dashed line marks good (≥' + goodAt + ').</p>' +
+      '</div>';
   }
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const slice = (arr, a, b) => arr.slice(Math.max(0, a), Math.max(0, b));

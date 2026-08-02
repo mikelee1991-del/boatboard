@@ -254,9 +254,15 @@ svg text{font-family:var(--font-mono)}
 .mpa-detail-rules li{margin:0 0 6px}
 .mpa-detail-meta{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-top:10px;line-height:1.45}
 .mpa-detail-link{margin-top:10px;font-size:13px}
-.plan-map-legend{font-size:11px;color:var(--ink3);padding:8px 12px 10px;border-top:1px solid var(--line2);display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-family:var(--mono)}
+.plan-map-legend{font-size:11px;color:var(--ink3);padding:10px 12px 12px;border-top:1px solid var(--line2);display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-start;font-family:var(--mono)}
+.score-ramp-legend{flex:1 1 100%;width:100%;max-width:100%;margin:0 0 2px}
+.score-ramp-title{font-size:11px;font-weight:600;color:var(--ink2);margin:0 0 6px;line-height:1.35;font-family:var(--font-ui,var(--font))}
+.score-ramp-track{position:relative;width:100%}
+.score-ramp-bar{display:block;width:100%;height:12px;border-radius:6px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(90deg,#d62828 0%,#f04e2e 10%,#ff7a1a 20%,#ffaa00 30%,#f5d000 40%,#c8e600 50%,#7adf28 60%,#2ed95a 70%,#1ed4a8 82%,#28c8e8 90%,#6eb5ff 100%);box-sizing:border-box}
+.score-ramp-good-mark{position:absolute;top:-2px;bottom:-2px;width:0;border-left:1.5px dashed rgba(232,236,255,.7);transform:translateX(-50%);pointer-events:none}
+.score-ramp-ticks{display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--ink3);line-height:1.2}
+.score-ramp-note{font-size:10px;color:var(--ink3);margin:5px 0 0;line-height:1.4;font-family:var(--font-ui,var(--font))}
 .score-ramp{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;max-width:100%;flex-wrap:wrap}
-.score-ramp-bar{display:inline-block;width:min(148px,42vw);height:10px;border-radius:5px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(90deg,#ff6644 0%,#ff8f2e 16%,#ffb020 32%,#f0d020 48%,#c8e020 62%,#4ad45a 76%,#2ecfb0 88%,#3dff9a 100%);vertical-align:middle;flex:0 0 auto}
 .score-ramp-ends{display:inline;line-height:1.3;font-size:10px;color:var(--ink3)}
 .score-ramp-ends b{font-weight:600;color:var(--ink2)}
 .score-ramp-buckets{opacity:.85;font-size:10px}
@@ -9318,18 +9324,22 @@ function bestNearbyFishSpot(ctx, maxNm){
 
 /**
  * Continuous score colormap (0–100) — same stops as dive-engine diveScoreColor.
- * Wider hue arc (HSL lerp): red→orange→amber→yellow→lime→green→teal→mint.
- * Keeps mid/high scores visually distinct (avoids crushing 70–100 into one green).
+ * Wide hue arc (HSL lerp) for max discrimination on small dark-UI markers:
+ * deep red → orange → amber → yellow → chartreuse → lime → green → teal → cyan → blue.
+ * Good threshold mark on legend = BITE_GOOD_AT (82).
  */
 const SCORE_COLOR_STOPS = [
-  [0, '#ff6644'],
-  [16, '#ff8f2e'],
-  [32, '#ffb020'],
-  [48, '#f0d020'],
-  [62, '#c8e020'],
-  [76, '#4ad45a'],
-  [88, '#2ecfb0'],
-  [100, '#3dff9a']
+  [0, '#d62828'],
+  [10, '#f04e2e'],
+  [20, '#ff7a1a'],
+  [30, '#ffaa00'],
+  [40, '#f5d000'],
+  [50, '#c8e600'],
+  [60, '#7adf28'],
+  [70, '#2ed95a'],
+  [82, '#1ed4a8'],
+  [90, '#28c8e8'],
+  [100, '#6eb5ff']
 ];
 function scoreHexToRgb(hex){
   const h = String(hex || '').replace('#', '');
@@ -9389,7 +9399,7 @@ function fishScoreColor(score){
       const t = (s - a) / (b - a || 1);
       const ha = scoreRgbToHsl(...scoreHexToRgb(stops[i][1]));
       const hb = scoreRgbToHsl(...scoreHexToRgb(stops[i + 1][1]));
-      /* Shortest hue arc so yellow→lime→teal stays vivid (no muddy RGB mix). */
+      /* Shortest hue arc keeps yellow→lime→teal→blue vivid (no muddy RGB mix). */
       let dh = hb[0] - ha[0];
       if(dh > 0.5) dh -= 1;
       if(dh < -0.5) dh += 1;
@@ -9401,13 +9411,30 @@ function fishScoreColor(score){
   }
   return stops[stops.length - 1][1];
 }
-function scoreRampLegendHtml(){
-  return '<span class="score-ramp" title="Marker fill tracks bite/dive score 0–100">' +
-    '<i class="score-ramp-bar" aria-hidden="true"></i>' +
-    '<span class="score-ramp-ends"><b>0</b> poor · fair · good · great <b>100</b></span>' +
-    '</span>';
+function scoreRampGradientCss(){
+  return 'linear-gradient(90deg,' + SCORE_COLOR_STOPS.map(([p, c]) => c + ' ' + p + '%').join(',') + ')';
 }
-window.BoatScoreColor = { color: fishScoreColor, stops: SCORE_COLOR_STOPS, legendHtml: scoreRampLegendHtml };
+function scoreRampLegendHtml(kind){
+  const goodAt = typeof BITE_GOOD_AT !== 'undefined' ? BITE_GOOD_AT : 82;
+  const label = kind === 'dive' ? 'Dive score' : 'Bite score';
+  return '<div class="score-ramp-legend">' +
+    '<div class="score-ramp-title">' + label + ' — continuous marker color (0–100) · good ≥' + goodAt + '</div>' +
+    '<div class="score-ramp-track">' +
+      '<i class="score-ramp-bar" style="background:' + scoreRampGradientCss() + '" aria-hidden="true"></i>' +
+      '<span class="score-ramp-good-mark" style="left:' + goodAt + '%" title="Good ≥' + goodAt + '"></span>' +
+      '<div class="score-ramp-ticks" aria-hidden="true"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>' +
+    '</div>' +
+    '<p class="score-ramp-note">Fill color tracks the numeric ' + (kind === 'dive' ? 'dive' : 'bite') +
+      ' score continuously — not Great/Good/Fair/Poor buckets. Dashed line marks good (≥' + goodAt + ').</p>' +
+    '</div>';
+}
+window.BoatScoreColor = {
+  color: fishScoreColor,
+  stops: SCORE_COLOR_STOPS,
+  goodAt: typeof BITE_GOOD_AT !== 'undefined' ? BITE_GOOD_AT : 82,
+  gradientCss: scoreRampGradientCss,
+  legendHtml: scoreRampLegendHtml
+};
 
 /**
  * fishStyle: 'structure' (default circle pin) vs 'surface' (diamond — troll / surface iron /
@@ -9869,7 +9896,7 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
   const localPins = (allPinRanked || ranked).filter(r => r.distNm <= FISH_MAP_FIT_NM);
   const localGroups = new Set(localPins.map(r => r.spot.featureGroup || r.spot.name)).size;
   if(leg) leg.innerHTML =
-    scoreRampLegendHtml()+
+    scoreRampLegendHtml('bite')+
     '<span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ink3);vertical-align:middle;margin-right:3px"></i> Structure / bottom</span>'+
     '<span><i style="display:inline-block;width:8px;height:8px;transform:rotate(45deg);background:var(--ink3);vertical-align:middle;margin:0 4px 0 2px"></i> Surface / troll</span>'+
     '<span># = top '+Math.min(FISH_MAP_MAX_MARKERS, ranked.length)+' spots · '+plotted+' pins · ~'+FISH_MAP_FIT_NM+' nm ('+localGroups+' spots / '+localPins.length+' pins)</span>'+
