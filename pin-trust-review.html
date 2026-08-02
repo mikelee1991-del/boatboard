@@ -269,10 +269,10 @@ aside {
     <div class="toolbar">
       <select id="filterPri" title="Priority">
         <option value="all">All priorities</option>
-        <option value="high" selected>High</option>
+        <option value="high">High</option>
         <option value="medium">Medium</option>
         <option value="low">Low</option>
-        <option value="pending">Unreviewed</option>
+        <option value="pending" selected>Unreviewed</option>
         <option value="done">Reviewed</option>
       </select>
       <select id="filterKind">
@@ -1033,10 +1033,62 @@ aside {
     return true;
   }
 
+  /*
+   * List / Next / Next-unreviewed order: Morton (Z-order) on lat/lon so nearby
+   * coastal sites cluster together (better for map review than A–Z or priority).
+   * Y axis is inverted (N→S); X is W→E. Dual fish+dive rows share coords → one key.
+   */
+  var _geoBounds = null;
+  function geoBounds() {
+    if (_geoBounds) return _geoBounds;
+    var minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+    (DATA.candidates || []).forEach(function (c) {
+      if (c.lat == null || c.lon == null) return;
+      var la = Number(c.lat), lo = Number(c.lon);
+      if (la < minLat) minLat = la;
+      if (la > maxLat) maxLat = la;
+      if (lo < minLon) minLon = lo;
+      if (lo > maxLon) maxLon = lo;
+    });
+    if (!(minLat < maxLat)) { minLat -= 0.01; maxLat += 0.01; }
+    if (!(minLon < maxLon)) { minLon -= 0.01; maxLon += 0.01; }
+    _geoBounds = { minLat: minLat, maxLat: maxLat, minLon: minLon, maxLon: maxLon };
+    return _geoBounds;
+  }
+
+  function mortonPart16(n) {
+    n &= 0xffff;
+    n = (n | (n << 8)) & 0x00ff00ff;
+    n = (n | (n << 4)) & 0x0f0f0f0f;
+    n = (n | (n << 2)) & 0x33333333;
+    n = (n | (n << 1)) & 0x55555555;
+    return n;
+  }
+
+  function geoMortonKey(c) {
+    var b = geoBounds();
+    var lat = Number(c.lat), lon = Number(c.lon);
+    /* Quantize into 16-bit grid; N→S (high lat → low y) then W→E via bit interleave. */
+    var y = Math.max(0, Math.min(0xffff,
+      Math.floor((b.maxLat - lat) / (b.maxLat - b.minLat) * 0xffff)));
+    var x = Math.max(0, Math.min(0xffff,
+      Math.floor((lon - b.minLon) / (b.maxLon - b.minLon) * 0xffff)));
+    return (mortonPart16(x) | (mortonPart16(y) << 1)) >>> 0;
+  }
+
+  function compareGeo(a, b) {
+    var ka = geoMortonKey(a), kb = geoMortonKey(b);
+    if (ka !== kb) return ka < kb ? -1 : 1;
+    if (a.id < b.id) return -1;
+    if (a.id > b.id) return 1;
+    return 0;
+  }
+
   function renderList() {
     filtered = DATA.candidates.filter(matchesFilter).filter(function (c) {
       return dualListRep(c).id === c.id;
     });
+    filtered.sort(compareGeo);
     var list = document.getElementById('list');
     list.innerHTML = '';
     filtered.forEach(function (c) {
