@@ -176,7 +176,7 @@
       }
     });
     return new NceiDem('', {
-      pane: paneName || 'blueTopoPane',
+      pane: paneName || 'btWater',
       maxZoom: 19,
       maxNativeZoom: 17,
       minZoom: 7,
@@ -200,11 +200,11 @@
       L.control.attribution({ prefix: false, position: 'bottomright' }).addTo(map);
     }
 
-    if (!map.getPane('blueTopoPane')) {
-      map.createPane('blueTopoPane');
+    if (!map.getPane('btWater')) {
+      map.createPane('btWater');
     }
-    const pane = map.getPane('blueTopoPane');
-    /* Above tile pane (200), below overlay (400). Avoid competing with ::after at 350. */
+    const pane = map.getPane('btWater');
+    /* leaflet-btWaterPane — above tile pane (200), below overlay (400). */
     pane.style.zIndex = 360;
     pane.style.pointerEvents = 'none';
 
@@ -215,11 +215,11 @@
     }).addTo(map);
 
     /* DEM underlay so water still shows relief where BlueTopo cells are undelivered (e.g. King Harbor). */
-    const dem = makeNceiDemLayer(L, 'blueTopoPane');
+    const dem = makeNceiDemLayer(L, 'btWater');
     dem.addTo(map);
 
     const blueTopo = L.tileLayer(BLUETOPO_WMTS, {
-      pane: 'blueTopoPane',
+      pane: 'btWater',
       maxZoom: 19,
       maxNativeZoom: 18,
       minZoom: 7,
@@ -286,6 +286,6 @@
     attach: attach,
     BLUETOPO_WMTS: BLUETOPO_WMTS,
     IMAGERY_URL: IMAGERY_URL,
-    version: '2'
+    version: '2b'
   };
 })(window);
