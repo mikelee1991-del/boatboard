@@ -560,11 +560,59 @@
     syncRecommendations(getMarine && getMarine(), getWx && getWx(), getTides && getTides());
     if (S && current) renderAt(d);
   }
+  /**
+   * Continuous score colormap (0–100) — same stops as index.html fishScoreColor.
+   * Stops: 0 #ff6644 → 40 #ffb020 → 70 #8be06a → 100 #3dff9a (red→amber→green).
+   */
+  const DIVE_SCORE_COLOR_STOPS = [
+    [0, '#ff6644'],
+    [40, '#ffb020'],
+    [70, '#8be06a'],
+    [100, '#3dff9a']
+  ];
+  function diveScoreHexToRgb(hex) {
+    const h = String(hex || '').replace('#', '');
+    const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    const n = parseInt(full, 16);
+    if (!isFinite(n)) return [255, 102, 68];
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function diveScoreRgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(v => {
+      const x = Math.round(Math.max(0, Math.min(255, v)));
+      return (x < 16 ? '0' : '') + x.toString(16);
+    }).join('');
+  }
   function diveScoreColor(score) {
-    if (score >= 75) return '#3dff9a';
-    if (score >= 55) return '#3dd6f5';
-    if (score >= 40) return '#ffb020';
-    return '#ff6644';
+    if (window.BoatScoreColor && typeof window.BoatScoreColor.color === 'function') {
+      return window.BoatScoreColor.color(score);
+    }
+    const s = Math.max(0, Math.min(100, score == null || !isFinite(+score) ? 0 : +score));
+    const stops = DIVE_SCORE_COLOR_STOPS;
+    if (s <= stops[0][0]) return stops[0][1];
+    if (s >= stops[stops.length - 1][0]) return stops[stops.length - 1][1];
+    for (let i = 0; i < stops.length - 1; i++) {
+      const a = stops[i][0], b = stops[i + 1][0];
+      if (s >= a && s <= b) {
+        const t = (s - a) / (b - a || 1);
+        const ca = diveScoreHexToRgb(stops[i][1]), cb = diveScoreHexToRgb(stops[i + 1][1]);
+        return diveScoreRgbToHex(
+          ca[0] + (cb[0] - ca[0]) * t,
+          ca[1] + (cb[1] - ca[1]) * t,
+          ca[2] + (cb[2] - ca[2]) * t
+        );
+      }
+    }
+    return stops[stops.length - 1][1];
+  }
+  function diveScoreRampLegendHtml() {
+    if (window.BoatScoreColor && typeof window.BoatScoreColor.legendHtml === 'function') {
+      return window.BoatScoreColor.legendHtml();
+    }
+    return '<span class="score-ramp" title="Marker fill tracks dive score 0–100">' +
+      '<i class="score-ramp-bar" aria-hidden="true"></i>' +
+      '<span class="score-ramp-ends"><b>0</b> poor · fair · good · great <b>100</b></span>' +
+      '</span>';
   }
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const slice = (arr, a, b) => arr.slice(Math.max(0, a), Math.max(0, b));
@@ -2287,10 +2335,7 @@
         ).size;
         const nearM = window.BoatFib?.NEAR_M || 500;
         if (leg) leg.innerHTML =
-          '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#3dff9a;vertical-align:middle;margin-right:3px"></i> Great</span>' +
-          '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#3dd6f5;vertical-align:middle;margin-right:3px"></i> Good</span>' +
-          '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffb020;vertical-align:middle;margin-right:3px"></i> Fair</span>' +
-          '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ff6644;vertical-align:middle;margin-right:3px"></i> Poor</span>' +
+          diveScoreRampLegendHtml() +
           '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid #ff5c5c;vertical-align:middle;margin-right:3px;box-sizing:border-box"></i>Elevated bacteria ≤' + nearM + ' m</span>' +
           '<span># = top ' + Math.min(DIVE_MAP_MAX_MARKERS, lastRanked.length) + ' spots · ' + plotted + ' pins · ~' + DIVE_MAP_FIT_NM + ' nm (' + localGroups + ' spots / ' + localN + ' pins)</span>' +
           '<span>Basemap: imagery (land) · BlueTopo (water)</span>' +
