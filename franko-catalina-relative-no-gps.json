@@ -1,61 +1,42 @@
 {
   "type": "franko-catalina-relative-no-gps",
-  "note": "Sites from Franko Catalina export with no concrete GPS (or range-only). Not placed on pin-trust map — no invented coordinates.",
-  "wgs84": "When GPS exists elsewhere in export, those pins are franko_* review candidates. Relative/range rows below have no map pin.",
+  "note": "Sites from earlier Franko export with no concrete GPS — not placed on map. Iron Bound Cove is now queued as two range endpoints (no midpoint). Eagle Reef queued as two separate pins.",
+  "wgs84": "Pinned franko_* candidates use exact stated WGS84; reference only — not for navigation.",
   "relativeNoGps": [
     {
       "name": "West Bathtub (Juicy Reef)",
-      "note": "Relative only — west of Lion Head / west of Bathtub Cove. No GPS provided.",
-      "depths": "15–40′",
+      "note": "Relative only — west of Lion Head. No GPS.",
       "confidence": "Low – no GPS"
     },
     {
       "name": "Bathtub Cove (Juicy Reef)",
-      "note": "Relative only — adjacent to West Bathtub. No GPS provided.",
-      "depths": "15–45′",
+      "note": "Relative only — adjacent to West Bathtub. No GPS.",
       "confidence": "Low – no GPS"
     },
     {
       "name": "Jake's Beach",
-      "note": "Relative only — near Sphinx Rock / Lion Head. No GPS provided.",
-      "depths": "0–30′",
+      "note": "Relative only — near Sphinx Rock / Lion Head. No GPS.",
       "confidence": "Low – no GPS"
     },
     {
       "name": "Catalina Harbor & Well's Beach",
-      "note": "Relative only — south isthmus. Clear on maps but no concrete GPS in export.",
-      "depths": "0–40′ (99 moorings)",
+      "note": "Relative only — south isthmus. No concrete GPS in export.",
       "confidence": "Medium – relative"
     },
     {
       "name": "Lover's Cove",
-      "note": "Relative only — east of Avalon Bay. No GPS provided.",
-      "depths": "Shallow",
+      "note": "Relative only — east of Avalon Bay. No GPS.",
       "confidence": "Medium – relative"
     },
     {
       "name": "Pedestal Rock",
-      "note": "Relative only — backside / south-central map label. No GPS provided.",
-      "depths": "Variable",
+      "note": "Relative only — backside map label. No GPS.",
       "confidence": "Low – no GPS"
     }
   ],
-  "rangeNoMidpoint": [
-    {
-      "name": "Iron Bound Cove",
-      "note": "Range only — ~33°27.11–26.79′ N, 118°35.19–34.74′ W. No single trusted pin; do not invent midpoint.",
-      "confidence": "Medium – range"
-    },
-    {
-      "name": "Ben Weston Point",
-      "note": "Range only — ~33°21.375–21.408′ N, 118°29.84–29.33′ W. No single trusted pin; do not invent midpoint.",
-      "confidence": "Medium – range"
-    },
-    {
-      "name": "Ship Rock (range summary)",
-      "note": "Range 33°27.783′–27.95′ N, 118°29.285′–29.467′ W — queued as two endpoint candidates (alt A / alt B), no averaged pin.",
-      "confidence": "High – range handled as dual endpoints"
-    }
-  ],
+  "rangeHandling": {
+    "ironBoundCove": "Parsed range 33°27.11′–26.79′ N, 118°35.19′–34.74′ W as endpoints A (33°27.11′ N, 118°35.19′ W) and B (33°26.79′ N, 118°34.74′ W) — no average.",
+    "eagleReef": "Two separate candidates: west end 33°27.678′ N, 118°30.687′ W and 33°27.780′ N, 118°30.260′ W — no midpoint."
+  },
   "reviewTip": "In pin-trust-review.html search \"Franko\" or \"franko_\" to filter these candidates."
 }
