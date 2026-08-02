@@ -1,42 +1,43 @@
 {
   "type": "franko-catalina-relative-no-gps",
-  "note": "Sites from earlier Franko export with no concrete GPS — not placed on map. Iron Bound Cove is now queued as two range endpoints (no midpoint). Eagle Reef queued as two separate pins.",
-  "wgs84": "Pinned franko_* candidates use exact stated WGS84; reference only — not for navigation.",
+  "masterFile": "c:\\Users\\mikel\\Downloads\\catalina_dive_sites_master.md",
+  "note": "Sites from Catalina master list with no published GPS — not placed on pin-trust map. No invented coordinates.",
+  "wgs84": "All master-list GPS pins are franko_* review candidates. Reference only — not for navigation.",
   "relativeNoGps": [
     {
       "name": "West Bathtub (Juicy Reef)",
-      "note": "Relative only — west of Lion Head. No GPS.",
-      "confidence": "Low – no GPS"
+      "source": "No reliable published coordinates found",
+      "description": "15'-40' Rocky with lots of kelp. Calicos, yellowtail & shovelnose guitarfish."
     },
     {
       "name": "Bathtub Cove (Juicy Reef)",
-      "note": "Relative only — adjacent to West Bathtub. No GPS.",
-      "confidence": "Low – no GPS"
+      "source": "No reliable published coordinates found",
+      "description": "15'-45' Excellent kelp bed with lobsters & calico bass. Great viz."
     },
     {
       "name": "Jake's Beach",
-      "note": "Relative only — near Sphinx Rock / Lion Head. No GPS.",
-      "confidence": "Low – no GPS"
-    },
-    {
-      "name": "Catalina Harbor & Well's Beach",
-      "note": "Relative only — south isthmus. No concrete GPS in export.",
-      "confidence": "Medium – relative"
-    },
-    {
-      "name": "Lover's Cove",
-      "note": "Relative only — east of Avalon Bay. No GPS.",
-      "confidence": "Medium – relative"
+      "source": "No reliable published coordinates found",
+      "description": "0'-30' Cobblestone beach entry or great kayak-in snorkeling in rich kelp patch."
     },
     {
       "name": "Pedestal Rock",
-      "note": "Relative only — backside map label. No GPS.",
-      "confidence": "Low – no GPS"
+      "source": "No reliable published coordinates found",
+      "description": "15'-100' A cone at 90' depth on south side. Good for all levels. Lobsters, pelagic gamefish."
+    },
+    {
+      "name": "Big Fisherman's Cove",
+      "source": "Near Blue Cavern Point (no independent GPS in master)",
+      "description": "0'-85' Marine Refuge with great snorkeling from Little Fisherman’s Cove. Restricted rocks & caves along shore."
+    },
+    {
+      "name": "Catalina Harbor & Well's Beach",
+      "source": "No reliable published coordinates found",
+      "description": "0'-40' 99 Moorings, & anchorage for up to 200. Poor visibility. Scant remnants of 200-year-old Chinese pirate ship near Ballast Point. 14 sea miles from Isthmus Cove."
     }
   ],
   "rangeHandling": {
-    "ironBoundCove": "Parsed range 33°27.11′–26.79′ N, 118°35.19′–34.74′ W as endpoints A (33°27.11′ N, 118°35.19′ W) and B (33°26.79′ N, 118°34.74′ W) — no average.",
-    "eagleReef": "Two separate candidates: west end 33°27.678′ N, 118°30.687′ W and 33°27.780′ N, 118°30.260′ W — no midpoint."
+    "loversCove": "CDFW SMCA range 33°20.460′–20.711′ N, 118°18.900′–19.321′ W queued as endpoints SW (20.460′/18.900′) and NE (20.711′/19.321′) — no midpoint.",
+    "eagleReef": "Two pins: west 33°27.678′ N, 118°30.687′ W and east 33°27.780′ N, 118°30.260′ W — no midpoint."
   },
-  "reviewTip": "In pin-trust-review.html search \"Franko\" or \"franko_\" to filter these candidates."
+  "reviewTip": "In pin-trust-review.html search \"Franko\" or \"franko_\". Same-coord dive+fish share one joint Yes/No/Unsure (b963c51)."
 }
