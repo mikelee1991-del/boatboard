@@ -562,12 +562,16 @@
   }
   /**
    * Continuous score colormap (0–100) — same stops as index.html fishScoreColor.
-   * Stops: 0 #ff6644 → 40 #ffb020 → 70 #8be06a → 100 #3dff9a (red→amber→green).
+   * Wider hue arc (HSL lerp): red→orange→amber→yellow→lime→green→teal→mint.
    */
   const DIVE_SCORE_COLOR_STOPS = [
     [0, '#ff6644'],
-    [40, '#ffb020'],
-    [70, '#8be06a'],
+    [16, '#ff8f2e'],
+    [32, '#ffb020'],
+    [48, '#f0d020'],
+    [62, '#c8e020'],
+    [76, '#4ad45a'],
+    [88, '#2ecfb0'],
     [100, '#3dff9a']
   ];
   function diveScoreHexToRgb(hex) {
@@ -583,6 +587,40 @@
       return (x < 16 ? '0' : '') + x.toString(16);
     }).join('');
   }
+  function diveScoreRgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const l = (max + min) / 2;
+    if (max === min) return [0, 0, l];
+    const d = max - min;
+    const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    let h = 0;
+    if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (max === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+    return [h, s, l];
+  }
+  function diveScoreHslToRgb(h, s, l) {
+    if (s <= 0) {
+      const v = l * 255;
+      return [v, v, v];
+    }
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    return [
+      hue2rgb(p, q, h + 1 / 3) * 255,
+      hue2rgb(p, q, h) * 255,
+      hue2rgb(p, q, h - 1 / 3) * 255
+    ];
+  }
   function diveScoreColor(score) {
     if (window.BoatScoreColor && typeof window.BoatScoreColor.color === 'function') {
       return window.BoatScoreColor.color(score);
@@ -595,12 +633,15 @@
       const a = stops[i][0], b = stops[i + 1][0];
       if (s >= a && s <= b) {
         const t = (s - a) / (b - a || 1);
-        const ca = diveScoreHexToRgb(stops[i][1]), cb = diveScoreHexToRgb(stops[i + 1][1]);
-        return diveScoreRgbToHex(
-          ca[0] + (cb[0] - ca[0]) * t,
-          ca[1] + (cb[1] - ca[1]) * t,
-          ca[2] + (cb[2] - ca[2]) * t
-        );
+        const ha = diveScoreRgbToHsl(...diveScoreHexToRgb(stops[i][1]));
+        const hb = diveScoreRgbToHsl(...diveScoreHexToRgb(stops[i + 1][1]));
+        let dh = hb[0] - ha[0];
+        if (dh > 0.5) dh -= 1;
+        if (dh < -0.5) dh += 1;
+        const h = (ha[0] + dh * t + 1) % 1;
+        const sat = ha[1] + (hb[1] - ha[1]) * t;
+        const lit = ha[2] + (hb[2] - ha[2]) * t;
+        return diveScoreRgbToHex(...diveScoreHslToRgb(h, sat, lit));
       }
     }
     return stops[stops.length - 1][1];

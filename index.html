@@ -256,7 +256,7 @@ svg text{font-family:var(--font-mono)}
 .mpa-detail-link{margin-top:10px;font-size:13px}
 .plan-map-legend{font-size:11px;color:var(--ink3);padding:8px 12px 10px;border-top:1px solid var(--line2);display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-family:var(--mono)}
 .score-ramp{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;max-width:100%;flex-wrap:wrap}
-.score-ramp-bar{display:inline-block;width:min(132px,36vw);height:10px;border-radius:5px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(90deg,#ff6644 0%,#ffb020 40%,#8be06a 70%,#3dff9a 100%);vertical-align:middle;flex:0 0 auto}
+.score-ramp-bar{display:inline-block;width:min(148px,42vw);height:10px;border-radius:5px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(90deg,#ff6644 0%,#ff8f2e 16%,#ffb020 32%,#f0d020 48%,#c8e020 62%,#4ad45a 76%,#2ecfb0 88%,#3dff9a 100%);vertical-align:middle;flex:0 0 auto}
 .score-ramp-ends{display:inline;line-height:1.3;font-size:10px;color:var(--ink3)}
 .score-ramp-ends b{font-weight:600;color:var(--ink2)}
 .score-ramp-buckets{opacity:.85;font-size:10px}
@@ -9282,13 +9282,17 @@ function bestNearbyFishSpot(ctx, maxNm){
 
 /**
  * Continuous score colormap (0–100) — same stops as dive-engine diveScoreColor.
- * Stops: 0 #ff6644 → 40 #ffb020 → 70 #8be06a → 100 #3dff9a (red→amber→green).
- * Bucket text labels (Great/Good/Fair/Poor) remain optional in lists; markers use this ramp.
+ * Wider hue arc (HSL lerp): red→orange→amber→yellow→lime→green→teal→mint.
+ * Keeps mid/high scores visually distinct (avoids crushing 70–100 into one green).
  */
 const SCORE_COLOR_STOPS = [
   [0, '#ff6644'],
-  [40, '#ffb020'],
-  [70, '#8be06a'],
+  [16, '#ff8f2e'],
+  [32, '#ffb020'],
+  [48, '#f0d020'],
+  [62, '#c8e020'],
+  [76, '#4ad45a'],
+  [88, '#2ecfb0'],
   [100, '#3dff9a']
 ];
 function scoreHexToRgb(hex){
@@ -9304,6 +9308,40 @@ function scoreRgbToHex(r, g, b){
     return (x < 16 ? '0' : '') + x.toString(16);
   }).join('');
 }
+function scoreRgbToHsl(r, g, b){
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if(max === min) return [0, 0, l];
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h = 0;
+  if(max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+  else if(max === g) h = ((b - r) / d + 2) / 6;
+  else h = ((r - g) / d + 4) / 6;
+  return [h, s, l];
+}
+function scoreHslToRgb(h, s, l){
+  if(s <= 0){
+    const v = l * 255;
+    return [v, v, v];
+  }
+  const hue2rgb = (p, q, t) => {
+    if(t < 0) t += 1;
+    if(t > 1) t -= 1;
+    if(t < 1 / 6) return p + (q - p) * 6 * t;
+    if(t < 1 / 2) return q;
+    if(t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  return [
+    hue2rgb(p, q, h + 1 / 3) * 255,
+    hue2rgb(p, q, h) * 255,
+    hue2rgb(p, q, h - 1 / 3) * 255
+  ];
+}
 function fishScoreColor(score){
   const s = clamp(score == null || !isFinite(+score) ? 0 : +score, 0, 100);
   const stops = SCORE_COLOR_STOPS;
@@ -9313,12 +9351,16 @@ function fishScoreColor(score){
     const a = stops[i][0], b = stops[i + 1][0];
     if(s >= a && s <= b){
       const t = (s - a) / (b - a || 1);
-      const ca = scoreHexToRgb(stops[i][1]), cb = scoreHexToRgb(stops[i + 1][1]);
-      return scoreRgbToHex(
-        ca[0] + (cb[0] - ca[0]) * t,
-        ca[1] + (cb[1] - ca[1]) * t,
-        ca[2] + (cb[2] - ca[2]) * t
-      );
+      const ha = scoreRgbToHsl(...scoreHexToRgb(stops[i][1]));
+      const hb = scoreRgbToHsl(...scoreHexToRgb(stops[i + 1][1]));
+      /* Shortest hue arc so yellow→lime→teal stays vivid (no muddy RGB mix). */
+      let dh = hb[0] - ha[0];
+      if(dh > 0.5) dh -= 1;
+      if(dh < -0.5) dh += 1;
+      const h = (ha[0] + dh * t + 1) % 1;
+      const sat = ha[1] + (hb[1] - ha[1]) * t;
+      const lit = ha[2] + (hb[2] - ha[2]) * t;
+      return scoreRgbToHex(...scoreHslToRgb(h, sat, lit));
     }
   }
   return stops[stops.length - 1][1];
