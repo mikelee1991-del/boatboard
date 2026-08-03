@@ -224,9 +224,8 @@
   }
 
   function groupListName(spot){
-    const base = spot.featureGroupName || spot.name;
-    const n = spot.featureGroupSize || 1;
-    return n > 1 ? base + ' (' + n + ')' : base;
+    /* Ranked row is already the best module — use that name as the title. */
+    return (spot && spot.name) || spot.featureGroupName || 'Spot';
   }
 
   function buildSpotPool(){
@@ -509,8 +508,8 @@
     return top.map((r, i) => {
       const d = r.spot.depthFt && r.spot.depthFt.mid != null ? f0(r.spot.depthFt.mid) + ' ft' : (r.spot.depth || '—');
       const label = groupListName(r.spot);
-      const modNote = (r.spot.featureGroupSize > 1 && r.spot.name && r.spot.name !== r.spot.featureGroupName)
-        ? ' · best module: ' + r.spot.name
+      const modNote = (r.spot.featureGroupSize > 1)
+        ? ' · ' + (r.spot.featureGroupName || r.spot.name) + ' · ' + r.spot.featureGroupSize + ' modules'
         : '';
       return '<div class="lob-row" data-id="' + esc(r.spot.id) + '">' +
         '<span class="lob-rank" style="background:' + scoreColor(r.score) + '">#' + (i + 1) + '</span>' +
@@ -524,7 +523,7 @@
         '<b style="color:' + scoreColor(r.score) + '">' + r.score + '</b>' +
       '</div>';
     }).join('') +
-      '<p class="plan-note" style="margin-top:8px">Same-reef modules from Fish + Dive count once · # = hunt rank · best module shown when grouped.</p>';
+      '<p class="plan-note" style="margin-top:8px">Same-reef modules from Fish + Dive count once · # = hunt rank · title is the best module.</p>';
   }
 
   function tipsHtml(){
@@ -670,7 +669,7 @@
       const depth = r.spot.depthFt && r.spot.depthFt.mid != null ? f0(r.spot.depthFt.mid) + ' ft' : (r.spot.depth || '—');
       const label = groupListName(r.spot);
       const modLine = (r.spot.featureGroupSize > 1)
-        ? '<br><span style="opacity:.85">Best module: ' + esc(r.spot.name) + '</span>'
+        ? '<br><span style="opacity:.85">' + esc(r.spot.featureGroupName || r.spot.name) + ' · ' + r.spot.featureGroupSize + ' modules</span>'
         : '';
       const marker = global.L.marker([r.spot.lat, r.spot.lon], {
         icon,

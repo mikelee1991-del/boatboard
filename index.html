@@ -1602,7 +1602,7 @@ function ensureDiveEngine(){
     .then(()=> loadScript('dive-site-intel.js'))
     .then(()=> loadScript('briefing-synth.js'))
     .then(()=> ensureForecastCharts())
-    .then(()=> loadScript('dive-engine.js?v=4'))
+    .then(()=> loadScript('dive-engine.js?v=5'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
       return window.BoatDive;
@@ -1628,7 +1628,7 @@ function ensureLobsterEngine(){
   if(_lobsterEnginePromise) return _lobsterEnginePromise;
   _lobsterEnginePromise = ensureDiveEngine().catch(()=>null)
     .then(()=> typeof ensureFishFeatureGroups === 'function' ? ensureFishFeatureGroups() : null)
-    .then(()=> loadScript('lobster-engine.js?v=5')).then(()=>{
+    .then(()=> loadScript('lobster-engine.js?v=6')).then(()=>{
     if(!window.BoatLobster) throw new Error('BoatLobster missing');
     BoatLobster.init({
       getPos: () => boatPos(),
@@ -4755,7 +4755,7 @@ function renderOverview(){
       if(fishCtx.sol.active) lines.push('<strong>Solunar</strong> Active feeding window now');
       else if(fishCtx.sol.minutes <= 90) lines.push('<strong>Solunar</strong> Peak in ~'+Math.round(fishCtx.sol.minutes)+' min');
       const topFish = bestNearbyFishSpot(fishCtx);
-      if(topFish) lines.push('<strong>Fishing</strong> Best nearby: '+esc(spotShortName(topFish.spot.featureGroupName || topFish.spot.name))+' (bite '+topFish.score+'/100 · '+esc(fishSiteFitLabel(topFish.siteDelta))+' · '+f1(topFish.distNm)+' nm)');
+      if(topFish) lines.push('<strong>Fishing</strong> Best nearby: '+esc(spotShortName(topFish.spot.name))+' (bite '+topFish.score+'/100 · '+esc(fishSiteFitLabel(topFish.siteDelta))+' · '+f1(topFish.distNm)+' nm)');
       if(aisN > 0) lines.push('<strong>Traffic</strong> '+aisN+' AIS target'+(aisN===1?'':'s')+' within 6 nm');
       brief.classList.remove('skel');
       brief.innerHTML = lines.map(l => '<li>'+l+'</li>').join('');
@@ -8973,9 +8973,8 @@ function fishFeatureDisplayName(name){
 }
 
 function fishGroupListName(spot){
-  const base = spot.featureGroupName || fishFeatureDisplayName(spot.name) || spot.name;
-  const n = spot.featureGroupSize || 1;
-  return n > 1 ? base + ' · ' + n + ' modules' : base;
+  /* Ranked row is already the best module — use that name as the title. */
+  return (spot && spot.name) || fishFeatureDisplayName(spot && spot.name) || 'Spot';
 }
 
 function assignFishFeatureGroups(){
@@ -9821,7 +9820,9 @@ function renderFishTopPicks(ranked, ctx, sol){
     const peak = spotBestPeak(tl);
     const peakTxt = peak ? 'Peak '+fmtDayTime(new Date(peak.t))+' ('+peak.score+'/100 fit)' : '';
     const label = fishGroupListName(spot);
-    const modNote = spot.featureGroupSize > 1 ? ' · best module: '+spot.name : '';
+    const modNote = spot.featureGroupSize > 1
+      ? ' · ' + (spot.featureGroupName || fishFeatureDisplayName(spot.name)) + ' · ' + spot.featureGroupSize + ' modules'
+      : '';
     return '<div class="fish-pick '+cls+'">'+
       '<span class="rank">#'+(i+1)+'</span>'+
       '<div class="body">'+
@@ -9989,7 +9990,9 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
         'Combined pick '+comfort.combined+'/100 · ~'+f1(comfort.effSeas)+' ft eff seas'
       : '';
     const label = fishGroupListName(spot);
-    const modLine = spot.featureGroupSize > 1 ? '<br><span style="opacity:.85">Best module: '+esc(spot.name)+'</span>' : '';
+    const modLine = spot.featureGroupSize > 1
+      ? '<br><span style="opacity:.85">' + esc(spot.featureGroupName || fishFeatureDisplayName(spot.name)) + ' · ' + spot.featureGroupSize + ' modules</span>'
+      : '';
     const styleLine = style === 'surface' ? '<br><span style="opacity:.9">◆ Surface / troll</span>' : '';
     L.marker([mpos.lat, mpos.lon], { icon, zIndexOffset: 500 - i })
       .bindPopup('<b>#'+rank+' '+esc(label)+'</b>'+styleLine+'<br>'+
@@ -10017,7 +10020,7 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
       .bindPopup('<b>'+esc(label)+'</b>'+(style === 'surface' ? '<br><span style="opacity:.9">◆ Surface / troll</span>' : '')+'<br>'+
         '<span style="font-family:var(--font-mono);font-size:12px;font-weight:500">'+fmtFishCoordsDepth(spot)+'</span><br>'+
         'Bite '+score+'/100 (same as glance) · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm'+(spot.regional ? ' · regional run' : '')+
-        (spot.featureGroupSize > 1 ? '<br><span style="opacity:.85">Best module: '+esc(spot.name)+'</span>' : '')+'<br>'+
+        (spot.featureGroupSize > 1 ? '<br><span style="opacity:.85">'+esc(spot.featureGroupName || fishFeatureDisplayName(spot.name))+' · '+spot.featureGroupSize+' modules</span>' : '')+'<br>'+
         (comfort ? 'Comfort '+comfort.bump+' · combined '+comfort.combined+'/100<br>' : '')+
         '<strong>Bait:</strong> '+esc(spotBaitLine(spot)))
       .addTo(fishSpotLayer);
@@ -10259,7 +10262,7 @@ function renderFishTimeline(ranked, sol, baseCtx){
   }
   const stepH = 2;
   const rows = top.map(({ spot, score }, i) => ({
-    name: spotShortName(spot.featureGroupName || fishFeatureDisplayName(spot.name) || spot.name), rank: i + 1, now: score,
+    name: spotShortName(spot.name), rank: i + 1, now: score,
     slots: spotTimeline24h(spot, baseCtx, sol, stepH)
   }));
   const W = 860, rowH = 34, padL = 118, padR = 14, padT = 28, padB = 28;
@@ -10334,7 +10337,7 @@ function renderFishComfortSynth(synthRanked, sw){
   rows.forEach((row, ri) => {
     const y = padT + ri * rowH;
     const c = row.comfort;
-    const name = spotShortName(row.spot.featureGroupName || fishFeatureDisplayName(row.spot.name) || row.spot.name);
+    const name = spotShortName(row.spot.name);
     svg += '<text x="'+(padL-8)+'" y="'+(y+16)+'" text-anchor="end" font-size="10" fill="#f0f4f8">'+esc(name)+'</text>';
     const bars = [
       { v: row.score, col: fishScoreColor(row.score), x: 0 },
@@ -10442,7 +10445,7 @@ function fishAdviceWithPicks(ctx, bite, ranked, synthRanked){
   const top = ranked.slice(0, 3);
   if(top.length){
     const names = top.map(({ spot, score, distNm, siteDelta }) =>
-      spotShortName(spot.featureGroupName || fishFeatureDisplayName(spot.name) || spot.name)+' (bite '+score+'/100, '+fishSiteFitLabel(siteDelta)+', '+f1(distNm)+' nm)'
+      spotShortName(spot.name)+' (bite '+score+'/100, '+fishSiteFitLabel(siteDelta)+', '+f1(distNm)+' nm)'
     ).join('; ');
     text += ' Best bite: '+names+'.';
   }
@@ -10450,7 +10453,7 @@ function fishAdviceWithPicks(ctx, bite, ranked, synthRanked){
     ?.filter(({ spot, distNm }) => !spot.regional && distNm <= FISH_MAP_LOCAL_NM)
     .sort((a, b) => b.comfort.combined - a.comfort.combined)[0];
   if(bestBal){
-    text += ' Best balanced pick (bite + comfort): '+spotShortName(bestBal.spot.featureGroupName || fishFeatureDisplayName(bestBal.spot.name) || bestBal.spot.name)+
+    text += ' Best balanced pick (bite + comfort): '+spotShortName(bestBal.spot.name)+
       ' — '+bestBal.comfort.bump+' ride, combined '+bestBal.comfort.combined+'/100.';
   }
   return text;
@@ -10642,7 +10645,7 @@ function renderFishUtilDetail(row, ctx, sw, sol){
   hero.innerHTML =
     '<h3>'+esc(fishGroupListName(spot))+' '+fishStyleBadgeHtml(spot)+'</h3>'+
     '<div class="mono" style="font-size:11px;color:var(--ink3);margin-bottom:8px">'+esc(fmtFishCoordsDepth(spot))+
-    (spot.featureGroupSize > 1 ? ' · best module: '+esc(spot.name) : '')+'</div>'+
+    (spot.featureGroupSize > 1 ? ' · '+esc(spot.featureGroupName || fishFeatureDisplayName(spot.name))+' · '+spot.featureGroupSize+' modules' : '')+'</div>'+
     '<div class="fish-verdict" style="font-size:14px;margin-bottom:10px">'+esc(spot.tactics)+'</div>'+
     '<div class="util-kv">'+
       '<div><span>'+(ctx.planWhen == null || Math.abs(ctx.planWhen - Date.now()) < 3600000 ? 'Bite now' : 'Bite at trip')+'</span><b style="color:'+fishScoreColor(score)+'">'+score+'/100</b></div>'+
@@ -10791,7 +10794,9 @@ function renderFishing(){
             ' ride · run '+comfort.runScore+' · at spot '+comfort.atScore+' · combined '+comfort.combined+'/100 · ~'+f1(comfort.effSeas)+' ft eff seas</div>'
           : '';
         const label = fishGroupListName(spot);
-        const modNote = spot.featureGroupSize > 1 ? ' · best module: '+spot.name : '';
+        const modNote = spot.featureGroupSize > 1
+          ? ' · ' + (spot.featureGroupName || fishFeatureDisplayName(spot.name)) + ' · ' + spot.featureGroupSize + ' modules'
+          : '';
         return '<div class="fish-spot '+cls+'"><div class="spot-h"><span><b>'+esc(label)+'</b>'+fishStyleBadgeHtml(spot)+'</span><span>Bite '+score+'/100 '+scoreLbl+' · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm</span></div>'+
           '<div class="spot-coords mono" style="font-size:11px;color:var(--ink3);margin:2px 0 6px">'+esc(fmtFishCoordsDepth(spot))+esc(modNote)+'</div>'+
           '<div class="tags">'+species+'</div>'+

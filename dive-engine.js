@@ -722,9 +722,8 @@
   }
 
   function groupListName(site) {
-    const base = site.featureGroupName || featureDisplayName(site.name) || site.name;
-    const n = site.featureGroupSize || 1;
-    return n > 1 ? base + ' · ' + n + ' modules' : base;
+    /* Ranked row is already the best module — use that name as the title. */
+    return (site && site.name) || featureDisplayName(site && site.name) || 'Site';
   }
 
   let FEATURE_GROUP_COUNT = DIVE_SITES.length;
@@ -2383,7 +2382,7 @@
           });
           const label = groupListName(site);
           L.marker([mpos.lat, mpos.lon], { icon, zIndexOffset: 500 - i })
-            .bindPopup('<b>#' + rank + ' ' + esc(label) + '</b><br><span style="font-family:var(--font-mono,monospace);font-size:12px;font-weight:500">' + fmtSiteCoordsDepth(site) + '</span><br>' + R.composite + '/100 · ' + R.stars.toFixed(1) + '\u2605<br>' + esc(R.verdict) + '<br>' + f1(dist) + ' nm' + (site.featureGroupSize > 1 ? '<br><span style="opacity:.85">Best module: ' + esc(site.name) + '</span>' : '') + (bactNear ? '<br><span style="color:#ff5c5c">Elevated bacteria nearby</span>' : ''))
+            .bindPopup('<b>#' + rank + ' ' + esc(label) + '</b><br><span style="font-family:var(--font-mono,monospace);font-size:12px;font-weight:500">' + fmtSiteCoordsDepth(site) + '</span><br>' + R.composite + '/100 · ' + R.stars.toFixed(1) + '\u2605<br>' + esc(R.verdict) + '<br>' + f1(dist) + ' nm' + (site.featureGroupSize > 1 ? '<br><span style="opacity:.85">' + esc(site.featureGroupName || featureDisplayName(site.name)) + ' · ' + site.featureGroupSize + ' modules</span>' : '') + (bactNear ? '<br><span style="color:#ff5c5c">Elevated bacteria nearby</span>' : ''))
             .addTo(diveSpotLayer);
         });
 
