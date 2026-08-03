@@ -14,7 +14,7 @@
  * Self-host pipeline: bluetopo/README.md (Docker → PMTiles → R2 Worker).
  *
  * Fit: On site ONSITE_FIT_FT = 1300 ft (~0.21 nm); Plan PLAN_FIT_NM = 2.5.
- * DEM tiles request retina-aware pixel size (512 on hi-DPI) + cubic resample for sharper relief.
+ * DEM tiles: fast 256px overview → up to 1024px at max zoom (progressive, not retina-everywhere).
  * Not for navigation.
  */
 
@@ -280,14 +280,30 @@
     return pmtilesLibP;
   }
 
+  /** Shared Leaflet opts: paint fast while zooming; sharpen after settle. */
+  const FAST_TILE_OPTS = {
+    updateWhenZooming: false,
+    updateWhenIdle: true,
+    keepBuffer: 1,
+    detectRetina: false
+  };
+
+  /** NCEI export pixels per tile — light overview, max detail when pinched in. */
+  function demExportPx(zoom) {
+    const z = zoom == null || !isFinite(zoom) ? 12 : +zoom;
+    if (z >= 19) return 1024;
+    if (z >= 17) return 768;
+    if (z >= 15) return 512;
+    return 256;
+  }
+
   /** Real BlueTopo hillshade: self-hosted PMTiles if configured, else nowCOAST WMTS. */
   async function makeBlueTopoOverlay(cfg) {
-    const common = {
+    const common = Object.assign({
       maxZoom: 20,
       minZoom: 8,
-      detectRetina: true,
       opacity: 1
-    };
+    }, FAST_TILE_OPTS);
     if (cfg?.pmtilesUrl) {
       try {
         const P = await ensurePmtilesLib();
@@ -331,26 +347,26 @@
         const nw = L.CRS.EPSG3857.project(bounds.getNorthWest());
         const se = L.CRS.EPSG3857.project(bounds.getSouthEast());
         const bbox = [nw.x, se.y, se.x, nw.y].join(',');
-        /* Match Leaflet tile pixel size (512 on retina via detectRetina) for sharper DEM. */
-        const sz = this.getTileSize();
-        const w = Math.max(256, sz.x | 0);
-        const h = Math.max(256, sz.y | 0);
+        const z = coords.z + (this.options.zoomOffset || 0);
+        const px = demExportPx(z);
+        /* png8 overview tiles are much smaller/faster; png32 at high zoom keeps relief detail. */
+        const fmt = z >= 16 ? 'png32' : 'png8';
+        const interp = z >= 17 ? 'RSP_CubicConvolution' : 'RSP_BilinearInterpolation';
         return NCEI_DEM_EXPORT +
           '?bbox=' + bbox +
-          '&bboxSR=3857&imageSR=3857&size=' + w + ',' + h +
-          '&format=png32&f=image' +
-          '&interpolation=RSP_CubicConvolution' +
+          '&bboxSR=3857&imageSR=3857&size=' + px + ',' + px +
+          '&format=' + fmt + '&f=image' +
+          '&interpolation=' + interp +
           '&renderingRule=' + NCEI_DEM_RENDER;
       }
     });
-    return new NceiDem('', {
+    return new NceiDem('', Object.assign({
       maxZoom: 20,
       maxNativeZoom: 19,
       minZoom: 8,
-      detectRetina: true,
       attribution: NCEI_DEM_ATTR,
       opacity: 1
-    });
+    }, FAST_TILE_OPTS));
   }
 
   async function addBaseLayers(map, opts) {
@@ -377,16 +393,16 @@
       minZoom: 3,
       attribution: IMAGERY_ATTR
     });
-    const seamarks = L.tileLayer(SEAMARK_URL, {
+    const seamarks = L.tileLayer(SEAMARK_URL, Object.assign({
       maxZoom: 18,
       minZoom: 9,
       attribution: SEAMARK_ATTR,
       opacity: 0.9
-    });
+    }, FAST_TILE_OPTS));
     /* Separate DEM instances — Leaflet cannot share one layer across two base entries. */
     const demSolo = makeNceiDemLayer();
     const demUnderBt = makeNceiDemLayer();
-    const enc = L.tileLayer.wms(ENC_WMS, {
+    const enc = L.tileLayer.wms(ENC_WMS, Object.assign({
       layers: ENC_LAYERS,
       format: 'image/png',
       transparent: true,
@@ -394,15 +410,15 @@
       attribution: ENC_ATTR,
       maxZoom: 20,
       minZoom: 11,
-      detectRetina: true,
       opacity: 1,
       uppercase: true
-    });
+    }, FAST_TILE_OPTS));
 
     let blueTopoGroup = null;
     const btLabel = opts.blueTopoLabel || 'BlueTopo relief';
-    if (opts.blueTopoLayer) {
-      blueTopoGroup = L.layerGroup([demUnderBt, opts.blueTopoLayer]);
+    const blueTopoLayer = opts.blueTopoLayer || null;
+    if (blueTopoLayer) {
+      blueTopoGroup = L.layerGroup([demUnderBt, blueTopoLayer]);
     }
 
     function anyDetailBase() {
@@ -449,11 +465,16 @@
     bases['Ocean chart'] = oceanGroup;
     bases['Satellite'] = imagery;
 
+    /* Prefer BlueTopo stack (DEM underlay + BT). Tile URL sizing stays zoom-adaptive for speed. */
     if (preferBlueTopo && blueTopoGroup) blueTopoGroup.addTo(map);
     else if (preferDem) demSolo.addTo(map);
     else if (preferEnc) enc.addTo(map);
     else oceanGroup.addTo(map);
-    seamarks.addTo(map);
+
+    /* Seamarks are secondary — defer so DEM/BlueTopo win the first network slots. */
+    setTimeout(() => {
+      try { if (!map.hasLayer(seamarks)) seamarks.addTo(map); } catch (e) { /* ignore */ }
+    }, 400);
 
     const overlays = { 'Seamarks': seamarks };
     const layersControl = L.control.layers(bases, overlays, {

@@ -1514,7 +1514,7 @@ function ensureSeafloorRender(){
   if(window.SeafloorRender) return Promise.resolve(window.SeafloorRender);
   if(_seafloorPromise) return _seafloorPromise;
   /* ?v=3 busts Pages CDN after ranked maps share On site BlueTopo+DEM stack. */
-  _seafloorPromise = loadScript('seafloor-render.js?v=5').then(()=>{
+  _seafloorPromise = loadScript('seafloor-render.js?v=6').then(()=>{
     if(window.SeafloorRender) SeafloorRender.init({ fetchJSON, loadLeaflet });
     return window.SeafloorRender;
   }).catch(e=>{ _seafloorPromise = null; throw e; });
