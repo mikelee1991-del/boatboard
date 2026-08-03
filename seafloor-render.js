@@ -281,29 +281,29 @@
 
   /** Real BlueTopo hillshade: self-hosted PMTiles if configured, else nowCOAST WMTS. */
   async function makeBlueTopoOverlay(cfg) {
+    const common = {
+      maxZoom: 20,
+      minZoom: 8,
+      detectRetina: true,
+      opacity: 1
+    };
     if (cfg?.pmtilesUrl) {
       try {
         const P = await ensurePmtilesLib();
         const tiles = new P.PMTiles(cfg.pmtilesUrl);
-        return P.leafletRasterLayer(tiles, {
-          maxZoom: 19,
-          maxNativeZoom: 16,
-          minZoom: 8,
-          attribution: BLUETOPO_ATTR + ' (PMTiles)',
-          opacity: 1
-        });
+        return P.leafletRasterLayer(tiles, Object.assign({}, common, {
+          maxNativeZoom: 17,
+          attribution: BLUETOPO_ATTR + ' (PMTiles)'
+        }));
       } catch (e) {
         console.warn('BlueTopo PMTiles unavailable, trying WMTS', e);
       }
     }
     if (cfg && cfg.wmtsEnabled === false) return null;
-    return L.tileLayer(BLUETOPO_WMTS, {
-      maxZoom: 19,
-      maxNativeZoom: 18,
-      minZoom: 8,
-      attribution: BLUETOPO_ATTR,
-      opacity: 1
-    });
+    return L.tileLayer(BLUETOPO_WMTS, Object.assign({}, common, {
+      maxNativeZoom: 19,
+      attribution: BLUETOPO_ATTR
+    }));
   }
 
   function ensureShell(host, mode) {
@@ -330,16 +330,23 @@
         const nw = L.CRS.EPSG3857.project(bounds.getNorthWest());
         const se = L.CRS.EPSG3857.project(bounds.getSouthEast());
         const bbox = [nw.x, se.y, se.x, nw.y].join(',');
+        /* Match Leaflet tile pixel size (512 on retina via detectRetina) for sharper DEM. */
+        const sz = this.getTileSize();
+        const w = Math.max(256, sz.x | 0);
+        const h = Math.max(256, sz.y | 0);
         return NCEI_DEM_EXPORT +
           '?bbox=' + bbox +
-          '&bboxSR=3857&imageSR=3857&size=256,256&format=png32&f=image' +
+          '&bboxSR=3857&imageSR=3857&size=' + w + ',' + h +
+          '&format=png32&f=image' +
+          '&interpolation=RSP_CubicConvolution' +
           '&renderingRule=' + NCEI_DEM_RENDER;
       }
     });
     return new NceiDem('', {
-      maxZoom: 19,
-      maxNativeZoom: 17,
+      maxZoom: 20,
+      maxNativeZoom: 19,
       minZoom: 8,
+      detectRetina: true,
       attribution: NCEI_DEM_ATTR,
       opacity: 1
     });
@@ -384,8 +391,9 @@
       transparent: true,
       version: '1.3.0',
       attribution: ENC_ATTR,
-      maxZoom: 19,
+      maxZoom: 20,
       minZoom: 11,
+      detectRetina: true,
       opacity: 1,
       uppercase: true
     });
@@ -607,7 +615,7 @@
         (opts.markLat == null || haversineNm(focusLat, focusLon, opts.centerLat, opts.centerLon) <= radiusNm * 1.2)) {
       bounds.extend([opts.centerLat, opts.centerLon]);
     }
-    const fitMax = opts.fitMaxZoom != null ? opts.fitMaxZoom : (radiusNm <= 0.5 ? 18 : 15);
+    const fitMax = opts.fitMaxZoom != null ? opts.fitMaxZoom : (radiusNm <= 0.5 ? 19 : 16);
     map.fitBounds(bounds.pad(0.06), { maxZoom: fitMax, animate: false });
   }
 
@@ -668,7 +676,7 @@
           zoomControl: true,
           attributionControl: false,
           minZoom: 8,
-          maxZoom: 19,
+          maxZoom: 20,
           scrollWheelZoom: true,
           tapTolerance: 18
         });
