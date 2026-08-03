@@ -119,11 +119,13 @@
   function destroyMap(host) {
     const st = hosts.get(host);
     if (st?.map) {
+      try { if (st.demViewport) st.demViewport.remove(); } catch (e) { /* ignore */ }
       try { st.map.remove(); } catch (e) { /* ignore */ }
       st.map = null;
       st.markers = null;
       st.kelpLayer = null;
       st.layersControl = null;
+      st.demViewport = null;
     }
   }
 
