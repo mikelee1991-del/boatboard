@@ -2275,7 +2275,7 @@
     }
     host.innerHTML = '';
     const pos = defaultPos();
-    diveMap = L.map(host, { zoomControl: true, attributionControl: false, minZoom: 7, maxZoom: 20 })
+    diveMap = L.map(host, { zoomControl: true, attributionControl: false, minZoom: 7, maxZoom: 21 })
       .setView([pos.lat, pos.lon], 14);
     if (planMapBaseLayerFn) await Promise.resolve(planMapBaseLayerFn(diveMap, { seafloorDem: true }));
     else {

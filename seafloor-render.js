@@ -14,7 +14,8 @@
  * Self-host pipeline: bluetopo/README.md (Docker → PMTiles → R2 Worker).
  *
  * Fit: On site ONSITE_FIT_FT = 1300 ft (~0.21 nm); Plan PLAN_FIT_NM = 2.5.
- * DEM tiles: fast 256px overview → up to 1024px at max zoom (progressive, not retina-everywhere).
+ * DEM tiles: fast 256px overview → up to 4096px at max zoom (progressive; DPR-aware).
+ * BlueTopo stops at native z18 so it never soft-upscales over sharper DEM.
  * Not for navigation.
  */
 
@@ -280,27 +281,52 @@
     return pmtilesLibP;
   }
 
-  /** Shared Leaflet opts: paint fast while zooming; sharpen after settle. */
+  /** Shared Leaflet opts: avoid mid-pinch tile storms; prefer sharp settle. */
   const FAST_TILE_OPTS = {
     updateWhenZooming: false,
     updateWhenIdle: true,
-    keepBuffer: 1,
+    keepBuffer: 2,
     detectRetina: false
   };
 
-  /** NCEI export pixels per tile — light overview, max detail when pinched in. */
+  /** DEM fetches during zoom at high z so pinch doesn't stretch a soft overview tile. */
+  const DEM_TILE_OPTS = Object.assign({}, FAST_TILE_OPTS, {
+    updateWhenZooming: true,
+    keepBuffer: 3
+  });
+
+  /**
+   * NCEI export pixels per 256 CSS tile — supersample harder as you pinch in.
+   * Service allows up to 20k; 4096 verified OK. DPR multiplies at z≥15 for retina sharpness.
+   */
   function demExportPx(zoom) {
     const z = zoom == null || !isFinite(zoom) ? 12 : +zoom;
-    if (z >= 19) return 1024;
-    if (z >= 17) return 768;
-    if (z >= 15) return 512;
-    return 256;
+    let px = 256;
+    if (z >= 20) px = 4096;
+    else if (z >= 19) px = 3072;
+    else if (z >= 18) px = 2048;
+    else if (z >= 17) px = 1536;
+    else if (z >= 16) px = 1024;
+    else if (z >= 15) px = 768;
+    else if (z >= 14) px = 512;
+    if (z >= 15) {
+      const dpr = (typeof global.devicePixelRatio === 'number' && global.devicePixelRatio > 1)
+        ? Math.min(2, global.devicePixelRatio)
+        : 1;
+      if (dpr > 1.25) px = Math.round(px * dpr);
+    }
+    return Math.min(4096, px);
   }
 
   /** Real BlueTopo hillshade: self-hosted PMTiles if configured, else nowCOAST WMTS. */
   async function makeBlueTopoOverlay(cfg) {
+    /*
+     * Cap at native z — past this Leaflet CSS-upscales BT over the DEM (blocky/blurry).
+     * Above maxZoom the layer clears; NCEI DEM underlay keeps climbing in resolution.
+     */
     const common = Object.assign({
-      maxZoom: 20,
+      maxZoom: 18,
+      maxNativeZoom: 18,
       minZoom: 8,
       opacity: 1
     }, FAST_TILE_OPTS);
@@ -309,6 +335,7 @@
         const P = await ensurePmtilesLib();
         const tiles = new P.PMTiles(cfg.pmtilesUrl);
         return P.leafletRasterLayer(tiles, Object.assign({}, common, {
+          maxZoom: 17,
           maxNativeZoom: 17,
           attribution: BLUETOPO_ATTR + ' (PMTiles)'
         }));
@@ -318,7 +345,6 @@
     }
     if (cfg && cfg.wmtsEnabled === false) return null;
     return L.tileLayer(BLUETOPO_WMTS, Object.assign({}, common, {
-      maxNativeZoom: 19,
       attribution: BLUETOPO_ATTR
     }));
   }
@@ -349,9 +375,9 @@
         const bbox = [nw.x, se.y, se.x, nw.y].join(',');
         const z = coords.z + (this.options.zoomOffset || 0);
         const px = demExportPx(z);
-        /* png8 overview tiles are much smaller/faster; png32 at high zoom keeps relief detail. */
-        const fmt = z >= 16 ? 'png32' : 'png8';
-        const interp = z >= 17 ? 'RSP_CubicConvolution' : 'RSP_BilinearInterpolation';
+        const fmt = z >= 15 ? 'png32' : 'png8';
+        /* Cubic only when supersampling hard — keeps overview fetches snappy. */
+        const interp = z >= 16 ? 'RSP_CubicConvolution' : 'RSP_BilinearInterpolation';
         return NCEI_DEM_EXPORT +
           '?bbox=' + bbox +
           '&bboxSR=3857&imageSR=3857&size=' + px + ',' + px +
@@ -361,12 +387,13 @@
       }
     });
     return new NceiDem('', Object.assign({
-      maxZoom: 20,
-      maxNativeZoom: 19,
+      /* Always request this zoom’s tiles — no soft upscale past maxNativeZoom. */
+      maxZoom: 21,
+      maxNativeZoom: 21,
       minZoom: 8,
       attribution: NCEI_DEM_ATTR,
       opacity: 1
-    }, FAST_TILE_OPTS));
+    }, DEM_TILE_OPTS));
   }
 
   async function addBaseLayers(map, opts) {
@@ -408,7 +435,7 @@
       transparent: true,
       version: '1.3.0',
       attribution: ENC_ATTR,
-      maxZoom: 20,
+      maxZoom: 21,
       minZoom: 11,
       opacity: 1,
       uppercase: true
@@ -698,7 +725,12 @@
           zoomControl: true,
           attributionControl: false,
           minZoom: 8,
-          maxZoom: 20,
+          maxZoom: 21,
+          zoomSnap: 1,
+          /* Instant zoom — no CSS-stretch of old tiles between levels (main “blurry” feel). */
+          zoomAnimation: false,
+          fadeAnimation: false,
+          markerZoomAnimation: false,
           scrollWheelZoom: true,
           tapTolerance: 18
         });
