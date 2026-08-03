@@ -631,6 +631,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .seafloor-map.leaflet-container.seafloor-dem{background:#0b2a33!important}
 .seafloor-map.leaflet-container.seafloor-dem .leaflet-tile-pane{filter:brightness(.97) contrast(1.06) saturate(1.04)}
 .seafloor-map.leaflet-container.seafloor-dem .leaflet-tile{image-rendering:auto;-ms-interpolation-mode:bicubic}
+.seafloor-map .seafloor-dem-viewport{image-rendering:auto;-ms-interpolation-mode:bicubic}
 .seafloor-status{font-family:var(--mono);font-size:12px;color:var(--ink3);padding:24px 16px;text-align:center;line-height:1.5}
 .seafloor-status.err{color:var(--poor)}
 .seafloor-legend{display:flex;flex-wrap:wrap;gap:6px 10px;padding:8px 8px 6px;font-size:10px;color:var(--ink2);font-family:var(--mono);justify-content:center;border-top:1px solid var(--line2);background:rgba(0,0,0,.18);flex:0 0 auto}
@@ -1515,7 +1516,7 @@ function ensureSeafloorRender(){
   if(window.SeafloorRender) return Promise.resolve(window.SeafloorRender);
   if(_seafloorPromise) return _seafloorPromise;
   /* ?v=3 busts Pages CDN after ranked maps share On site BlueTopo+DEM stack. */
-  _seafloorPromise = loadScript('seafloor-render.js?v=7').then(()=>{
+  _seafloorPromise = loadScript('seafloor-render.js?v=8').then(()=>{
     if(window.SeafloorRender) SeafloorRender.init({ fetchJSON, loadLeaflet });
     return window.SeafloorRender;
   }).catch(e=>{ _seafloorPromise = null; throw e; });

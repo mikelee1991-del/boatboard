@@ -14,8 +14,9 @@
  * Self-host pipeline: bluetopo/README.md (Docker → PMTiles → R2 Worker).
  *
  * Fit: On site ONSITE_FIT_FT = 1300 ft (~0.21 nm); Plan PLAN_FIT_NM = 2.5.
- * DEM tiles: fast 256px overview → up to 4096px at max zoom (progressive; DPR-aware).
- * BlueTopo stops at native z18 so it never soft-upscales over sharper DEM.
+ * DEM: tiled overview, then viewport-matched NCEI export at z≥14 (screen pixels, not stretched tiles).
+ * BlueTopo WMTS is native through z20 (512px tiles); SoCal cells are often empty → DEM shows through.
+ * NCEI source cells are ~3 m — beyond that we smooth, we cannot invent survey detail.
  * Not for navigation.
  */
 
@@ -50,13 +51,15 @@
     'NOAA NCEI DEM ColorHillshade — coastal bathy/topo mosaic; not for navigation';
 
   /* nowCOAST GeoServer GWC — real BlueTopo hillshade (REST = TileMatrix/TileRow/TileCol).
-   * Leaflet template uses {z}/{y}/{x}. Empty / undelivered cells are fully transparent PNG8. */
+   * Tiles are 512×512 on a 2^z grid (same indices as Leaflet XYZ). Empty / undelivered = transparent. */
   const BLUETOPO_WMTS =
-    'https://nowcoast.noaa.gov/geoserver/gwc/service/wmts/rest/bluetopo:hillshade/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8';
+    'https://nowcoast.noaa.gov/geoserver/gwc/service/wmts/rest/bluetopo:hillshade/nbs_hillshade/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8';
   const BLUETOPO_ATTR =
     'NOAA BlueTopo (NBS) © Office of Coast Survey — not for navigation';
   const BLUETOPO_CONFIG_URL = 'bluetopo/config.json';
   const PMTILES_CDN = 'https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js';
+  /** Swap tiled DEM for a single screen-matched export at/above this zoom. */
+  const DEM_VIEWPORT_MIN_Z = 14;
 
   const OCEAN_BASE =
     'https://services.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}';
@@ -320,15 +323,16 @@
 
   /** Real BlueTopo hillshade: self-hosted PMTiles if configured, else nowCOAST WMTS. */
   async function makeBlueTopoOverlay(cfg) {
-    /*
-     * Cap at native z — past this Leaflet CSS-upscales BT over the DEM (blocky/blurry).
-     * Above maxZoom the layer clears; NCEI DEM underlay keeps climbing in resolution.
-     */
+    /* Native matrices go through z20; keep maxZoom === maxNativeZoom (no CSS upscale). */
     const common = Object.assign({
-      maxZoom: 18,
-      maxNativeZoom: 18,
+      maxZoom: 20,
+      maxNativeZoom: 20,
       minZoom: 8,
-      opacity: 1
+      opacity: 1,
+      pane: 'btOverlay',
+      /* 512px server tiles in 256 CSS slots = 2× supersample (retina-native). */
+      tileSize: 256,
+      detectRetina: false
     }, FAST_TILE_OPTS);
     if (cfg?.pmtilesUrl) {
       try {
@@ -347,6 +351,130 @@
     return L.tileLayer(BLUETOPO_WMTS, Object.assign({}, common, {
       attribution: BLUETOPO_ATTR
     }));
+  }
+
+  function demViewportUrl(bounds, w, h) {
+    const nw = L.CRS.EPSG3857.project(bounds.getNorthWest());
+    const se = L.CRS.EPSG3857.project(bounds.getSouthEast());
+    const bbox = [nw.x, se.y, se.x, nw.y].join(',');
+    return NCEI_DEM_EXPORT +
+      '?bbox=' + encodeURIComponent(bbox) +
+      '&bboxSR=3857&imageSR=3857&size=' + w + ',' + h +
+      '&format=png32&f=image' +
+      '&interpolation=RSP_CubicConvolution' +
+      '&renderingRule=' + NCEI_DEM_RENDER;
+  }
+
+  /**
+   * At higher zooms, replace tiled DEM with one export sized to the map viewport.
+   * Avoids soft-upscaled overview tiles and samples the mosaic once at screen resolution.
+   */
+  function attachDemViewport(map, demTileLayers) {
+    if (!map.getPane('demViewport')) {
+      map.createPane('demViewport');
+      /* Above base tiles (200), below BlueTopo overlay pane (360). */
+      map.getPane('demViewport').style.zIndex = 350;
+    }
+    if (!map.getPane('btOverlay')) {
+      map.createPane('btOverlay');
+      map.getPane('btOverlay').style.zIndex = 360;
+      map.getPane('btOverlay').style.pointerEvents = 'none';
+    }
+
+    let overlay = null;
+    let timer = null;
+    let seq = 0;
+    const layers = (demTileLayers || []).filter(Boolean);
+
+    function demBaseActive() {
+      return layers.some(function (layer) {
+        try {
+          if (map.hasLayer(layer)) return true;
+          /* Layer inside a LayerGroup still has _map set when the group is on the map. */
+          return !!(layer._map);
+        } catch (e) {
+          return false;
+        }
+      });
+    }
+
+    function setTileOpacity(opacity) {
+      for (let i = 0; i < layers.length; i++) {
+        try { layers[i].setOpacity(opacity); } catch (e) { /* ignore */ }
+      }
+    }
+
+    function clearOverlay() {
+      if (overlay) {
+        try { map.removeLayer(overlay); } catch (e) { /* ignore */ }
+        overlay = null;
+      }
+    }
+
+    function refresh() {
+      const my = ++seq;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(function () {
+        if (my !== seq) return;
+        const z = map.getZoom();
+        if (z < DEM_VIEWPORT_MIN_Z || !demBaseActive()) {
+          setTileOpacity(1);
+          clearOverlay();
+          return;
+        }
+        const size = map.getSize();
+        if (!size || size.x < 32 || size.y < 32) return;
+        const dpr = (typeof global.devicePixelRatio === 'number' && global.devicePixelRatio > 1)
+          ? Math.min(2, global.devicePixelRatio)
+          : 1;
+        /* Match CSS pixels × DPR, cap for NCEI maxImageWidth and payload size. */
+        let w = Math.round(size.x * dpr);
+        let h = Math.round(size.y * dpr);
+        const maxEdge = 4096;
+        if (w > maxEdge || h > maxEdge) {
+          const s = maxEdge / Math.max(w, h);
+          w = Math.max(64, Math.round(w * s));
+          h = Math.max(64, Math.round(h * s));
+        }
+        const bounds = map.getBounds().pad(0.02);
+        const url = demViewportUrl(bounds, w, h);
+        const next = L.imageOverlay(url, bounds, {
+          pane: 'demViewport',
+          opacity: 1,
+          interactive: false,
+          className: 'seafloor-dem-viewport'
+        });
+        next.on('load', function () {
+          if (my !== seq) {
+            try { map.removeLayer(next); } catch (e) { /* ignore */ }
+            return;
+          }
+          setTileOpacity(0);
+          clearOverlay();
+          overlay = next;
+        });
+        next.on('error', function () {
+          if (my !== seq) return;
+          setTileOpacity(1);
+        });
+        next.addTo(map);
+      }, 120);
+    }
+
+    map.on('moveend zoomend resize', refresh);
+    map.on('baselayerchange', refresh);
+    setTimeout(refresh, 80);
+    return {
+      refresh: refresh,
+      remove: function () {
+        seq++;
+        if (timer) clearTimeout(timer);
+        map.off('moveend zoomend resize', refresh);
+        map.off('baselayerchange', refresh);
+        clearOverlay();
+        setTileOpacity(1);
+      }
+    };
   }
 
   function ensureShell(host, mode) {
@@ -400,6 +528,17 @@
     const preferDem = !!opts.preferDem;
     const preferEnc = !preferDem && !!opts.preferEnc;
     const preferBlueTopo = preferDem && !!opts.blueTopoLayer;
+
+    if (!map.getPane('demViewport')) {
+      map.createPane('demViewport');
+      map.getPane('demViewport').style.zIndex = 350;
+    }
+    if (!map.getPane('btOverlay')) {
+      map.createPane('btOverlay');
+      map.getPane('btOverlay').style.zIndex = 360;
+      map.getPane('btOverlay').style.pointerEvents = 'none';
+    }
+
     /* Ocean Base native tiles stop at z16; allow upscale so pinch-in stays useful locally. */
     const ocean = L.tileLayer(OCEAN_BASE, {
       maxNativeZoom: 16,
@@ -498,6 +637,10 @@
     else if (preferEnc) enc.addTo(map);
     else oceanGroup.addTo(map);
 
+    const demViewport = (preferDem || preferBlueTopo)
+      ? attachDemViewport(map, [demSolo, demUnderBt])
+      : null;
+
     /* Seamarks are secondary — defer so DEM/BlueTopo win the first network slots. */
     setTimeout(() => {
       try { if (!map.hasLayer(seamarks)) seamarks.addTo(map); } catch (e) { /* ignore */ }
@@ -511,7 +654,8 @@
 
     return {
       oceanGroup, imagery, seamarks, enc, dem: demSolo,
-      blueTopoGroup, layersControl, usingBlueTopo: !!(preferBlueTopo && blueTopoGroup),
+      blueTopoGroup, layersControl, demViewport,
+      usingBlueTopo: !!(preferBlueTopo && blueTopoGroup),
       mode: preferBlueTopo && blueTopoGroup ? 'bt' : (preferDem ? 'dem' : (preferEnc ? 'enc' : 'ocean'))
     };
   }
@@ -725,7 +869,7 @@
           zoomControl: true,
           attributionControl: false,
           minZoom: 8,
-          maxZoom: 21,
+          maxZoom: 19,
           zoomSnap: 1,
           /* Instant zoom — no CSS-stretch of old tiles between levels (main “blurry” feel). */
           zoomAnimation: false,
@@ -750,6 +894,7 @@
           blueTopoLabel: btCfg?.layerLabel || 'BlueTopo relief'
         });
         st.usingBlueTopo = added.usingBlueTopo;
+        st.demViewport = added.demViewport;
         st.markers = L.layerGroup().addTo(st.map);
       }
 
@@ -786,7 +931,7 @@
         ' · ' + kelpCount + ' kelp bed' + (kelpCount === 1 ? '' : 's') +
         ' · ' + spanLbl +
         (opts.habitat ? ' · <span class="seafloor-habitat">' + esc(opts.habitat) + '</span>' : '') +
-        ' · <span class="seafloor-note">Chart depths are approximate — verify on a plotter before anchoring. Not for navigation.</span>';
+        ' · <span class="seafloor-note">Relief uses ~3&nbsp;m public DEM where BlueTopo is undelivered — extreme pinch softens source cells. Not for navigation.</span>';
       if (metaEl) metaEl.innerHTML = baseMeta;
     } catch (e) {
       console.error('seafloor chart', e);

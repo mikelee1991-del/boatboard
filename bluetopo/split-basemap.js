@@ -17,7 +17,7 @@
 
   const D2R = Math.PI / 180;
   const BLUETOPO_WMTS =
-    'https://nowcoast.noaa.gov/geoserver/gwc/service/wmts/rest/bluetopo:hillshade/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8';
+    'https://nowcoast.noaa.gov/geoserver/gwc/service/wmts/rest/bluetopo:hillshade/nbs_hillshade/EPSG:3857/EPSG:3857:{z}/{y}/{x}?format=image/png8';
   const BLUETOPO_ATTR =
     'NOAA BlueTopo (NBS) © Office of Coast Survey — not for navigation';
   const NCEI_DEM_EXPORT =
