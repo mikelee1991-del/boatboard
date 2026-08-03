@@ -649,6 +649,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .seafloor-map .leaflet-control-layers{background:rgba(6,10,16,.88);color:var(--ink2);border:1px solid var(--line);border-radius:8px}
 .seafloor-map .leaflet-control-layers-toggle{background-color:rgba(6,10,16,.88)}
 .seafloor-map .leaflet-control-layers label{color:var(--ink2);font-family:var(--font-ui);font-size:12px}
+.leaflet-container .contour-label{background:none!important;border:none!important;color:#ffe566;font:600 11px/1 var(--font-mono,ui-monospace,Consolas,monospace);text-shadow:0 0 4px #000,0 1px 2px #000,0 -1px 2px #000;white-space:nowrap}
 
 .boat-icon{background:transparent;border:none}
 .ais-ship-icon{background:transparent;border:none}
@@ -1515,8 +1516,8 @@ let _seafloorPromise = null;
 function ensureSeafloorRender(){
   if(window.SeafloorRender) return Promise.resolve(window.SeafloorRender);
   if(_seafloorPromise) return _seafloorPromise;
-  /* ?v=3 busts Pages CDN after ranked maps share On site BlueTopo+DEM stack. */
-  _seafloorPromise = loadScript('seafloor-render.js?v=8').then(()=>{
+  /* ?v=9 — depth isolines overlay + 10 nmi default On site fit. */
+  _seafloorPromise = loadScript('seafloor-render.js?v=9').then(()=>{
     if(window.SeafloorRender) SeafloorRender.init({ fetchJSON, loadLeaflet });
     return window.SeafloorRender;
   }).catch(e=>{ _seafloorPromise = null; throw e; });
@@ -1604,7 +1605,7 @@ function ensureDiveEngine(){
     .then(()=> loadScript('dive-site-intel.js'))
     .then(()=> loadScript('briefing-synth.js'))
     .then(()=> ensureForecastCharts())
-    .then(()=> loadScript('dive-engine.js?v=7'))
+    .then(()=> loadScript('dive-engine.js?v=8'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
       return window.BoatDive;
@@ -10479,9 +10480,9 @@ function refreshFishSeafloor(row, ctx){
   ensureSeafloorRender().then(SR=>{
     if(!SR) return;
     const bp = boatPos();
-    /* Local structure: 1300 ft fit; BlueTopo (+ NCEI DEM underlay); ENC in layers. */
-    const radiusNm = SR.ONSITE_FIT_NM != null ? SR.ONSITE_FIT_NM : (1300 / 6076.12);
-    const nearNm = SR.ONSITE_NEAR_NM != null ? SR.ONSITE_NEAR_NM : 0.32;
+    /* ~10 nmi fit; BlueTopo (+ NCEI DEM underlay); depth isolines + ENC in layers. */
+    const radiusNm = SR.ONSITE_FIT_NM != null ? SR.ONSITE_FIT_NM : 10;
+    const nearNm = SR.ONSITE_NEAR_NM != null ? SR.ONSITE_NEAR_NM : 8;
     SR.update('fishSeafloorRender', {
       centerLat: bp.lat,
       centerLon: bp.lon,
@@ -15116,8 +15117,8 @@ function switchSubtab(section, name){
       else {
         const bp = boatPos();
         const SR = window.SeafloorRender;
-        const radiusNm = SR?.ONSITE_FIT_NM != null ? SR.ONSITE_FIT_NM : (1300 / 6076.12);
-        const nearNm = SR?.ONSITE_NEAR_NM != null ? SR.ONSITE_NEAR_NM : 0.32;
+        const radiusNm = SR?.ONSITE_FIT_NM != null ? SR.ONSITE_FIT_NM : 10;
+        const nearNm = SR?.ONSITE_NEAR_NM != null ? SR.ONSITE_NEAR_NM : 8;
         const nearby = (BD.DIVE_SITES || []).filter(s => s && haversineM(bp.lat, bp.lon, s.lat, s.lon) / 1852 <= nearNm)
           .slice(0, 24).map(s => ({ lat: s.lat, lon: s.lon, name: s.name, depth: s.depth, kind: 'reef' }));
         SeafloorRender.update('diveSeafloorRender', {

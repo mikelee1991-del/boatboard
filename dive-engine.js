@@ -2191,9 +2191,9 @@
       const p = getPos ? getPos() : null;
       const lat = p?.lat ?? site.lat;
       const lon = p?.lon ?? site.lon;
-      /* Local structure: 1300 ft fit; NCEI DEM relief; ENC available in layers. */
-      const radiusNm = SR.ONSITE_FIT_NM != null ? SR.ONSITE_FIT_NM : (1300 / 6076.12);
-      const nearNm = SR.ONSITE_NEAR_NM != null ? SR.ONSITE_NEAR_NM : 0.32;
+      /* ~10 nmi fit; NCEI DEM / BlueTopo; depth isolines available in layers. */
+      const radiusNm = SR.ONSITE_FIT_NM != null ? SR.ONSITE_FIT_NM : 10;
+      const nearNm = SR.ONSITE_NEAR_NM != null ? SR.ONSITE_NEAR_NM : 8;
       const markKey = site.lat.toFixed(5) + ',' + site.lon.toFixed(5);
       const nearby = [];
       for (let i = 0; i < DIVE_SITES.length; i++) {

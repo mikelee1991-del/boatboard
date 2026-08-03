@@ -323,8 +323,8 @@ aside {
   var GROUPS_KEY = 'pinFeatureGroups_v1';
   var DUAL_UNLINK_KEY = 'pinTrustReviewDualUnlink_v1';
   var SR = window.SeafloorRender || null;
-  /* Local review view — slightly wider than On site 1300 ft fit so nearby pins read clearly. */
-  var REVIEW_FIT_NM = (SR && SR.ONSITE_NEAR_NM != null) ? SR.ONSITE_NEAR_NM : 0.32; /* ~1944 ft */
+  /* Local review view — structure-scale (~1944 ft), not the app’s 10 nmi On site fit. */
+  var REVIEW_FIT_NM = 0.32; /* ~1944 ft */
   var REVIEW_FIT_MAX_ZOOM = 17;
   /* Exact-or-tiny float epsilon for “same physical coords” fish+dive duals (Franko pairs). */
   var DUAL_COORD_EPS = 1e-9;
@@ -333,7 +333,7 @@ aside {
   var groupSel = {}; /* pinKey -> pin snapshot */
   var dualOf = {}; /* candidateId -> twin candidate object */
   var dualUnlinked = {}; /* candidateId -> true when user split joint review */
-  /* Default 0.5 nm — enough for duplicates/clusters without bay clutter (On site near ≈ 0.32 nm). */
+  /* Default 0.5 nm — enough for duplicates/clusters without bay clutter. */
   var nearbyRadiusNm = 0.5;
   var editingGroupId = null;
   var basemapReady = false;

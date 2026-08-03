@@ -10,10 +10,12 @@
  *   3. NOAA ENC Online WMS — chart soundings / schematic symbols.
  *   4. Esri World Ocean Base + Reference — regional tint (Plan default).
  *   5. OpenSeaMap seamarks · Esri World Imagery · CDFW kelp GeoJSON.
+ *   6. Depth isolines (ft) — NCEI elevations, toggleable overlay (cyan minor / yellow major).
  *
  * Self-host pipeline: bluetopo/README.md (Docker → PMTiles → R2 Worker).
  *
- * Fit: On site ONSITE_FIT_FT = 1300 ft (~0.21 nm); Plan PLAN_FIT_NM = 2.5.
+ * Fit: On site + Plan default ~10 nmi radius (ONSITE_FIT_NM / PLAN_FIT_NM).
+ * Overlay: fishing-style depth isolines (ft) via NCEI getSamples + marching squares.
  * DEM: tiled overview, then viewport-matched NCEI export at z≥14 (screen pixels, not stretched tiles).
  * BlueTopo WMTS is native through z20 (512px tiles); SoCal cells are often empty → DEM shows through.
  * NCEI source cells are ~3 m — beyond that we smooth, we cannot invent survey detail.
@@ -23,17 +25,25 @@
 (function (global) {
   const D2R = Math.PI / 180;
   const FT_PER_NM = 6076.12;
-  /** On site default fit radius — local structure scale (hundreds–low thousands of feet). */
-  const ONSITE_FIT_FT = 1300;                 // ~396 m
-  const ONSITE_FIT_NM = ONSITE_FIT_FT / FT_PER_NM; // ~0.214 nm
-  /** Nearby reef/kelp/rock pins on On site (slightly wider than fit). */
-  const ONSITE_NEAR_NM = 0.32;                // ~1944 ft
-  /** Fish Plan seafloor — wider context around the vessel. */
-  const PLAN_FIT_NM = 2.5;
-  const PLAN_NEAR_NM = 1.0;                   // ~6076 ft
+  /** On site + Plan default fit radius (~10 nmi view span). */
+  const ONSITE_FIT_NM = 10;
+  const ONSITE_FIT_FT = Math.round(ONSITE_FIT_NM * FT_PER_NM);
+  /** Nearby reef/kelp/rock pins — a bit under the fit radius so the chart stays readable. */
+  const ONSITE_NEAR_NM = 8;
+  /** Plan seafloor fit (same regional span as On site). */
+  const PLAN_FIT_NM = 10;
+  const PLAN_NEAR_NM = 8;
   const KELP_QUERY = 'https://services2.arcgis.com/Uq9r85Potqm3MfRV/arcgis/rest/services/biosds3135_fpu/FeatureServer/0/query';
   const FETCH_MS = 20000;
   const KELP_CACHE_MS = 10 * 60 * 1000;
+
+  /* NCEI elevations (meters). Contour at depth_ft → elev = -ft / 3.28084. */
+  const NCEI_ELEV_SAMPLES =
+    'https://gis.ngdc.noaa.gov/arcgis/rest/services/DEM_mosaics/DEM_global_mosaic/ImageServer/getSamples';
+  const M_PER_FT = 1 / 3.28084;
+  const ISOLINE_LEVELS_FT = [10, 20, 30, 40, 50, 60, 80, 100, 120, 150, 180, 200, 250, 300, 400, 500];
+  const ISOLINE_MAJOR_FT = { 30: 1, 60: 1, 100: 1, 150: 1, 200: 1, 300: 1 };
+  const ISOLINE_LAYER_NAME = 'Depth isolines (ft)';
 
   /* NOAA ENC Online — Maritime Chart Service WMS (CORS OK for GH Pages).
    * Layer ids: 10=chart info area, 2=depths/currents, 4=seabed/obstructions, 1=features. */
@@ -120,12 +130,14 @@
     const st = hosts.get(host);
     if (st?.map) {
       try { if (st.demViewport) st.demViewport.remove(); } catch (e) { /* ignore */ }
+      try { if (st.isolineCtrl) st.isolineCtrl.remove(); } catch (e) { /* ignore */ }
       try { st.map.remove(); } catch (e) { /* ignore */ }
       st.map = null;
       st.markers = null;
       st.kelpLayer = null;
       st.layersControl = null;
       st.demViewport = null;
+      st.isolineCtrl = null;
     }
   }
 
@@ -479,6 +491,273 @@
     };
   }
 
+  /* --- Fishing-style depth isolines (NCEI getSamples + marching squares) --- */
+  function isolineLerp(a, b, t) { return a + (b - a) * t; }
+  function isolineEdgePoint(x0, y0, x1, y1, v0, v1, level) {
+    const t = (Math.abs(v1 - v0) < 1e-9) ? 0.5 : (level - v0) / (v1 - v0);
+    return [isolineLerp(x0, x1, t), isolineLerp(y0, y1, t)];
+  }
+
+  function isolineStitch(segs) {
+    if (!segs.length) return [];
+    const key = (p) => p[0].toFixed(5) + ',' + p[1].toFixed(5);
+    const used = new Array(segs.length).fill(false);
+    const lines = [];
+    for (let s = 0; s < segs.length; s++) {
+      if (used[s]) continue;
+      used[s] = true;
+      let line = [segs[s][0], segs[s][1]];
+      let grew = true;
+      while (grew) {
+        grew = false;
+        const head = key(line[0]);
+        const tail = key(line[line.length - 1]);
+        for (let i = 0; i < segs.length; i++) {
+          if (used[i]) continue;
+          const a = key(segs[i][0]), b = key(segs[i][1]);
+          if (a === tail) { line.push(segs[i][1]); used[i] = true; grew = true; break; }
+          if (b === tail) { line.push(segs[i][0]); used[i] = true; grew = true; break; }
+          if (a === head) { line.unshift(segs[i][1]); used[i] = true; grew = true; break; }
+          if (b === head) { line.unshift(segs[i][0]); used[i] = true; grew = true; break; }
+        }
+      }
+      if (line.length >= 2) lines.push(line);
+    }
+    return lines;
+  }
+
+  function isolineMarch(grid, xs, ys, level) {
+    const rows = grid.length;
+    const cols = grid[0].length;
+    const segs = [];
+    for (let j = 0; j < rows - 1; j++) {
+      for (let i = 0; i < cols - 1; i++) {
+        const v00 = grid[j][i], v10 = grid[j][i + 1];
+        const v01 = grid[j + 1][i], v11 = grid[j + 1][i + 1];
+        if ([v00, v10, v01, v11].some(v => v == null || !isFinite(v))) continue;
+        const b0 = v00 >= level ? 1 : 0;
+        const b1 = v10 >= level ? 2 : 0;
+        const b2 = v11 >= level ? 4 : 0;
+        const b3 = v01 >= level ? 8 : 0;
+        const idx = b0 | b1 | b2 | b3;
+        if (idx === 0 || idx === 15) continue;
+        const x0 = xs[i], x1 = xs[i + 1], y0 = ys[j], y1 = ys[j + 1];
+        const top = () => isolineEdgePoint(x0, y0, x1, y0, v00, v10, level);
+        const right = () => isolineEdgePoint(x1, y0, x1, y1, v10, v11, level);
+        const bottom = () => isolineEdgePoint(x0, y1, x1, y1, v01, v11, level);
+        const left = () => isolineEdgePoint(x0, y0, x0, y1, v00, v01, level);
+        const cases = {
+          1: [left, top], 2: [top, right], 3: [left, right], 4: [right, bottom],
+          5: [left, top, right, bottom], 6: [top, bottom], 7: [left, bottom],
+          8: [bottom, left], 9: [top, bottom], 10: [top, right, bottom, left],
+          11: [right, bottom], 12: [right, left], 13: [top, right], 14: [top, left]
+        };
+        const fns = cases[idx];
+        if (!fns) continue;
+        for (let k = 0; k < fns.length; k += 2) {
+          segs.push([fns[k](), fns[k + 1]()]);
+        }
+      }
+    }
+    return isolineStitch(segs);
+  }
+
+  function isolineGridFromSamples(samples, west, east, south, north, nCol, nRow) {
+    const xs = [];
+    const ys = [];
+    for (let i = 0; i < nCol; i++) xs.push(west + (east - west) * (i / (nCol - 1)));
+    for (let j = 0; j < nRow; j++) ys.push(north - (north - south) * (j / (nRow - 1)));
+    const grid = Array.from({ length: nRow }, () => Array(nCol).fill(null));
+    const bin = Array.from({ length: nRow }, () => Array.from({ length: nCol }, () => []));
+    for (let s = 0; s < samples.length; s++) {
+      const sample = samples[s];
+      const v = typeof sample.value === 'number' ? sample.value : parseFloat(sample.value);
+      if (!isFinite(v) || !sample.location) continue;
+      const x = sample.location.x, y = sample.location.y;
+      const i = Math.round((x - west) / (east - west) * (nCol - 1));
+      const j = Math.round((north - y) / (north - south) * (nRow - 1));
+      if (i < 0 || j < 0 || i >= nCol || j >= nRow) continue;
+      bin[j][i].push(v);
+    }
+    for (let j = 0; j < nRow; j++) {
+      for (let i = 0; i < nCol; i++) {
+        const arr = bin[j][i];
+        if (!arr.length) continue;
+        let sum = 0;
+        for (let k = 0; k < arr.length; k++) sum += arr[k];
+        grid[j][i] = sum / arr.length;
+      }
+    }
+    for (let pass = 0; pass < 2; pass++) {
+      for (let j = 0; j < nRow; j++) {
+        for (let i = 0; i < nCol; i++) {
+          if (grid[j][i] != null) continue;
+          let sum = 0, n = 0;
+          for (let dj = -1; dj <= 1; dj++) {
+            for (let di = -1; di <= 1; di++) {
+              const jj = j + dj, ii = i + di;
+              if (jj < 0 || ii < 0 || jj >= nRow || ii >= nCol) continue;
+              if (grid[jj][ii] == null) continue;
+              sum += grid[jj][ii]; n++;
+            }
+          }
+          if (n >= 3) grid[j][i] = sum / n;
+        }
+      }
+    }
+    return { grid, xs, ys };
+  }
+
+  async function isolineFetchEnvelope(w, s, e, n, nn) {
+    const span = Math.max(e - w, n - s);
+    const dist = span / (nn * 1.02);
+    const geom = JSON.stringify({
+      xmin: w, ymin: s, xmax: e, ymax: n,
+      spatialReference: { wkid: 4326 }
+    });
+    const url = NCEI_ELEV_SAMPLES +
+      '?geometry=' + encodeURIComponent(geom) +
+      '&geometryType=esriGeometryEnvelope' +
+      '&sampleDistance=' + dist +
+      '&sampleCount=' + (nn * nn) +
+      '&f=pjson';
+    return fetchJsonSimple(url, FETCH_MS);
+  }
+
+  /**
+   * Toggleable fishing-style depth isolines (feet). Live-reloads on pan/zoom when on.
+   * Off by default — add via layers control.
+   */
+  function attachDepthIsolines(map) {
+    const contourGroup = L.layerGroup();
+    let timer = null;
+    let seq = 0;
+    let active = false;
+
+    async function refresh() {
+      if (!active || !map) return;
+      const my = ++seq;
+      const b = map.getBounds().pad(0.04);
+      const z = map.getZoom();
+      const west = b.getWest(), east = b.getEast(), south = b.getSouth(), north = b.getNorth();
+      let nTarget = z >= 17 ? 72 : (z >= 16 ? 64 : (z >= 14 ? 50 : (z >= 12 ? 38 : 30)));
+      const useBatch = z >= 15;
+      let samples = [];
+      try {
+        if (useBatch) {
+          const nQuad = z >= 17 ? 44 : (z >= 16 ? 40 : 36);
+          const mx = (west + east) / 2, myLat = (south + north) / 2;
+          const quads = [
+            [west, south, mx, myLat], [mx, south, east, myLat],
+            [west, myLat, mx, north], [mx, myLat, east, north]
+          ];
+          let parts = await Promise.all(quads.map(q => isolineFetchEnvelope(q[0], q[1], q[2], q[3], nQuad)));
+          if (parts.some(p => p.error || !(p.samples && p.samples.length))) {
+            const one = await isolineFetchEnvelope(west, south, east, north, nTarget);
+            parts = [one];
+          }
+          for (let i = 0; i < parts.length; i++) {
+            if (parts[i].error) throw new Error(parts[i].error.message || 'sample error');
+            samples = samples.concat(parts[i].samples || []);
+          }
+          nTarget = Math.max(nTarget, nQuad * 2);
+        } else {
+          let data = await isolineFetchEnvelope(west, south, east, north, nTarget);
+          if (data.error ||
+              ((data.samples || []).length < Math.min(48, nTarget * nTarget * 0.35) && nTarget > 32)) {
+            nTarget = Math.max(28, Math.round(nTarget * 0.7));
+            data = await isolineFetchEnvelope(west, south, east, north, nTarget);
+          }
+          if (data.error) throw new Error(data.error.message || 'sample error');
+          samples = data.samples || [];
+        }
+      } catch (e) {
+        console.warn('depth isolines', e);
+        return;
+      }
+      if (my !== seq || !active) return;
+      if (samples.length < 16) {
+        contourGroup.clearLayers();
+        return;
+      }
+
+      const nEff = Math.min(nTarget, Math.max(16, Math.round(Math.sqrt(samples.length * 1.05))));
+      const packed = isolineGridFromSamples(samples, west, east, south, north, nEff, nEff);
+      const grid = packed.grid, xs = packed.xs, ys = packed.ys;
+      contourGroup.clearLayers();
+
+      for (let li = 0; li < ISOLINE_LEVELS_FT.length; li++) {
+        const ft = ISOLINE_LEVELS_FT[li];
+        const level = -ft * M_PER_FT;
+        const paths = isolineMarch(grid, xs, ys, level);
+        const major = !!ISOLINE_MAJOR_FT[ft];
+        for (let pi = 0; pi < paths.length; pi++) {
+          const path = paths[pi];
+          if (path.length < 2) continue;
+          const latlngs = path.map(p => [p[1], p[0]]);
+          L.polyline(latlngs, {
+            color: major ? '#ffe566' : '#5dffd0',
+            weight: major ? 2.25 : 1.15,
+            opacity: major ? 0.95 : 0.75,
+            lineJoin: 'round',
+            interactive: false,
+            className: 'fish-isoline'
+          }).addTo(contourGroup);
+          if (major && path.length > 6) {
+            const mid = path[Math.floor(path.length / 2)];
+            L.marker([mid[1], mid[0]], {
+              interactive: false,
+              icon: L.divIcon({
+                className: 'contour-label',
+                html: ft + ' ft',
+                iconSize: [56, 14],
+                iconAnchor: [28, 7]
+              })
+            }).addTo(contourGroup);
+          }
+        }
+      }
+    }
+
+    function schedule() {
+      if (!active) return;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(refresh, 180);
+    }
+
+    function onOverlayAdd(e) {
+      if (e.layer !== contourGroup) return;
+      active = true;
+      schedule();
+    }
+    function onOverlayRemove(e) {
+      if (e.layer !== contourGroup) return;
+      active = false;
+      seq++;
+      if (timer) clearTimeout(timer);
+      contourGroup.clearLayers();
+    }
+
+    map.on('overlayadd', onOverlayAdd);
+    map.on('overlayremove', onOverlayRemove);
+    map.on('moveend zoomend', schedule);
+
+    return {
+      layer: contourGroup,
+      name: ISOLINE_LAYER_NAME,
+      remove: function () {
+        active = false;
+        seq++;
+        if (timer) clearTimeout(timer);
+        map.off('overlayadd', onOverlayAdd);
+        map.off('overlayremove', onOverlayRemove);
+        map.off('moveend zoomend', schedule);
+        try { map.removeLayer(contourGroup); } catch (e) { /* ignore */ }
+        contourGroup.clearLayers();
+      }
+    };
+  }
+
   function ensureShell(host, mode) {
     let mapEl = host.querySelector('.seafloor-map');
     let legendEl = host.querySelector('.seafloor-legend');
@@ -648,7 +927,11 @@
       try { if (!map.hasLayer(seamarks)) seamarks.addTo(map); } catch (e) { /* ignore */ }
     }, 400);
 
-    const overlays = { 'Seamarks': seamarks };
+    const isolineCtrl = attachDepthIsolines(map);
+    const overlays = {
+      'Seamarks': seamarks
+    };
+    overlays[isolineCtrl.name] = isolineCtrl.layer;
     const layersControl = L.control.layers(bases, overlays, {
       position: opts.layersPosition || 'topright',
       collapsed: true
@@ -656,7 +939,7 @@
 
     return {
       oceanGroup, imagery, seamarks, enc, dem: demSolo,
-      blueTopoGroup, layersControl, demViewport,
+      blueTopoGroup, layersControl, demViewport, isolineCtrl,
       usingBlueTopo: !!(preferBlueTopo && blueTopoGroup),
       mode: preferBlueTopo && blueTopoGroup ? 'bt' : (preferDem ? 'dem' : (preferEnc ? 'enc' : 'ocean'))
     };
@@ -810,7 +1093,7 @@
         (opts.markLat == null || haversineNm(focusLat, focusLon, opts.centerLat, opts.centerLon) <= radiusNm * 1.2)) {
       bounds.extend([opts.centerLat, opts.centerLon]);
     }
-    const fitMax = opts.fitMaxZoom != null ? opts.fitMaxZoom : (radiusNm <= 0.5 ? 19 : 16);
+    const fitMax = opts.fitMaxZoom != null ? opts.fitMaxZoom : (radiusNm <= 0.5 ? 19 : (radiusNm <= 3 ? 16 : 14));
     map.fitBounds(bounds.pad(0.06), { maxZoom: fitMax, animate: false });
   }
 
@@ -842,9 +1125,10 @@
       await ensureLeaflet();
       if (hosts.get(host)?.reqId !== reqId) return;
 
-      const preferDem = opts.preferDem === true ||
-        (opts.preferDem !== false && opts.preferEnc !== true &&
-          (opts.radiusNm == null || opts.radiusNm <= 0.5));
+      /* Prefer DEM/BlueTopo for On site & Plan spans; ENC only when explicitly requested. */
+      const preferDem = opts.preferEnc === true
+        ? !!opts.preferDem
+        : (opts.preferDem !== false);
       const preferEnc = !preferDem && (opts.preferEnc === true);
 
       const btCfg = preferDem ? await loadBlueTopoConfig() : null;
@@ -897,6 +1181,7 @@
         });
         st.usingBlueTopo = added.usingBlueTopo;
         st.demViewport = added.demViewport;
+        st.isolineCtrl = added.isolineCtrl;
         st.markers = L.layerGroup().addTo(st.map);
       }
 
