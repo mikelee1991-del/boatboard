@@ -1601,11 +1601,11 @@ function ensureDiveEngine(){
   if(window.BoatDive) return Promise.resolve(window.BoatDive);
   if(_diveEnginePromise) return _diveEnginePromise;
   _diveEnginePromise = loadScript('pin-feature-groups-data.js?v=2').catch(function(){ /* optional */ })
-    .then(()=> loadScript('dive-briefings-data.js'))
+    .then(()=> loadScript('dive-briefings-data.js?v=2'))
     .then(()=> loadScript('dive-site-intel.js'))
-    .then(()=> loadScript('briefing-synth.js'))
+    .then(()=> loadScript('briefing-synth.js?v=2'))
     .then(()=> ensureForecastCharts())
-    .then(()=> loadScript('dive-engine.js?v=8'))
+    .then(()=> loadScript('dive-engine.js?v=9'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
       return window.BoatDive;
@@ -6162,8 +6162,8 @@ const FISH_SPOTS = [
     bestTide: 'incoming', bestTime: 'morning', minSstF: 58, userTrusted: true}, // diver.net Worm Reef DMS + USC Rocky Pt Kelp (same complex)
   { name: 'Ship Rock — Catalina (Isthmus)', lat: 33.4631983, lon: -118.4916767, face: 90, regional: true, verified: true,
     species: ['yellowtail', 'white seabass', 'calico bass', 'sheephead'],
-    depth: '40-130 ft', habitat: 'Offshore pinnacle / kelp at Ship Rock Light (Isthmus)',
-    tactics: 'Work rock edges and reef finger SE of the light; watch current and boat traffic.',
+    depth: '40-130 ft', habitat: 'Offshore pinnacle / kelp at Ship Rock Light (Isthmus); Franko: east slope steep wall, SSE kelp',
+    tactics: 'Work rock edges and reef finger SE of the light; watch current and boat traffic. Franko chart notes: 0′–135′+ east wall, SSE kelp forest, lobsters/inverts/pelagics, sea lions tease divers.',
     bestTide: 'incoming', bestTime: 'morning', minSstF: 60, userTrusted: true}, // USCG Ship Rock Light + Diosa del Mar wreck GPS (~0.03 NM)
   { name: 'Indian Rock — Emerald Bay / Catalina', lat: 33.467997, lon: -118.526799, face: 90, regional: true, verified: true,
     species: ['calico bass', 'sheephead', 'opaleve', 'halibut'],
@@ -6427,11 +6427,6 @@ const FISH_SPOTS = [
     depth: '30-120 ft', habitat: 'Offshore fishing grounds',
     tactics: 'San Diego Fishing Spots.kml chart waypoint; drift or live bait on structure.',
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58, userTrusted: true},
-  { name: '307', lat: 33.7917, lon: -118.5333, face: 250, kmlImported: true,
-    species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
-    depth: '30-120 ft', habitat: 'Offshore fishing grounds',
-    tactics: 'San Diego Fishing Spots.kml chart waypoint; drift or live bait on structure.',
-    bestTide: 'incoming', bestTime: 'dawn', minSstF: 58, userTrusted: true},
   { name: '311', lat: 33.6167, lon: -120.25, face: 270, kmlImported: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
     depth: '30-120 ft', habitat: 'Offshore fishing grounds',
@@ -6689,8 +6684,8 @@ const FISH_SPOTS = [
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58, userTrusted: true},
   { name: 'Ben Weston', lat: 33.357, lon: -118.4902, face: 270, kmlImported: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
-    depth: '30-120 ft', habitat: 'Offshore fishing grounds',
-    tactics: 'San Diego Fishing Spots.kml chart waypoint; drift or live bait on structure.',
+    depth: '30-120 ft', habitat: 'Catalina backside — rocky NW side, caves, kelp/reef',
+    tactics: 'Franko chart (text only; KML GPS kept): 10′–80′ Int — NW side rocky with gamefish, caves & white seabass; exposed; all levels when flat.',
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58, userTrusted: true},
   { name: 'Bend in Pipe', lat: 33.6145, lon: -117.9727, face: 200, kmlImported: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
@@ -6794,8 +6789,8 @@ const FISH_SPOTS = [
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58, userTrusted: true},
   { name: 'China Point - Catalina', lat: 33.3283, lon: -118.4688, face: 270, kmlImported: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
-    depth: '30-120 ft', habitat: 'Offshore fishing grounds',
-    tactics: 'San Diego Fishing Spots.kml chart waypoint; drift or live bait on structure.',
+    depth: '30-120 ft', habitat: 'Catalina SW coast rocky reefs with kelp; exposed surf/surge',
+    tactics: 'Franko chart (text only; KML GPS kept): 10′–80′ Int — historic smugglers’ point; rocky kelp reefs; bull lobster/scallops/gamefish/sea lions; heavy surf, surge, currents.',
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58, userTrusted: true},
   { name: 'China Point - San Clemente Island', lat: 32.7958, lon: -118.4333, face: 270, kmlImported: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
@@ -6809,8 +6804,8 @@ const FISH_SPOTS = [
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58, userTrusted: true},
   { name: 'Church Rock', lat: 33.2968, lon: -118.3267, face: 270, kmlImported: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
-    depth: '30-120 ft', habitat: 'Offshore fishing grounds',
-    tactics: 'San Diego Fishing Spots.kml chart waypoint; drift or live bait on structure.',
+    depth: '30-120 ft', habitat: 'E-end Catalina — huge rocks, kelp, swim-thru caves (Binnacle Rock area)',
+    tactics: 'Franko chart notes blended at trusted Church Rock GPS: 0′–80′ Int — huge rocks, kelp, swim-thru caves toward Binnacle Rock; lobsters & pelagic fish.',
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58, userTrusted: true},
   { name: 'CI - Rockfish #1', lat: 33.4667, lon: -118.6193, face: 270, kmlImported: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
@@ -6934,8 +6929,8 @@ const FISH_SPOTS = [
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58, userTrusted: true},
   { name: 'Eagle Reef', lat: 33.4603, lon: -118.5073, face: 270, kmlImported: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
-    depth: '30-120 ft', habitat: 'Rocky reef',
-    tactics: 'San Diego Fishing Spots.kml chart waypoint; drift or live bait on structure.',
+    depth: '30-120 ft', habitat: 'Isthmus-area rocky reef chain (four reefs W→E); kelp forest',
+    tactics: 'Drift kelp reef steps; watch boat traffic. Franko: 3′–135′+ four reefs W to E at ~8′, 3′, 35′, and 45′–135′+; great kelp diving — caution boats.',
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58, userTrusted: true},
   { name: 'Eagle\'s Nest', lat: 33.9317, lon: -120.0017, face: 250, kmlImported: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
@@ -8839,8 +8834,8 @@ const FISH_SPOTS = [
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58 },
   { name: 'Eagle Reef (west) — Catalina (fish)', lat: 33.4613, lon: -118.51145, userTrusted: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
-    depth: '30-120 ft', habitat: 'User-trusted water target',
-    tactics: 'Pin-trust review yes — published coords unchanged.',
+    depth: '30-120 ft', habitat: 'West end of Eagle Reef chain off Isthmus; kelp forest steps',
+    tactics: 'Pin-trust yes — published west-end coords. Franko reef-chain notes: 3′–135′+ four reefs W→E (~8′, 3′, 35′, 45′–135′+); kelp forest; caution boats.',
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58 },
   { name: 'Bird Rock — Catalina (fish)', lat: 33.451, lon: -118.48616666666666, userTrusted: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
@@ -8874,8 +8869,8 @@ const FISH_SPOTS = [
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58 },
   { name: 'Isthmus Cove — Catalina (Two Harbors) (fish)', lat: 33.44233333333333, lon: -118.495, userTrusted: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
-    depth: '30-120 ft', habitat: 'User-trusted water target',
-    tactics: 'Pin-trust review yes — published coords unchanged.',
+    depth: '30-120 ft', habitat: 'Two Harbors isthmus cove; adjacent 4th of July Cove mooring field (private beach)',
+    tactics: 'Pin-trust yes — Isthmus GPS unchanged. Adjacent Franko notes for 4th of July Cove (bad GPS withheld): 0\u2032–30\u2032, 42 moorings but zero anchorage; historic Banning family 4th of July beach; private beach.',
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58 },
   { name: 'Casino Point / Avalon Underwater Park — Catalina (fish)', lat: 33.349266666666665, lon: -118.32488333333333, userTrusted: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
