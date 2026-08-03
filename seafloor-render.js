@@ -641,15 +641,15 @@
       const z = map.getZoom();
       const west = b.getWest(), east = b.getEast(), south = b.getSouth(), north = b.getNorth();
       /* Sample density by zoom. NCEI getSamples soft-caps ~1000 pts/request, so
-         mid/high zoom uses 2x2 batched envelopes. Prior: 30/38/50/64/72, batch z>=15.
-         Now denser targets + batch from z>=13 (typical Plan / On-site) so contours
-         are not stuck at ~31^2 after the soft cap. */
-      let nTarget = z >= 17 ? 84 : (z >= 16 ? 72 : (z >= 14 ? 60 : (z >= 12 ? 46 : 36)));
-      const useBatch = z >= 13;
+         mid/high zoom uses 2x2 batched envelopes (4 parallel). Prior densify:
+         nTarget 36/46/60/72/84, nQuad 38/42/46/50, batch z>=13. Now tighter at
+         every band + batch from z>=11 so overview/Plan also clear the soft cap. */
+      let nTarget = z >= 17 ? 100 : (z >= 16 ? 88 : (z >= 14 ? 72 : (z >= 12 ? 58 : 48)));
+      const useBatch = z >= 11;
       let samples = [];
       try {
         if (useBatch) {
-          const nQuad = z >= 17 ? 50 : (z >= 16 ? 46 : (z >= 14 ? 42 : 38));
+          const nQuad = z >= 17 ? 56 : (z >= 16 ? 52 : (z >= 14 ? 48 : 44));
           const mx = (west + east) / 2, myLat = (south + north) / 2;
           const quads = [
             [west, south, mx, myLat], [mx, south, east, myLat],
