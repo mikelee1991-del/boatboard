@@ -996,7 +996,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         </div>
         <div class="uw-zoom-bar">
           <button type="button" class="uw-zoom-btn" id="uwZoomIn" title="Zoom in — closer range" aria-label="Zoom in">+</button>
-          <span id="uwRangeLbl" class="uw-range-lbl">6 nm</span>
+          <span id="uwRangeLbl" class="uw-range-lbl">1.1 nm</span>
           <button type="button" class="uw-zoom-btn" id="uwZoomOut" title="Zoom out — wider range" aria-label="Zoom out">−</button>
           <button type="button" class="uw-zoom-btn" id="uwZoomReset" title="Reset zoom" aria-label="Reset zoom" style="font-size:11px;font-weight:600">Reset</button>
         </div>
@@ -12430,7 +12430,8 @@ function renderSwellTab(){
 }
 
 /* ============ underway (heading-up swell + AIS) ============ */
-const UW_RANGE_DEFAULT = 6;
+/* Default frames the outer ring at 1.1 nm (harbor-approach scale around Port Royal / King Harbor). */
+const UW_RANGE_DEFAULT = 1.1;
 const UW_RANGE_MIN = 0.6;
 const UW_RANGE_MAX = 12;
 let uwRadarView = { rangeNm: UW_RANGE_DEFAULT };
@@ -12646,7 +12647,7 @@ function renderUnderwayTab(){
   for(const nm of uwRangeRings(rangeNm)){
     const rr = uwDistToRadius(nm, rangeNm, plotR);
     svg += '<circle cx="'+cx+'" cy="'+cy+'" r="'+rr+'" fill="none" stroke="#1e2a38" stroke-width="1.5" stroke-dasharray="5 6"/>';
-    const lbl = nm >= 1 ? f0(nm) : f1(nm);
+    const lbl = Math.abs(nm - Math.round(nm)) < 0.05 ? f0(nm) : f1(nm);
     svg += '<text x="'+(cx+6)+'" y="'+(cy-rr+14)+'" font-size="11" fill="var(--ink3)">'+lbl+' nm</text>';
   }
 
