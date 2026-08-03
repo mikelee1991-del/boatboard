@@ -1516,8 +1516,8 @@ let _seafloorPromise = null;
 function ensureSeafloorRender(){
   if(window.SeafloorRender) return Promise.resolve(window.SeafloorRender);
   if(_seafloorPromise) return _seafloorPromise;
-  /* ?v=13 — smooth + zoom-stable depth isolines (Chaikin + quantized pool). */
-  _seafloorPromise = loadScript('seafloor-render.js?v=13').then(()=>{
+  /* ?v=14 — low Chaikin + zoom-stable depth isolines (dense grid + quantized pool). */
+  _seafloorPromise = loadScript('seafloor-render.js?v=14').then(()=>{
     if(window.SeafloorRender) SeafloorRender.init({ fetchJSON, loadLeaflet });
     return window.SeafloorRender;
   }).catch(e=>{ _seafloorPromise = null; throw e; });
