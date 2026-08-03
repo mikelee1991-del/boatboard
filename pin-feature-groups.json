@@ -1,6 +1,6 @@
 {
   "type": "pin-feature-groups",
-  "exportedAt": "2026-08-02T18:05:01.100Z",
+  "exportedAt": "2026-08-03T03:10:46.839Z",
   "note": "Explicit feature groups from pin-trust-review.html. Members keep published coords (never nudged). Live dive/fish grouping unions matched pins even when names do not normalize together.",
   "groups": [
     {
@@ -489,6 +489,644 @@
         }
       ],
       "updatedAt": "2026-08-02T18:03:26.904Z"
+    },
+    {
+      "groupId": "pfg_santa_monica_artificial_reef_grze",
+      "displayName": "Santa Monica Artificial Reef",
+      "members": [
+        {
+          "id": "coord_fish|34.013889|-118.548333",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 15",
+          "lat": 34.0138889,
+          "lon": -118.5483333,
+          "diveId": ""
+        },
+        {
+          "id": "coord_fish|34.008889|-118.549722",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 22",
+          "lat": 34.0088889,
+          "lon": -118.5497222,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_22",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 22",
+          "lat": 34.0088889,
+          "lon": -118.5497222,
+          "diveId": "cdfg_santa_monica_bay_ar_22"
+        },
+        {
+          "id": "dive_ver_cdfg_santamonicaartificialreefb_32",
+          "kind": "dive",
+          "name": "Santa Monica Artificial Reef B",
+          "lat": 34.0091667,
+          "lon": -118.53,
+          "diveId": "cdfg_santamonicaartificialreefb_32"
+        },
+        {
+          "id": "dive_ver_cdfg_santamonicaartificialreefa_31",
+          "kind": "dive",
+          "name": "Santa Monica Artificial Reef A",
+          "lat": 34.0095,
+          "lon": -118.5303333,
+          "diveId": "cdfg_santamonicaartificialreefa_31"
+        },
+        {
+          "id": "dive_ver_cdfg_santamonicaartificialreefc_33",
+          "kind": "dive",
+          "name": "Santa Monica Artificial Reef C",
+          "lat": 34.0091667,
+          "lon": -118.5306778,
+          "diveId": "cdfg_santamonicaartificialreefc_33"
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_10",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 10",
+          "lat": 34.0100139,
+          "lon": -118.5339389,
+          "diveId": "cdfg_santa_monica_bay_ar_10"
+        },
+        {
+          "id": "coord_fish|34.010014|-118.533939",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 10",
+          "lat": 34.0100139,
+          "lon": -118.5339389,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_9",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 9",
+          "lat": 34.0080556,
+          "lon": -118.5344444,
+          "diveId": "cdfg_santa_monica_bay_ar_9"
+        },
+        {
+          "id": "coord_fish|34.008056|-118.534444",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 9",
+          "lat": 34.0080556,
+          "lon": -118.5344444,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_11",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 11",
+          "lat": 34.0115194,
+          "lon": -118.5361389,
+          "diveId": "cdfg_santa_monica_bay_ar_11"
+        },
+        {
+          "id": "coord_fish|34.011519|-118.536139",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 11",
+          "lat": 34.0115194,
+          "lon": -118.5361389,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_2",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 2",
+          "lat": 34.0141667,
+          "lon": -118.5341667,
+          "diveId": "cdfg_santa_monica_bay_ar_2"
+        },
+        {
+          "id": "coord_fish|34.014167|-118.534167",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 2",
+          "lat": 34.0141667,
+          "lon": -118.5341667,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_12",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 12",
+          "lat": 34.0118806,
+          "lon": -118.5383278,
+          "diveId": "cdfg_santa_monica_bay_ar_12"
+        },
+        {
+          "id": "coord_fish|34.011881|-118.538328",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 12",
+          "lat": 34.0118806,
+          "lon": -118.5383278,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_18",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 18",
+          "lat": 34.0049556,
+          "lon": -118.5370278,
+          "diveId": "cdfg_santa_monica_bay_ar_18"
+        },
+        {
+          "id": "coord_fish|34.004956|-118.537028",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 18",
+          "lat": 34.0049556,
+          "lon": -118.5370278,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_17",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 17",
+          "lat": 34.0025,
+          "lon": -118.5372222,
+          "diveId": "cdfg_santa_monica_bay_ar_17"
+        },
+        {
+          "id": "coord_fish|34.002500|-118.537222",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 17",
+          "lat": 34.0025,
+          "lon": -118.5372222,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_3",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 3",
+          "lat": 34.0172389,
+          "lon": -118.53605,
+          "diveId": "cdfg_santa_monica_bay_ar_3"
+        },
+        {
+          "id": "coord_fish|34.017239|-118.536050",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 3",
+          "lat": 34.0172389,
+          "lon": -118.53605,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_smbay13",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef #13",
+          "lat": 34.0130778,
+          "lon": -118.54065,
+          "diveId": "smbay13"
+        },
+        {
+          "id": "coord_fish|34.013078|-118.540650",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef #13",
+          "lat": 34.0130778,
+          "lon": -118.54065,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_19",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 19",
+          "lat": 34.0047222,
+          "lon": -118.5405556,
+          "diveId": "cdfg_santa_monica_bay_ar_19"
+        },
+        {
+          "id": "coord_fish|34.004722|-118.540556",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 19",
+          "lat": 34.0047222,
+          "lon": -118.5405556,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_smbayreef",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef (Center)",
+          "lat": 34.0130556,
+          "lon": -118.5425,
+          "diveId": "smbayreef"
+        },
+        {
+          "id": "fish_ver_santamonicabayartificial",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef (Center)",
+          "lat": 34.0130556,
+          "lon": -118.5425,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_4",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 4",
+          "lat": 34.0182639,
+          "lon": -118.5382444,
+          "diveId": "cdfg_santa_monica_bay_ar_4"
+        },
+        {
+          "id": "coord_fish|34.018264|-118.538244",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 4",
+          "lat": 34.0182639,
+          "lon": -118.5382444,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_20",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 20",
+          "lat": 34.0058333,
+          "lon": -118.5436111,
+          "diveId": "cdfg_santa_monica_bay_ar_20"
+        },
+        {
+          "id": "coord_fish|34.005833|-118.543611",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 20",
+          "lat": 34.0058333,
+          "lon": -118.5436111,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_smbay14",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef #14",
+          "lat": 34.0140194,
+          "lon": -118.5438333,
+          "diveId": "smbay14"
+        },
+        {
+          "id": "coord_fish|34.014019|-118.543833",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef #14",
+          "lat": 34.0140194,
+          "lon": -118.5438333,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_5",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 5",
+          "lat": 34.0196,
+          "lon": -118.5404333,
+          "diveId": "cdfg_santa_monica_bay_ar_5"
+        },
+        {
+          "id": "coord_fish|34.019600|-118.540433",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 5",
+          "lat": 34.0196,
+          "lon": -118.5404333,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_21",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 21",
+          "lat": 34.0075,
+          "lon": -118.5466667,
+          "diveId": "cdfg_santa_monica_bay_ar_21"
+        },
+        {
+          "id": "coord_fish|34.007500|-118.546667",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 21",
+          "lat": 34.0075,
+          "lon": -118.5466667,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_15",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 15",
+          "lat": 34.0138889,
+          "lon": -118.5483333,
+          "diveId": "cdfg_santa_monica_bay_ar_15"
+        },
+        {
+          "id": "dive_ver_smareefa",
+          "kind": "dive",
+          "name": "Santa Monica Artificial Reef A",
+          "lat": 34.0094444,
+          "lon": -118.5297222,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_6",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 6",
+          "lat": 34.0220556,
+          "lon": -118.5447222,
+          "diveId": "cdfg_santa_monica_bay_ar_6"
+        },
+        {
+          "id": "coord_fish|34.022056|-118.544722",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 6",
+          "lat": 34.0220556,
+          "lon": -118.5447222,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_23",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 23",
+          "lat": 34.0105556,
+          "lon": -118.5513889,
+          "diveId": "cdfg_santa_monica_bay_ar_23"
+        },
+        {
+          "id": "coord_fish|34.010556|-118.551389",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 23",
+          "lat": 34.0105556,
+          "lon": -118.5513889,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_16",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 16",
+          "lat": 34.0158333,
+          "lon": -118.5508333,
+          "diveId": "cdfg_santa_monica_bay_ar_16"
+        },
+        {
+          "id": "coord_fish|34.015833|-118.550833",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 16",
+          "lat": 34.0158333,
+          "lon": -118.5508333,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_8",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 8",
+          "lat": 34.0211111,
+          "lon": -118.5477778,
+          "diveId": "cdfg_santa_monica_bay_ar_8"
+        },
+        {
+          "id": "coord_fish|34.021111|-118.547778",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 8",
+          "lat": 34.0211111,
+          "lon": -118.5477778,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_7",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 7",
+          "lat": 34.0229472,
+          "lon": -118.5469222,
+          "diveId": "cdfg_santa_monica_bay_ar_7"
+        },
+        {
+          "id": "coord_fish|34.022947|-118.546922",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 7",
+          "lat": 34.0229472,
+          "lon": -118.5469222,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_santa_monica_bay_ar_24",
+          "kind": "dive",
+          "name": "Santa Monica Bay Artificial Reef 24",
+          "lat": 34.0108333,
+          "lon": -118.5541667,
+          "diveId": "cdfg_santa_monica_bay_ar_24"
+        },
+        {
+          "id": "coord_fish|34.010833|-118.554167",
+          "kind": "fish",
+          "name": "Santa Monica Bay Artificial Reef 24",
+          "lat": 34.0108333,
+          "lon": -118.5541667,
+          "diveId": ""
+        }
+      ],
+      "updatedAt": "2026-08-03T03:09:12.027Z"
+    },
+    {
+      "groupId": "pfg_marina_del_rey_artificial_reef_ivvl",
+      "displayName": "Marina Del Rey Artificial Reef",
+      "members": [
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2k_45",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2K",
+          "lat": 33.9686111,
+          "lon": -118.4872222,
+          "diveId": "cdfg_marinadelreyartificialreef2k_45"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2l_46",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2L",
+          "lat": 33.9686111,
+          "lon": -118.4877778,
+          "diveId": "cdfg_marinadelreyartificialreef2l_46"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2o_49",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2O",
+          "lat": 33.9691667,
+          "lon": -118.4866667,
+          "diveId": "cdfg_marinadelreyartificialreef2o_49"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2n_48",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2N",
+          "lat": 33.9688889,
+          "lon": -118.4861111,
+          "diveId": "cdfg_marinadelreyartificialreef2n_48"
+        },
+        {
+          "id": "dive_ver_mdreyreef",
+          "kind": "dive",
+          "name": "Marina del Rey Artificial Reef (Center)",
+          "lat": 33.9683333,
+          "lon": -118.4863889,
+          "diveId": "mdreyreef"
+        },
+        {
+          "id": "fish_kml_326",
+          "kind": "fish",
+          "name": "Reef #2 - 65 ft",
+          "lat": 33.9683,
+          "lon": -118.4863,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2m_47",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2M",
+          "lat": 33.9688889,
+          "lon": -118.4852778,
+          "diveId": "cdfg_marinadelreyartificialreef2m_47"
+        },
+        {
+          "id": "coord_fish|33.968889|-118.485278",
+          "kind": "fish",
+          "name": "Marina Del Rey Artificial Reef 2M",
+          "lat": 33.9688889,
+          "lon": -118.4852778,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_mdrey2a",
+          "kind": "dive",
+          "name": "Marina del Rey Artificial Reef 2A",
+          "lat": 33.9672222,
+          "lon": -118.4869444,
+          "diveId": "mdrey2a"
+        },
+        {
+          "id": "coord_fish|33.967222|-118.486944",
+          "kind": "fish",
+          "name": "Marina del Rey Artificial Reef 2A",
+          "lat": 33.9672222,
+          "lon": -118.4869444,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2i_43",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2I",
+          "lat": 33.9680556,
+          "lon": -118.4852778,
+          "diveId": "cdfg_marinadelreyartificialreef2i_43"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2g_41",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2G",
+          "lat": 33.9670833,
+          "lon": -118.4866667,
+          "diveId": "cdfg_marinadelreyartificialreef2g_41"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2d_38",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2D",
+          "lat": 33.9669444,
+          "lon": -118.4869444,
+          "diveId": "cdfg_marinadelreyartificialreef2d_38"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2c_37",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2C",
+          "lat": 33.9668056,
+          "lon": -118.4866667,
+          "diveId": "cdfg_marinadelreyartificialreef2c_37"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2f_40",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2F",
+          "lat": 33.9669444,
+          "lon": -118.4861111,
+          "diveId": "cdfg_marinadelreyartificialreef2f_40"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2b_36",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2B",
+          "lat": 33.9667111,
+          "lon": -118.4863889,
+          "diveId": "cdfg_marinadelreyartificialreef2b_36"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2e_39",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2E",
+          "lat": 33.9668056,
+          "lon": -118.4858333,
+          "diveId": "cdfg_marinadelreyartificialreef2e_39"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2a_35",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2A",
+          "lat": 33.9666667,
+          "lon": -118.4861111,
+          "diveId": "cdfg_marinadelreyartificialreef2a_35"
+        },
+        {
+          "id": "coord_fish|33.966667|-118.486111",
+          "kind": "fish",
+          "name": "Marina del Rey Artificial Reef 2A",
+          "lat": 33.9666667,
+          "lon": -118.4861111,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef1r_53",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 1R",
+          "lat": 33.9658333,
+          "lon": -118.4861111,
+          "diveId": "cdfg_marinadelreyartificialreef1r_53"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef1q_52",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 1Q",
+          "lat": 33.9655556,
+          "lon": -118.4869444,
+          "diveId": "cdfg_marinadelreyartificialreef1q_52"
+        },
+        {
+          "id": "fish_kml_527",
+          "kind": "fish",
+          "name": "Reef #1 - 65 ft",
+          "lat": 33.965,
+          "lon": -118.4862,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_mdrey1ctr",
+          "kind": "dive",
+          "name": "Marina del Rey Artificial Reef 1 Center",
+          "lat": 33.965,
+          "lon": -118.4861111,
+          "diveId": "mdrey1ctr"
+        },
+        {
+          "id": "coord_fish|33.965000|-118.486111",
+          "kind": "fish",
+          "name": "Marina del Rey Artificial Reef 1 Center",
+          "lat": 33.965,
+          "lon": -118.4861111,
+          "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef1t_55",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 1T",
+          "lat": 33.9644444,
+          "lon": -118.4861111,
+          "diveId": "cdfg_marinadelreyartificialreef1t_55"
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2p_50",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2P",
+          "lat": 33.9691667,
+          "lon": -118.4875,
+          "diveId": ""
+        }
+      ],
+      "updatedAt": "2026-08-03T03:10:21.921Z"
     }
   ]
 }
