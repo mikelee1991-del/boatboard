@@ -497,7 +497,8 @@
      instead of reshaping on a brand-new viewport lattice. ~0.001° ≈ 111 m. */
   const ISOLINE_CELL_DEG = [0.016, 0.008, 0.004, 0.002, 0.001, 0.0005];
   const ISOLINE_DEBOUNCE_MS = 280;
-  const ISOLINE_SMOOTH_ITERS = 3;
+  /** Chaikin corner-cutting passes after marching squares (1 = light; 0 = raw). */
+  const ISOLINE_SMOOTH_ITERS = 1;
   const ISOLINE_POOL_PAD = 0.35;
 
   function isolineLerp(a, b, t) { return a + (b - a) * t; }
