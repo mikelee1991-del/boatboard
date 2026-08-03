@@ -15,7 +15,8 @@
  * Self-host pipeline: bluetopo/README.md (Docker → PMTiles → R2 Worker).
  *
  * Fit: On site + Plan default ~10 nmi radius (ONSITE_FIT_NM / PLAN_FIT_NM).
- * Overlay: fishing-style depth isolines (ft) via NCEI getSamples + marching squares.
+ * Overlay: depth isolines (ft) via NCEI getSamples + marching squares + Chaikin smooth;
+ *   quantized world grid + sample pool keep contours stable across zoom refine.
  * DEM: tiled overview, then viewport-matched NCEI export at z≥14 (screen pixels, not stretched tiles).
  * BlueTopo WMTS is native through z20 (512px tiles); SoCal cells are often empty → DEM shows through.
  * NCEI source cells are ~3 m — beyond that we smooth, we cannot invent survey detail.
@@ -492,10 +493,53 @@
   }
 
   /* --- Fishing-style depth isolines (NCEI getSamples + marching squares) --- */
+  /* Dyadic cell sizes (°) so successive zoom bands nest and isolines refine in place
+     instead of reshaping on a brand-new viewport lattice. ~0.001° ≈ 111 m. */
+  const ISOLINE_CELL_DEG = [0.016, 0.008, 0.004, 0.002, 0.001, 0.0005];
+  const ISOLINE_DEBOUNCE_MS = 280;
+  const ISOLINE_SMOOTH_ITERS = 3;
+  const ISOLINE_POOL_PAD = 0.35;
+
   function isolineLerp(a, b, t) { return a + (b - a) * t; }
   function isolineEdgePoint(x0, y0, x1, y1, v0, v1, level) {
     const t = (Math.abs(v1 - v0) < 1e-9) ? 0.5 : (level - v0) / (v1 - v0);
     return [isolineLerp(x0, x1, t), isolineLerp(y0, y1, t)];
+  }
+
+  function isolineCellForZoom(z) {
+    if (z >= 17) return ISOLINE_CELL_DEG[5];
+    if (z >= 16) return ISOLINE_CELL_DEG[4];
+    if (z >= 14) return ISOLINE_CELL_DEG[3];
+    if (z >= 12) return ISOLINE_CELL_DEG[2];
+    if (z >= 10) return ISOLINE_CELL_DEG[1];
+    return ISOLINE_CELL_DEG[0];
+  }
+
+  /** Snap envelope to a stable world grid; cap cell count for getSamples soft limits. */
+  function isolineQuantizeEnvelope(west, south, east, north, cell, maxN) {
+    let c = cell;
+    for (let guard = 0; guard < 8; guard++) {
+      const w = Math.floor(west / c) * c;
+      const s = Math.floor(south / c) * c;
+      const e = Math.ceil(east / c) * c;
+      const n = Math.ceil(north / c) * c;
+      const nCol = Math.max(2, Math.round((e - w) / c) + 1);
+      const nRow = Math.max(2, Math.round((n - s) / c) + 1);
+      if (nCol <= maxN && nRow <= maxN) {
+        return { west: w, south: s, east: e, north: n, nCol: nCol, nRow: nRow, cell: c };
+      }
+      c *= 2;
+    }
+    const w = Math.floor(west / c) * c;
+    const s = Math.floor(south / c) * c;
+    const e = Math.ceil(east / c) * c;
+    const n = Math.ceil(north / c) * c;
+    return {
+      west: w, south: s, east: e, north: n,
+      nCol: Math.max(2, Math.round((e - w) / c) + 1),
+      nRow: Math.max(2, Math.round((n - s) / c) + 1),
+      cell: c
+    };
   }
 
   function isolineStitch(segs) {
@@ -524,6 +568,34 @@
       if (line.length >= 2) lines.push(line);
     }
     return lines;
+  }
+
+  /** Geometric Chaikin corner-cutting — smooths polyline shape, does not invent depth. */
+  function isolineSmoothChaikin(line, iterations) {
+    if (!line || line.length < 3) return line;
+    const eps = 1e-9;
+    const closed = Math.abs(line[0][0] - line[line.length - 1][0]) < eps &&
+      Math.abs(line[0][1] - line[line.length - 1][1]) < eps;
+    let pts = closed ? line.slice(0, -1) : line.slice();
+    if (pts.length < 3) return line;
+    const iters = iterations == null ? ISOLINE_SMOOTH_ITERS : iterations;
+    for (let iter = 0; iter < iters; iter++) {
+      const n = pts.length;
+      if (n < 3) break;
+      const next = [];
+      if (!closed) next.push(pts[0]);
+      const lim = closed ? n : (n - 1);
+      for (let i = 0; i < lim; i++) {
+        const p0 = pts[i];
+        const p1 = pts[(i + 1) % n];
+        next.push([0.75 * p0[0] + 0.25 * p1[0], 0.75 * p0[1] + 0.25 * p1[1]]);
+        next.push([0.25 * p0[0] + 0.75 * p1[0], 0.25 * p0[1] + 0.75 * p1[1]]);
+      }
+      if (!closed) next.push(pts[n - 1]);
+      pts = next;
+    }
+    if (closed && pts.length) pts.push([pts[0][0], pts[0][1]]);
+    return pts;
   }
 
   function isolineMarch(grid, xs, ys, level) {
@@ -608,9 +680,9 @@
     return { grid, xs, ys };
   }
 
-  async function isolineFetchEnvelope(w, s, e, n, nn) {
+  async function isolineFetchEnvelope(w, s, e, n, nn, sampleDist) {
     const span = Math.max(e - w, n - s);
-    const dist = span / (nn * 1.02);
+    const dist = (sampleDist != null && sampleDist > 0) ? sampleDist : (span / (nn * 1.02));
     const geom = JSON.stringify({
       xmin: w, ymin: s, xmax: e, ymax: n,
       spatialReference: { wkid: 4326 }
@@ -627,50 +699,133 @@
   /**
    * Toggleable fishing-style depth isolines (feet). Live-reloads on pan/zoom when on.
    * Off by default — add via layers control.
+   * Smooth via Chaikin after marching squares; sample pool + quantized world grid
+   * keep contours stable while denser points refine on zoom-in.
    */
   function attachDepthIsolines(map) {
     const contourGroup = L.layerGroup();
     let timer = null;
     let seq = 0;
     let active = false;
+    /* Persistent elev samples (lon,lat → meters). Refines across zooms; pruned on pan. */
+    const samplePool = new Map();
+
+    function poolKey(x, y) {
+      return x.toFixed(5) + ',' + y.toFixed(5);
+    }
+
+    function mergeSamplesIntoPool(samples) {
+      for (let i = 0; i < samples.length; i++) {
+        const sample = samples[i];
+        if (!sample || !sample.location) continue;
+        const v = typeof sample.value === 'number' ? sample.value : parseFloat(sample.value);
+        if (!isFinite(v)) continue;
+        samplePool.set(poolKey(sample.location.x, sample.location.y), {
+          location: { x: sample.location.x, y: sample.location.y },
+          value: v
+        });
+      }
+    }
+
+    function prunePool(west, south, east, north) {
+      const dx = (east - west) * ISOLINE_POOL_PAD;
+      const dy = (north - south) * ISOLINE_POOL_PAD;
+      const w = west - dx, e = east + dx, s = south - dy, n = north + dy;
+      samplePool.forEach(function (sample, key) {
+        const x = sample.location.x, y = sample.location.y;
+        if (x < w || x > e || y < s || y > n) samplePool.delete(key);
+      });
+    }
+
+    function poolSamplesInEnvelope(west, south, east, north) {
+      const out = [];
+      samplePool.forEach(function (sample) {
+        const x = sample.location.x, y = sample.location.y;
+        if (x >= west && x <= east && y >= south && y <= north) out.push(sample);
+      });
+      return out;
+    }
+
+    function paintContours(grid, xs, ys) {
+      const staged = [];
+      for (let li = 0; li < ISOLINE_LEVELS_FT.length; li++) {
+        const ft = ISOLINE_LEVELS_FT[li];
+        const level = -ft * M_PER_FT;
+        const paths = isolineMarch(grid, xs, ys, level);
+        const major = !!ISOLINE_MAJOR_FT[ft];
+        for (let pi = 0; pi < paths.length; pi++) {
+          let path = paths[pi];
+          if (path.length < 2) continue;
+          path = isolineSmoothChaikin(path, ISOLINE_SMOOTH_ITERS);
+          if (path.length < 2) continue;
+          const latlngs = path.map(p => [p[1], p[0]]);
+          staged.push(L.polyline(latlngs, {
+            color: major ? '#ffe566' : '#5dffd0',
+            weight: major ? 2.25 : 1.15,
+            opacity: major ? 0.95 : 0.75,
+            lineJoin: 'round',
+            lineCap: 'round',
+            smoothFactor: 0,
+            interactive: false,
+            className: 'fish-isoline'
+          }));
+          if (major && path.length > 8) {
+            const mid = path[Math.floor(path.length / 2)];
+            staged.push(L.marker([mid[1], mid[0]], {
+              interactive: false,
+              icon: L.divIcon({
+                className: 'contour-label',
+                html: ft + ' ft',
+                iconSize: [56, 14],
+                iconAnchor: [28, 7]
+              })
+            }));
+          }
+        }
+      }
+      /* Swap only when ready so old smooth contours stay put until refine lands. */
+      contourGroup.clearLayers();
+      for (let i = 0; i < staged.length; i++) staged[i].addTo(contourGroup);
+    }
 
     async function refresh() {
       if (!active || !map) return;
       const my = ++seq;
-      const b = map.getBounds().pad(0.04);
+      const b = map.getBounds().pad(0.06);
       const z = map.getZoom();
-      const west = b.getWest(), east = b.getEast(), south = b.getSouth(), north = b.getNorth();
-      /* Sample density by zoom. NCEI getSamples soft-caps ~1000 pts/request, so
-         mid/high zoom uses 2x2 batched envelopes (4 parallel). Prior densify:
-         nTarget 36/46/60/72/84, nQuad 38/42/46/50, batch z>=13. Now tighter at
-         every band + batch from z>=11 so overview/Plan also clear the soft cap. */
-      let nTarget = z >= 17 ? 100 : (z >= 16 ? 88 : (z >= 14 ? 72 : (z >= 12 ? 58 : 48)));
+      const rawW = b.getWest(), rawE = b.getEast(), rawS = b.getSouth(), rawN = b.getNorth();
+      /* Cap lattice size; denser cells at higher zoom via dyadic world grid. */
+      const maxN = z >= 17 ? 100 : (z >= 16 ? 88 : (z >= 14 ? 72 : (z >= 12 ? 58 : 48)));
+      const q = isolineQuantizeEnvelope(rawW, rawS, rawE, rawN, isolineCellForZoom(z), maxN);
+      const west = q.west, east = q.east, south = q.south, north = q.north;
+      const nTarget = Math.max(q.nCol, q.nRow);
       const useBatch = z >= 11;
       let samples = [];
       try {
         if (useBatch) {
-          const nQuad = z >= 17 ? 56 : (z >= 16 ? 52 : (z >= 14 ? 48 : 44));
+          const nQuad = Math.min(56, Math.max(36, Math.ceil(nTarget / 2) + 4));
           const mx = (west + east) / 2, myLat = (south + north) / 2;
           const quads = [
             [west, south, mx, myLat], [mx, south, east, myLat],
             [west, myLat, mx, north], [mx, myLat, east, north]
           ];
-          let parts = await Promise.all(quads.map(q => isolineFetchEnvelope(q[0], q[1], q[2], q[3], nQuad)));
+          let parts = await Promise.all(
+            quads.map(quad => isolineFetchEnvelope(quad[0], quad[1], quad[2], quad[3], nQuad, q.cell))
+          );
           if (parts.some(p => p.error || !(p.samples && p.samples.length))) {
-            const one = await isolineFetchEnvelope(west, south, east, north, nTarget);
+            const one = await isolineFetchEnvelope(west, south, east, north, nTarget, q.cell);
             parts = [one];
           }
           for (let i = 0; i < parts.length; i++) {
             if (parts[i].error) throw new Error(parts[i].error.message || 'sample error');
             samples = samples.concat(parts[i].samples || []);
           }
-          nTarget = Math.max(nTarget, nQuad * 2);
         } else {
-          let data = await isolineFetchEnvelope(west, south, east, north, nTarget);
+          let data = await isolineFetchEnvelope(west, south, east, north, nTarget, q.cell);
           if (data.error ||
               ((data.samples || []).length < Math.min(48, nTarget * nTarget * 0.35) && nTarget > 32)) {
-            nTarget = Math.max(28, Math.round(nTarget * 0.7));
-            data = await isolineFetchEnvelope(west, south, east, north, nTarget);
+            const nn = Math.max(28, Math.round(nTarget * 0.7));
+            data = await isolineFetchEnvelope(west, south, east, north, nn, q.cell * 1.4);
           }
           if (data.error) throw new Error(data.error.message || 'sample error');
           samples = data.samples || [];
@@ -680,58 +835,29 @@
         return;
       }
       if (my !== seq || !active) return;
-      if (samples.length < 16) {
-        contourGroup.clearLayers();
+
+      mergeSamplesIntoPool(samples);
+      prunePool(west, south, east, north);
+      const pooled = poolSamplesInEnvelope(west, south, east, north);
+      if (pooled.length < 16) {
+        /* Keep prior geometry if a thin fetch arrives mid-pan. */
         return;
       }
 
-      const nEff = Math.min(nTarget, Math.max(16, Math.round(Math.sqrt(samples.length * 1.05))));
-      const packed = isolineGridFromSamples(samples, west, east, south, north, nEff, nEff);
-      const grid = packed.grid, xs = packed.xs, ys = packed.ys;
-      contourGroup.clearLayers();
-
-      for (let li = 0; li < ISOLINE_LEVELS_FT.length; li++) {
-        const ft = ISOLINE_LEVELS_FT[li];
-        const level = -ft * M_PER_FT;
-        const paths = isolineMarch(grid, xs, ys, level);
-        const major = !!ISOLINE_MAJOR_FT[ft];
-        for (let pi = 0; pi < paths.length; pi++) {
-          const path = paths[pi];
-          if (path.length < 2) continue;
-          const latlngs = path.map(p => [p[1], p[0]]);
-          L.polyline(latlngs, {
-            color: major ? '#ffe566' : '#5dffd0',
-            weight: major ? 2.25 : 1.15,
-            opacity: major ? 0.95 : 0.75,
-            lineJoin: 'round',
-            interactive: false,
-            className: 'fish-isoline'
-          }).addTo(contourGroup);
-          if (major && path.length > 6) {
-            const mid = path[Math.floor(path.length / 2)];
-            L.marker([mid[1], mid[0]], {
-              interactive: false,
-              icon: L.divIcon({
-                className: 'contour-label',
-                html: ft + ' ft',
-                iconSize: [56, 14],
-                iconAnchor: [28, 7]
-              })
-            }).addTo(contourGroup);
-          }
-        }
-      }
+      const packed = isolineGridFromSamples(pooled, west, east, south, north, q.nCol, q.nRow);
+      paintContours(packed.grid, packed.xs, packed.ys);
     }
 
     function schedule() {
       if (!active) return;
       if (timer) clearTimeout(timer);
-      timer = setTimeout(refresh, 180);
+      timer = setTimeout(refresh, ISOLINE_DEBOUNCE_MS);
     }
 
     function onOverlayAdd(e) {
       if (e.layer !== contourGroup) return;
       active = true;
+      samplePool.clear();
       schedule();
     }
     function onOverlayRemove(e) {
@@ -739,6 +865,7 @@
       active = false;
       seq++;
       if (timer) clearTimeout(timer);
+      samplePool.clear();
       contourGroup.clearLayers();
     }
 
@@ -753,6 +880,7 @@
         active = false;
         seq++;
         if (timer) clearTimeout(timer);
+        samplePool.clear();
         map.off('overlayadd', onOverlayAdd);
         map.off('overlayremove', onOverlayRemove);
         map.off('moveend zoomend', schedule);

@@ -1516,8 +1516,8 @@ let _seafloorPromise = null;
 function ensureSeafloorRender(){
   if(window.SeafloorRender) return Promise.resolve(window.SeafloorRender);
   if(_seafloorPromise) return _seafloorPromise;
-  /* ?v=12 — tighter depth isoline sample grid (batch from z11). */
-  _seafloorPromise = loadScript('seafloor-render.js?v=12').then(()=>{
+  /* ?v=13 — smooth + zoom-stable depth isolines (Chaikin + quantized pool). */
+  _seafloorPromise = loadScript('seafloor-render.js?v=13').then(()=>{
     if(window.SeafloorRender) SeafloorRender.init({ fetchJSON, loadLeaflet });
     return window.SeafloorRender;
   }).catch(e=>{ _seafloorPromise = null; throw e; });
