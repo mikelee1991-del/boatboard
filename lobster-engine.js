@@ -604,7 +604,7 @@
         zoomControl: true,
         attributionControl: true,
         minZoom: 7,
-        maxZoom: 19
+        maxZoom: 20
       }).setView([bp.lat, bp.lon], 11);
       map = m;
 

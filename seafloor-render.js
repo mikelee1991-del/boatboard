@@ -14,6 +14,7 @@
  * Self-host pipeline: bluetopo/README.md (Docker → PMTiles → R2 Worker).
  *
  * Fit: On site ONSITE_FIT_FT = 1300 ft (~0.21 nm); Plan PLAN_FIT_NM = 2.5.
+ * DEM tiles request retina-aware pixel size (512 on hi-DPI) + cubic resample for sharper relief.
  * Not for navigation.
  */
 

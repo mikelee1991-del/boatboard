@@ -1514,7 +1514,7 @@ function ensureSeafloorRender(){
   if(window.SeafloorRender) return Promise.resolve(window.SeafloorRender);
   if(_seafloorPromise) return _seafloorPromise;
   /* ?v=3 busts Pages CDN after ranked maps share On site BlueTopo+DEM stack. */
-  _seafloorPromise = loadScript('seafloor-render.js?v=4').then(()=>{
+  _seafloorPromise = loadScript('seafloor-render.js?v=5').then(()=>{
     if(window.SeafloorRender) SeafloorRender.init({ fetchJSON, loadLeaflet });
     return window.SeafloorRender;
   }).catch(e=>{ _seafloorPromise = null; throw e; });
@@ -1602,7 +1602,7 @@ function ensureDiveEngine(){
     .then(()=> loadScript('dive-site-intel.js'))
     .then(()=> loadScript('briefing-synth.js'))
     .then(()=> ensureForecastCharts())
-    .then(()=> loadScript('dive-engine.js?v=5'))
+    .then(()=> loadScript('dive-engine.js?v=6'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
       return window.BoatDive;
@@ -1628,7 +1628,7 @@ function ensureLobsterEngine(){
   if(_lobsterEnginePromise) return _lobsterEnginePromise;
   _lobsterEnginePromise = ensureDiveEngine().catch(()=>null)
     .then(()=> typeof ensureFishFeatureGroups === 'function' ? ensureFishFeatureGroups() : null)
-    .then(()=> loadScript('lobster-engine.js?v=6')).then(()=>{
+    .then(()=> loadScript('lobster-engine.js?v=7')).then(()=>{
     if(!window.BoatLobster) throw new Error('BoatLobster missing');
     BoatLobster.init({
       getPos: () => boatPos(),
@@ -9858,7 +9858,7 @@ async function ensureFishMap(){
   host.innerHTML = '';
   const { lat, lon } = boatPos();
   try{
-    fishMap = L.map(host, { zoomControl:true, attributionControl:false, minZoom:7, maxZoom:19 })
+    fishMap = L.map(host, { zoomControl:true, attributionControl:false, minZoom:7, maxZoom:20 })
       .setView([lat, lon], FISH_MAP_DEFAULT_ZOOM);
     try{ await attachSeafloorPlanBasemap(fishMap); }
     catch(e){
