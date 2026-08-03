@@ -86,9 +86,15 @@
     wreckalley: 'wreckalley', horseshoe: 'horseshoe', valiant: 'valiant', casino: 'casino',
     farnsworth: 'farnsworth', birdrock: 'birdrock', wormreef: 'wormreef', longpoint: 'longpoint',
     goatharbor: 'goatharbor', henrock: 'henrock', shiprock: 'shiprock',
+    ut_chinapointcatalina_167: 'chineserocks',
+    ut_benweston_151: 'benweston',
+    dive_ver_churchrock: 'churchrock',
+    ut_eaglereef_195: 'eaglereef',
+    franko_eagle_reef_west_dive: 'eaglereef',
+    franko_isthmus_cove_dive: 'twoharbors',
     newportreef: 'newportjetty', hbreefa: 'strandsoff', hbreefb: 'strandsoff', hbreefc: 'strandsoff', hbreefd: 'strandsoff',
     oceanside1: 'delmar', oceanside2: 'delmar', carlsbad: 'delmar', pacificbeach: 'pescadero', torreypines2: 'torrey',
-    ssavalonbow: 'rockypoint', westeaglereef: 'birdrock', churchrock: 'casino', indianrock: 'casino',
+    ssavalonbow: 'rockypoint', westeaglereef: 'eaglereef', churchrock: 'churchrock', indianrock: 'casino',
     empirelanding: 'goatharbor',
     pv_portuguesepoint: 'portuguese', pv_neptunearch: 'pvcaves', pv_halfwayreef: 'honeymoon',
     pv_jennylynne: 'longpoint', pv_kevinsreef: 'honeymoon', pv_resortpointwall: 'honeymoon',
@@ -121,7 +127,7 @@
     fortyfathomcurve: 'horseshoe',
     fortysevenfathomridge: 'horseshoe',
     cat_littlegeiger: 'goatharbor', cat_littlefarnsworth: 'farnsworth', cat_garibaldireef: 'casino',
-    cat_doctorscove: 'goatharbor', cat_lulureef: 'birdrock', cat_nooksandcrannies: 'shiprock'
+    cat_doctorscove: 'goatharbor', cat_lulureef: 'eaglereef', cat_nooksandcrannies: 'shiprock'
   };
 
   function briefingIsSubstantial(blocks) {

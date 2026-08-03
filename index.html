@@ -1516,8 +1516,8 @@ let _seafloorPromise = null;
 function ensureSeafloorRender(){
   if(window.SeafloorRender) return Promise.resolve(window.SeafloorRender);
   if(_seafloorPromise) return _seafloorPromise;
-  /* ?v=9 — depth isolines overlay + 10 nmi default On site fit. */
-  _seafloorPromise = loadScript('seafloor-render.js?v=9').then(()=>{
+  /* ?v=10 — denser depth isoline sample grid (batch from z13). */
+  _seafloorPromise = loadScript('seafloor-render.js?v=10').then(()=>{
     if(window.SeafloorRender) SeafloorRender.init({ fetchJSON, loadLeaflet });
     return window.SeafloorRender;
   }).catch(e=>{ _seafloorPromise = null; throw e; });
