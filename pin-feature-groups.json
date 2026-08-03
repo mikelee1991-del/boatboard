@@ -1,7 +1,7 @@
 {
   "type": "pin-feature-groups",
-  "exportedAt": "2026-08-03T03:10:46.839Z",
-  "note": "Explicit feature groups from pin-trust-review.html. Members keep published coords (never nudged). Live dive/fish grouping unions matched pins even when names do not normalize together.",
+  "exportedAt": "2026-08-03T03:22:34.842Z",
+  "note": "Explicit feature groups from pin-trust-review.html. Members keep published coords (never nudged). Live dive/fish grouping unions matched pins even when names do not normalize together. Deduped duplicate displayName groups on import.",
   "groups": [
     {
       "groupId": "pfg_pvr_restoration_reef_zwdn",
@@ -323,9 +323,17 @@
           "lat": 33.9666667,
           "lon": -118.4861111,
           "diveId": ""
+        },
+        {
+          "id": "dive_ver_cdfg_marinadelreyartificialreef2a_35",
+          "kind": "dive",
+          "name": "Marina Del Rey Artificial Reef 2A",
+          "lat": 33.9666667,
+          "lon": -118.4861111,
+          "diveId": "cdfg_marinadelreyartificialreef2a_35"
         }
       ],
-      "updatedAt": "2026-08-02T05:37:42.856Z"
+      "updatedAt": "2026-08-03T03:22:34.837Z"
     },
     {
       "groupId": "pfg_emerald_bay_m604",
@@ -912,221 +920,6 @@
         }
       ],
       "updatedAt": "2026-08-03T03:09:12.027Z"
-    },
-    {
-      "groupId": "pfg_marina_del_rey_artificial_reef_ivvl",
-      "displayName": "Marina Del Rey Artificial Reef",
-      "members": [
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef2k_45",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 2K",
-          "lat": 33.9686111,
-          "lon": -118.4872222,
-          "diveId": "cdfg_marinadelreyartificialreef2k_45"
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef2l_46",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 2L",
-          "lat": 33.9686111,
-          "lon": -118.4877778,
-          "diveId": "cdfg_marinadelreyartificialreef2l_46"
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef2o_49",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 2O",
-          "lat": 33.9691667,
-          "lon": -118.4866667,
-          "diveId": "cdfg_marinadelreyartificialreef2o_49"
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef2n_48",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 2N",
-          "lat": 33.9688889,
-          "lon": -118.4861111,
-          "diveId": "cdfg_marinadelreyartificialreef2n_48"
-        },
-        {
-          "id": "dive_ver_mdreyreef",
-          "kind": "dive",
-          "name": "Marina del Rey Artificial Reef (Center)",
-          "lat": 33.9683333,
-          "lon": -118.4863889,
-          "diveId": "mdreyreef"
-        },
-        {
-          "id": "fish_kml_326",
-          "kind": "fish",
-          "name": "Reef #2 - 65 ft",
-          "lat": 33.9683,
-          "lon": -118.4863,
-          "diveId": ""
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef2m_47",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 2M",
-          "lat": 33.9688889,
-          "lon": -118.4852778,
-          "diveId": "cdfg_marinadelreyartificialreef2m_47"
-        },
-        {
-          "id": "coord_fish|33.968889|-118.485278",
-          "kind": "fish",
-          "name": "Marina Del Rey Artificial Reef 2M",
-          "lat": 33.9688889,
-          "lon": -118.4852778,
-          "diveId": ""
-        },
-        {
-          "id": "dive_ver_mdrey2a",
-          "kind": "dive",
-          "name": "Marina del Rey Artificial Reef 2A",
-          "lat": 33.9672222,
-          "lon": -118.4869444,
-          "diveId": "mdrey2a"
-        },
-        {
-          "id": "coord_fish|33.967222|-118.486944",
-          "kind": "fish",
-          "name": "Marina del Rey Artificial Reef 2A",
-          "lat": 33.9672222,
-          "lon": -118.4869444,
-          "diveId": ""
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef2i_43",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 2I",
-          "lat": 33.9680556,
-          "lon": -118.4852778,
-          "diveId": "cdfg_marinadelreyartificialreef2i_43"
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef2g_41",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 2G",
-          "lat": 33.9670833,
-          "lon": -118.4866667,
-          "diveId": "cdfg_marinadelreyartificialreef2g_41"
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef2d_38",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 2D",
-          "lat": 33.9669444,
-          "lon": -118.4869444,
-          "diveId": "cdfg_marinadelreyartificialreef2d_38"
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef2c_37",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 2C",
-          "lat": 33.9668056,
-          "lon": -118.4866667,
-          "diveId": "cdfg_marinadelreyartificialreef2c_37"
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef2f_40",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 2F",
-          "lat": 33.9669444,
-          "lon": -118.4861111,
-          "diveId": "cdfg_marinadelreyartificialreef2f_40"
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef2b_36",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 2B",
-          "lat": 33.9667111,
-          "lon": -118.4863889,
-          "diveId": "cdfg_marinadelreyartificialreef2b_36"
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef2e_39",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 2E",
-          "lat": 33.9668056,
-          "lon": -118.4858333,
-          "diveId": "cdfg_marinadelreyartificialreef2e_39"
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef2a_35",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 2A",
-          "lat": 33.9666667,
-          "lon": -118.4861111,
-          "diveId": "cdfg_marinadelreyartificialreef2a_35"
-        },
-        {
-          "id": "coord_fish|33.966667|-118.486111",
-          "kind": "fish",
-          "name": "Marina del Rey Artificial Reef 2A",
-          "lat": 33.9666667,
-          "lon": -118.4861111,
-          "diveId": ""
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef1r_53",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 1R",
-          "lat": 33.9658333,
-          "lon": -118.4861111,
-          "diveId": "cdfg_marinadelreyartificialreef1r_53"
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef1q_52",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 1Q",
-          "lat": 33.9655556,
-          "lon": -118.4869444,
-          "diveId": "cdfg_marinadelreyartificialreef1q_52"
-        },
-        {
-          "id": "fish_kml_527",
-          "kind": "fish",
-          "name": "Reef #1 - 65 ft",
-          "lat": 33.965,
-          "lon": -118.4862,
-          "diveId": ""
-        },
-        {
-          "id": "dive_ver_mdrey1ctr",
-          "kind": "dive",
-          "name": "Marina del Rey Artificial Reef 1 Center",
-          "lat": 33.965,
-          "lon": -118.4861111,
-          "diveId": "mdrey1ctr"
-        },
-        {
-          "id": "coord_fish|33.965000|-118.486111",
-          "kind": "fish",
-          "name": "Marina del Rey Artificial Reef 1 Center",
-          "lat": 33.965,
-          "lon": -118.4861111,
-          "diveId": ""
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef1t_55",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 1T",
-          "lat": 33.9644444,
-          "lon": -118.4861111,
-          "diveId": "cdfg_marinadelreyartificialreef1t_55"
-        },
-        {
-          "id": "dive_ver_cdfg_marinadelreyartificialreef2p_50",
-          "kind": "dive",
-          "name": "Marina Del Rey Artificial Reef 2P",
-          "lat": 33.9691667,
-          "lon": -118.4875,
-          "diveId": ""
-        }
-      ],
-      "updatedAt": "2026-08-03T03:10:21.921Z"
     }
   ]
 }

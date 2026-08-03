@@ -798,6 +798,17 @@
     const preferredName = Object.create(null);
     const preferredId = Object.create(null);
     applyExplicitPinFeatureGroups(union, preferredName, preferredId);
+    /* Second pass: union every dive site that shares an explicit groupId. */
+    const byPrefId = new Map();
+    for (let i = 0; i < n; i++) {
+      const id = preferredId[i];
+      if (!id) continue;
+      if (!byPrefId.has(id)) byPrefId.set(id, []);
+      byPrefId.get(id).push(i);
+    }
+    for (const idxs of byPrefId.values()) {
+      for (let k = 1; k < idxs.length; k++) union(idxs[0], idxs[k]);
+    }
     const members = new Map();
     for (let i = 0; i < n; i++) {
       const r = find(i);

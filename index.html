@@ -1597,12 +1597,12 @@ window.ensureForecastCharts = ensureForecastCharts;
 function ensureDiveEngine(){
   if(window.BoatDive) return Promise.resolve(window.BoatDive);
   if(_diveEnginePromise) return _diveEnginePromise;
-  _diveEnginePromise = loadScript('pin-feature-groups-data.js').catch(function(){ /* optional */ })
+  _diveEnginePromise = loadScript('pin-feature-groups-data.js?v=2').catch(function(){ /* optional */ })
     .then(()=> loadScript('dive-briefings-data.js'))
     .then(()=> loadScript('dive-site-intel.js'))
     .then(()=> loadScript('briefing-synth.js'))
     .then(()=> ensureForecastCharts())
-    .then(()=> loadScript('dive-engine.js?v=3'))
+    .then(()=> loadScript('dive-engine.js?v=4'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
       return window.BoatDive;
@@ -1628,7 +1628,7 @@ function ensureLobsterEngine(){
   if(_lobsterEnginePromise) return _lobsterEnginePromise;
   _lobsterEnginePromise = ensureDiveEngine().catch(()=>null)
     .then(()=> typeof ensureFishFeatureGroups === 'function' ? ensureFishFeatureGroups() : null)
-    .then(()=> loadScript('lobster-engine.js?v=4')).then(()=>{
+    .then(()=> loadScript('lobster-engine.js?v=5')).then(()=>{
     if(!window.BoatLobster) throw new Error('BoatLobster missing');
     BoatLobster.init({
       getPos: () => boatPos(),
@@ -9032,6 +9032,17 @@ function assignFishFeatureGroups(){
       if(g.groupId) preferredId[idxs[k]] = g.groupId;
     }
   }
+  /* Second pass: force-union every pin that shares an explicit groupId (covers overlapping duplicate exports). */
+  const byPrefId = new Map();
+  for(let i = 0; i < n; i++){
+    const id = preferredId[i];
+    if(!id) continue;
+    if(!byPrefId.has(id)) byPrefId.set(id, []);
+    byPrefId.get(id).push(i);
+  }
+  for(const idxs of byPrefId.values()){
+    for(let k = 1; k < idxs.length; k++) union(idxs[0], idxs[k]);
+  }
   const members = new Map();
   for(let i = 0; i < n; i++){
     if(!FISH_SPOTS[i]) continue;
@@ -9071,7 +9082,7 @@ let _fishGroupsPromise = null;
 function ensureFishFeatureGroups(){
   if(_fishGroupsReady) return Promise.resolve();
   if(_fishGroupsPromise) return _fishGroupsPromise;
-  _fishGroupsPromise = loadScript('pin-feature-groups-data.js').catch(function(){ /* optional */ })
+  _fishGroupsPromise = loadScript('pin-feature-groups-data.js?v=2').catch(function(){ /* optional */ })
     .then(()=>{
       try{ assignFishFeatureGroups(); _fishGroupsReady = true; }
       catch(e){ console.error('assignFishFeatureGroups', e); _fishGroupsReady = true; }

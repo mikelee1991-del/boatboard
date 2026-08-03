@@ -195,24 +195,31 @@
   function pfgLookup(lat, lon){
     const groups = (global.PIN_FEATURE_GROUPS && global.PIN_FEATURE_GROUPS.groups) || [];
     if(!groups.length || lat == null || lon == null) return null;
-    const key = (+lat).toFixed(5) + ',' + (+lon).toFixed(5);
+    const matchTolNm = 0.05;
+    let best = null;
+    let bestD = Infinity;
     for(let i = 0; i < groups.length; i++){
       const g = groups[i];
       const members = g.members || [];
       for(let j = 0; j < members.length; j++){
         const m = members[j];
         if(m == null || m.lat == null || m.lon == null) continue;
-        if((+m.lat).toFixed(5) + ',' + (+m.lon).toFixed(5) === key){
-          return { id: g.groupId || ('pfg_' + i), name: g.displayName || g.groupId, size: members.length };
-        }
+        const dNm = haversineM(lat, lon, m.lat, m.lon) / NM;
+        if(dNm > matchTolNm || dNm >= bestD) continue;
+        bestD = dNm;
+        best = { id: g.groupId || ('pfg_' + i), name: g.displayName || g.groupId, size: members.length };
       }
     }
-    return null;
+    return best;
   }
 
   function groupKey(spot){
+    /* Prefer explicit PIN feature-group id so fish + dive modules of one reef share a rank. */
     if(spot.pfgId) return 'pfg:' + spot.pfgId;
-    if(spot.featureGroup) return String(spot.sourceKind || spot.kind || 'x') + ':' + spot.featureGroup;
+    const fg = spot.featureGroup;
+    if(fg && String(fg).indexOf('pfg_') === 0) return 'pfg:' + fg;
+    if(spot.featureGroupName) return 'name:' + String(spot.featureGroupName).toLowerCase();
+    if(fg) return String(spot.sourceKind || spot.kind || 'x') + ':' + fg;
     return 'pin:' + spot.lat.toFixed(5) + ',' + spot.lon.toFixed(5);
   }
 
