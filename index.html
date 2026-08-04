@@ -486,6 +486,23 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .fish-spot .spot-rec{font-size:12px;color:var(--accent);margin-top:6px;line-height:1.4}
 .fish-spot .spot-bait{font-size:12px;color:var(--ink2);margin-top:4px;line-height:1.4}
 .fish-style-badge{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.02em;padding:1px 6px;margin-left:6px;border:1px dashed var(--ink3);border-radius:3px;color:var(--ink2);vertical-align:middle;white-space:nowrap}
+.fish-tech-badge{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.02em;padding:1px 6px;margin-left:6px;border-radius:3px;vertical-align:middle;white-space:nowrap;border:1px solid var(--line2);color:var(--ink2);background:var(--bg2)}
+.fish-tech-surface{border-color:var(--accent);color:var(--accent)}
+.fish-tech-mid{border-color:var(--fair);color:var(--fair)}
+.fish-tech-bottom{border-color:var(--ink3);color:var(--ink2)}
+.fish-tech-mixed{border-color:var(--good);color:var(--good)}
+.fish-smart-card{margin-top:10px}
+.fish-smart-h{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:600;margin:0 0 8px}
+.fish-smart-meta{font-size:11px;color:var(--ink3);font-family:var(--mono);line-height:1.45;margin:8px 0 0}
+.fish-tech-panel{margin:0 0 12px}
+.fish-tech-body{font-size:13px;color:var(--ink);line-height:1.5;margin:0 0 4px}
+.fish-species-like{margin-top:4px}
+.fish-like-row{display:grid;grid-template-columns:minmax(72px,28%) 1fr minmax(72px,auto);gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line2);font-size:12px}
+.fish-like-row:last-child{border-bottom:none}
+.fish-like-name{font-weight:600;color:var(--ink);min-width:0}
+.fish-like-bar{height:7px;border-radius:4px;background:var(--line2);overflow:hidden}
+.fish-like-bar i{display:block;height:100%;border-radius:4px;min-width:2px}
+.fish-like-pct{font-family:var(--mono);font-size:10px;text-align:right;white-space:nowrap;color:var(--ink3)}
 .fish-pick{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line2);font-size:13px}
 .fish-pick:last-child{border-bottom:none}
 .fish-pick .rank{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);min-width:22px}
@@ -873,6 +890,9 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <h3 id="fishAdviceTitle">Trip advice</h3>
           <p id="fishAdvice" class="fish-verdict skel">Analyzing conditions…</p>
         </div>
+        <div class="card" id="fishSmartPanel" style="margin-top:10px">
+          <div class="skel">Synthesizing SST, plankton, technique &amp; species lean…</div>
+        </div>
         <div class="plan-split">
           <div class="plan-split-list">
             <div class="sec" id="fishTopPicksSec">Top picks — for your trip</div>
@@ -922,6 +942,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <select id="fishUtilSpot" aria-label="Spot for on-site guide"></select>
         </div>
         <div id="fishUtilHero" class="card"><div class="skel">Pick a spot — loads tackle, conditions at the mark, and charts.</div></div>
+        <div class="card" id="fishUtilSmart" style="margin-top:10px"><div class="skel">Technique &amp; species lean load with the spot…</div></div>
         <div class="sec">Fishing briefing</div>
         <div id="fishSpotBriefing" class="card dive-briefing-card"><p class="dive-briefing-placeholder">Select a fishing spot to load the briefing.</p></div>
         <div class="sec">Seafloor at the mark</div>
@@ -1603,7 +1624,7 @@ function ensureDiveEngine(){
   _diveEnginePromise = loadScript('pin-feature-groups-data.js?v=2').catch(function(){ /* optional */ })
     .then(()=> loadScript('dive-briefings-data.js?v=2'))
     .then(()=> loadScript('dive-site-intel.js'))
-    .then(()=> loadScript('briefing-synth.js?v=2'))
+    .then(()=> loadScript('briefing-synth.js?v=3'))
     .then(()=> ensureForecastCharts())
     .then(()=> loadScript('dive-engine.js?v=9'))
     .then(()=>{
@@ -9184,6 +9205,84 @@ function solunarStatus(sol, now){
 const BITE_GOOD_AT = 82;
 const BITE_FAIR_AT = 55;
 
+/** Cached regional chlorophyll for Fish synthesis (zone samples — not inventing pin GPS). */
+let fishOceanCache = null;
+let _fishSmartPromise = null;
+let _fishOceanPromise = null;
+function ensureFishSmart(){
+  if(window.BoatFishSmart) return Promise.resolve(window.BoatFishSmart);
+  if(_fishSmartPromise) return _fishSmartPromise;
+  _fishSmartPromise = loadScript('fish-smart.js?v=1').then(()=>{
+    if(!window.BoatFishSmart) throw new Error('BoatFishSmart missing');
+    return window.BoatFishSmart;
+  }).catch(e=>{ _fishSmartPromise = null; throw e; });
+  return _fishSmartPromise;
+}
+/**
+ * Pull Plankton-tab / Overview chlorophyll zone samples into Fish.
+ * Uses fixed CHL_ZONES only — never moves pins or invents bathymetry.
+ */
+async function refreshFishOceanContext(force){
+  const sstFBoat = (()=>{
+    const mc = marineSnapshotAt(getFishPlanWhen ? getFishPlanWhen() : new Date()) || marine?.current;
+    return mc?.sea_surface_temperature != null ? mc.sea_surface_temperature * 9/5 + 32 : null;
+  })();
+  if(!force && fishOceanCache && (Date.now() - fishOceanCache.at < 8 * 60e3)){
+    return { ...fishOceanCache, sstF: fishOceanCache.sstF != null ? fishOceanCache.sstF : sstFBoat };
+  }
+  if(_fishOceanPromise && !force) return _fishOceanPromise;
+  _fishOceanPromise = (async ()=>{
+    const sourceNotes = ['SST: Open-Meteo marine at boat'];
+    let chlSamples = [];
+    let chlTime = null;
+    let takeawayText = '';
+    let chlAvg = null;
+    try{
+      if(typeof ovSampleChlorophyll === 'function'){
+        const chl = await ovSampleChlorophyll();
+        chlTime = chl?.time || null;
+        chlSamples = (chl?.samples || []).map(s => ({
+          id: s.zone?.id, name: s.zone?.name, lat: s.zone?.lat, lon: s.zone?.lon, val: s.val
+        }));
+        if(chlSamples.some(s => s.val != null)) sourceNotes.push('Chl: NOAA VIIRS zone samples');
+        else sourceNotes.push('Chl: zone sample empty (cloud/CORS) — using takeaway if any');
+      }
+    }catch(e){
+      console.warn('fish ocean chl', e);
+      sourceNotes.push('Chl sample failed');
+    }
+    if(chlLastMarineTakeaway?.text && (Date.now() - (chlLastMarineTakeaway.at || 0) < OV_TAKEAWAYS_TTL * 3)){
+      takeawayText = chlLastMarineTakeaway.text;
+      if(!chlSamples.some(s => s.val != null)) sourceNotes.push('Chl narrative from Plankton/Overview cache');
+    }else if(typeof chlMarineTakeawayBrief === 'function' && chlSamples.length){
+      const brief = chlMarineTakeawayBrief(chlSamples.map(s => ({ zone: { name: s.name }, val: s.val })));
+      takeawayText = brief?.text || '';
+    }
+    const vals = chlSamples.map(s => s.val).filter(v => v != null && isFinite(v));
+    if(vals.length) chlAvg = vals.reduce((a, b) => a + b, 0) / vals.length;
+    let chlBand = null;
+    if(typeof chlLevel === 'function' && chlAvg != null){
+      const lv = chlLevel(chlAvg);
+      const map = { 'Ultra-clear':'ultra-clear', 'Clear blue-green':'clear', 'Green':'green', 'Very green':'very-green', 'Bloom':'bloom' };
+      chlBand = map[lv.label] || null;
+    }
+    fishOceanCache = {
+      at: Date.now(),
+      sstF: sstFBoat,
+      chlAvg, chlBand, chlSamples, takeawayText, chlTime, sourceNotes,
+      hasChl: chlAvg != null || !!takeawayText,
+      hasSst: sstFBoat != null
+    };
+    return fishOceanCache;
+  })().finally(()=>{ _fishOceanPromise = null; });
+  return _fishOceanPromise;
+}
+function fishOceanForCtx(ctx){
+  const base = fishOceanCache ? { ...fishOceanCache } : { sourceNotes: [], chlSamples: [] };
+  if(ctx && ctx.sstF != null) base.sstF = ctx.sstF;
+  return base;
+}
+
 /** Approx tide slope (ft/hr) from height → next extremum; negative = ebb. */
 function approxTideRateFtHr(tide, refMs){
   if(!tide || tide.next == null || tide.h == null || !isFinite(tide.h) || !isFinite(tide.next.v)) return null;
@@ -9239,6 +9338,11 @@ function fishBiteScore(ctx){
 
   if(ctx.sstF != null && ctx.sstF >= 65){ s += 6; notes.push('warm SST — pelagics more likely'); }
   if(ctx.moonIllum >= 80){ s += 3; notes.push('bright moon — night bite possible'); }
+
+  if(window.BoatFishSmart && typeof BoatFishSmart.oceanBiteDelta === 'function'){
+    const od = BoatFishSmart.oceanBiteDelta(ctx, fishOceanForCtx(ctx));
+    if(od && od.delta){ s += od.delta; if(od.notes && od.notes[0]) notes.push(od.notes[0]); }
+  }
 
   return { score: clamp(Math.round(s), 5, 98), notes };
 }
@@ -9297,14 +9401,14 @@ function biteIndexSeries(opts){
 
 function biteIndexHonestyNote(cov){
   const parts = [
-    'Y-axis: Bite index 0–100 (same model as “Bite index” glance — solunar, tide phase/slack, wind, seas, SST, time of day).',
+    'Y-axis: Bite index 0–100 (same model as “Bite index” glance — solunar, tide phase/slack, wind, seas, SST, time of day'+(window.BoatFishSmart ? ', regional plankton' : '')+').',
     'Window matches the tide plot (−'+TIDE_CHART_BACK_HR+' h / +'+TIDE_CHART_FWD_HR+' h), sampled hourly.'
   ];
   if(cov){
     if(cov.marine < 0.85 || cov.wx < 0.85){
       parts.push('Some hours lack Open-Meteo wind/seas/SST — those slots take a mild missing-data penalty (not a fake sine wave).');
     } else {
-      parts.push('Wind, seas, and SST are Open-Meteo hourly forecasts; tides from NOAA; solunar computed locally.');
+      parts.push('Wind, seas, and SST are Open-Meteo hourly forecasts; tides from NOAA; solunar computed locally'+(fishOceanCache?.hasChl ? '; plankton is a regional snapshot (not hourly).' : '.'));
     }
   }
   return parts.join(' ');
@@ -9386,6 +9490,11 @@ function scoreFishSpot(spot, ctx){
 
   if(ctx.seas != null && ctx.seas > 3 && distNm > 5) d -= 5;
   if(ctx.wind != null && ctx.wind >= 16 && /Catalina|Basin|Channel/.test(spot.name)) d -= 4;
+
+  if(window.BoatFishSmart && typeof BoatFishSmart.oceanSiteDelta === 'function'){
+    const od = BoatFishSmart.oceanSiteDelta(spot, ctx, fishOceanForCtx(ctx));
+    if(od && od.delta) d += od.delta;
+  }
 
   const siteDelta = Math.round(d);
   const fitScore = clamp(Math.round(biteBase + siteDelta), 5, 98);
@@ -9609,6 +9718,11 @@ function fishStyleBadgeHtml(spot){
   if(classifyFishStyle(spot) !== 'surface') return '';
   return '<span class="fish-style-badge" title="Surface / troll / open-water drift">◆ Surface</span>';
 }
+function fishTechBadgeHtml(spot, ctx){
+  if(!window.BoatFishSmart || !spot) return '';
+  const tech = BoatFishSmart.recommendTechnique(spot, ctx || {}, fishOceanForCtx(ctx || {}));
+  return BoatFishSmart.techniqueBadgeHtml(tech, esc);
+}
 
 function comfortColor(score){
   if(score >= 75) return CHART.good;
@@ -9821,17 +9935,23 @@ function renderFishTopPicks(ranked, ctx, sol){
     const modNote = spot.featureGroupSize > 1
       ? ' · ' + (spot.featureGroupName || fishFeatureDisplayName(spot.name)) + ' · ' + spot.featureGroupSize + ' modules'
       : '';
+    let howTxt = '';
+    if(window.BoatFishSmart){
+      const tech = BoatFishSmart.recommendTechnique(spot, ctx, fishOceanForCtx(ctx));
+      howTxt = '<div class="rec"><strong>How:</strong> '+esc(tech.label)+' — '+esc(tech.presentation)+'</div>';
+    }
     return '<div class="fish-pick '+cls+'">'+
       '<span class="rank">#'+(i+1)+'</span>'+
       '<div class="body">'+
-        '<b>'+esc(label)+'</b>'+fishStyleBadgeHtml(spot)+
+        '<b>'+esc(label)+'</b>'+fishStyleBadgeHtml(spot)+fishTechBadgeHtml(spot, ctx)+
         '<div class="meta">Bite '+score+'/100 '+scoreLbl+' · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm · '+esc(fmtFishCoordsDepth(spot))+esc(modNote)+'</div>'+
         '<div class="rec">'+esc(spotConditionRec(spot, score, ctx))+(peakTxt ? ' · '+esc(peakTxt) : '')+'</div>'+
+        howTxt+
         '<div class="rec"><strong>Bait:</strong> '+esc(spotBaitLine(spot))+'</div>'+
         '<div class="rec"><strong>Gear:</strong> '+esc(spotGearLine(spot))+'</div>'+
       '</div></div>';
   }).join('') +
-  '<p class="plan-note" style="margin-top:8px">Bite numbers match the Plan glance (same model at trip time). Order uses modest site-fit among nearest <strong>'+FISH_PICKER_POOL+'</strong> groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> spots · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill color = bite · top '+FISH_MAP_MAX_MARKERS+'; same-reef modules count once.</p>';
+  '<p class="plan-note" style="margin-top:8px">Bite numbers match the Plan glance (same model at trip time). Order uses modest site-fit (SST/tide/time + plankton productivity) among nearest <strong>'+FISH_PICKER_POOL+'</strong> groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> spots · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill color = bite · top '+FISH_MAP_MAX_MARKERS+'; same-reef modules count once.</p>';
 }
 
 function fishPlanVisible(){
@@ -10426,7 +10546,8 @@ function fishAdviceSummary(ctx, bite){
   if(ctx.tide?.rising) parts.push('Incoming tide pushes bait toward shore — good for harbor mouth and kelp.');
   else if(ctx.tide?.rising === false) parts.push('Outgoing tide — work sandy transitions and channel edges for halibut.');
 
-  if(ctx.sstF != null){
+  /* SST + plankton narrative owned by BoatFishSmart.enrichAdviceText when loaded. */
+  if(!window.BoatFishSmart && ctx.sstF != null){
     if(ctx.sstF >= 67) parts.push('SST ~'+f0(ctx.sstF)+'°F supports bonito/yellowtail if bait is present.');
     else if(ctx.sstF >= 62) parts.push('SST ~'+f0(ctx.sstF)+'°F — kelp bass and bass dominate; troll if bait marks appear.');
     else parts.push('Cooler SST ~'+f0(ctx.sstF)+'°F — focus rockfish, bass, and halibut on structure.');
@@ -10454,7 +10575,33 @@ function fishAdviceWithPicks(ctx, bite, ranked, synthRanked){
     text += ' Best balanced pick (bite + comfort): '+spotShortName(bestBal.spot.name)+
       ' — '+bestBal.comfort.bump+' ride, combined '+bestBal.comfort.combined+'/100.';
   }
+  if(window.BoatFishSmart){
+    const ocean = fishOceanForCtx(ctx);
+    const lead = ranked[0]?.spot;
+    const tech = lead ? BoatFishSmart.recommendTechnique(lead, ctx, ocean) : null;
+    text = BoatFishSmart.enrichAdviceText(text, ctx, ocean, ranked, tech);
+  }
   return text;
+}
+
+function renderFishSmartPanel(ctx, ranked){
+  const box = $('fishSmartPanel');
+  if(!box) return;
+  if(!window.BoatFishSmart){
+    box.innerHTML = '<div class="skel">Loading smart fish layer…</div>';
+    return;
+  }
+  const ocean = fishOceanForCtx(ctx);
+  const lead = ranked[0]?.spot;
+  const tech = lead
+    ? BoatFishSmart.recommendTechnique(lead, ctx, ocean)
+    : BoatFishSmart.recommendTechnique({ species:['calico bass','bonito'], fishStyle:'structure', tactics:'Drift structure' }, ctx, ocean);
+  const likes = BoatFishSmart.speciesLikelihoodPanel(ctx, ocean, ranked);
+  const whereLine = ranked.slice(0, 3).map((r, i) => {
+    const t = BoatFishSmart.recommendTechnique(r.spot, ctx, ocean);
+    return '#'+(i+1)+' '+spotShortName(r.spot.name)+' · '+t.label+' · bite '+r.score+'/100 · '+f1(r.distNm)+' nm';
+  }).join(' · ') || 'Rank spots after marine/tide load.';
+  box.innerHTML = BoatFishSmart.smartPlanPanelHtml(esc, { tech, likes, ocean, ctx, whereLine });
 }
 
 function spotKey(spot){ return spot.featureGroup || spot.name; }
@@ -10512,7 +10659,7 @@ function ensureBriefingSynth(){
     return Promise.resolve(window.__BOAT_BRIEFING_SYNTH__);
   }
   if(_briefingSynthPromise) return _briefingSynthPromise;
-  _briefingSynthPromise = loadScript('briefing-synth.js')
+  _briefingSynthPromise = loadScript('briefing-synth.js?v=3')
     .then(()=> loadScript('fish-spot-intel.js').catch(()=>{}))
     .then(()=> window.__BOAT_BRIEFING_SYNTH__)
     .catch(e=>{ _briefingSynthPromise = null; throw e; });
@@ -10558,9 +10705,16 @@ function gatherBriefingLiveConditions(){
   if(mc && mc.sea_surface_temperature != null){
     sstLabel = f0(mc.sea_surface_temperature * 9/5 + 32)+'°F';
   }
+  let chlLabel = '—';
+  const ocean = fishOceanCache;
+  if(ocean && ocean.chlBand){
+    chlLabel = ocean.chlBand + (ocean.chlAvg != null ? ' ~'+ocean.chlAvg.toFixed(2) : '');
+  }else if(ocean && ocean.takeawayText){
+    chlLabel = 'see takeaway';
+  }
   return {
-    swellLabel, windLabel, tideLabel, sstLabel,
-    caveat: 'Live model near the boat — briefing prose stays timeless.'
+    swellLabel, windLabel, tideLabel, sstLabel, chlLabel,
+    caveat: 'Live model near the boat + regional chlorophyll zones — briefing prose stays mostly timeless.'
   };
 }
 function briefingLiveStripHtml(){
@@ -10580,11 +10734,12 @@ function briefingLiveStripHtml(){
     '<div><span>Swell / wind</span><b>'+esc(seasWind)+'</b></div>'+
     '<div><span>Tide window</span><b>'+esc(cond.tideLabel || '—')+'</b></div>'+
     '<div><span>SST</span><b>'+esc(cond.sstLabel || '—')+'</b></div>'+
+    (cond.chlLabel ? '<div><span>Plankton</span><b>'+esc(cond.chlLabel)+'</b></div>' : '')+
     '</div><p class="briefing-live-caveat">'+esc(cond.caveat || '')+'</p></div>';
 }
 window.briefingLiveStripHtml = briefingLiveStripHtml;
 window.gatherBriefingLiveConditions = gatherBriefingLiveConditions;
-function renderFishSpotBriefing(spot, distNm){
+function renderFishSpotBriefing(spot, distNm, ctx){
   const box = $('fishSpotBriefing');
   if(!box) return;
   if(!spot){
@@ -10593,11 +10748,17 @@ function renderFishSpotBriefing(spot, distNm){
   }
   const paint = (synth)=>{
     const liveStrip = briefingLiveStripHtml();
-    const blocks = synth && synth.fishBriefingFor
+    let blocks = synth && synth.fishBriefingFor
       ? synth.fishBriefingFor(spot, distNm, window.__BOAT_FISH_SPOT_INTEL__)
       : (synth && synth.synthesizeFishBriefing
         ? synth.synthesizeFishBriefing(spot, distNm, synth.resolveFishIntel ? synth.resolveFishIntel(spot, window.__BOAT_FISH_SPOT_INTEL__) : null)
         : null);
+    if(blocks && blocks.length && window.BoatFishSmart && ctx){
+      const oceanParas = BoatFishSmart.briefingOceanParagraphs(spot, ctx, fishOceanForCtx(ctx));
+      if(oceanParas.length){
+        blocks = blocks.concat([{ h: 'Conditions synthesis (today)', body: oceanParas }]);
+      }
+    }
     if(!blocks || !blocks.length){
       box.innerHTML = liveStrip +
         '<p class="dive-briefing-placeholder">No briefing available for <strong>'+esc(spot.name)+'</strong>.</p>';
@@ -10641,7 +10802,7 @@ function renderFishUtilDetail(row, ctx, sw, sol){
   }).join(' · ') || 'No swell direction in model';
 
   hero.innerHTML =
-    '<h3>'+esc(fishGroupListName(spot))+' '+fishStyleBadgeHtml(spot)+'</h3>'+
+    '<h3>'+esc(fishGroupListName(spot))+' '+fishStyleBadgeHtml(spot)+fishTechBadgeHtml(spot, ctx)+'</h3>'+
     '<div class="mono" style="font-size:11px;color:var(--ink3);margin-bottom:8px">'+esc(fmtFishCoordsDepth(spot))+
     (spot.featureGroupSize > 1 ? ' · '+esc(spot.featureGroupName || fishFeatureDisplayName(spot.name))+' · '+spot.featureGroupSize+' modules' : '')+'</div>'+
     '<div class="fish-verdict" style="font-size:14px;margin-bottom:10px">'+esc(spot.tactics)+'</div>'+
@@ -10665,8 +10826,23 @@ function renderFishUtilDetail(row, ctx, sw, sol){
     '<p class="mono" style="font-size:12px;color:var(--ink2);margin-top:6px"><strong>Run:</strong> '+esc(comfort.runWhy)+'<br><strong>Drifting here:</strong> '+esc(comfort.atWhy)+'</p>'+
     (comfort.leeNotes.length ? '<p class="mono" style="font-size:11px;color:var(--ink3);margin-top:6px">'+esc(comfort.leeNotes.join(' · '))+'</p>' : '');
 
+  const smartBox = $('fishUtilSmart');
+  if(smartBox && window.BoatFishSmart){
+    const ocean = fishOceanForCtx(ctx);
+    const tech = BoatFishSmart.recommendTechnique(spot, ctx, ocean);
+    const likes = BoatFishSmart.speciesLikelihoodForSpot(spot, ctx, ocean);
+    smartBox.innerHTML =
+      BoatFishSmart.techniquePanelHtml(tech, esc) +
+      BoatFishSmart.likelihoodBarHtml(likes, esc, {
+        title: 'Species bite lean at this mark',
+        footnote: 'Uses trip time, tide/solunar, boat SST, and nearest regional chlorophyll zone — not a pin-local satellite pixel.'
+      });
+  }else if(smartBox){
+    smartBox.innerHTML = '<div class="skel">Loading technique &amp; species lean…</div>';
+  }
+
   if(bathy) bathy.innerHTML = bathyLinksForSpot(spot);
-  renderFishSpotBriefing(spot, distNm);
+  renderFishSpotBriefing(spot, distNm, ctx);
   lastFishUtilRow = row;
   lastFishUtilCtx = ctx;
   if(activeTab()==='fishing' && activeSubtab('fishing')==='onsite') refreshFishSeafloor(row, ctx);
@@ -10717,6 +10893,62 @@ function renderFishing(){
     if(advTitle) advTitle.textContent = Math.abs(planMs - Date.now()) < 3600000 ? "Today's advice" : 'Trip advice';
 
     const ctx = { lat: boatPos().lat, lon: boatPos().lon, hour: now.getHours(), sol: solSt, tide, sstF, wind, seas, moonIllum: sol.illum, planWhen: planMs };
+    const sw = currentSwellsAt(planWhen);
+    const windSpd = wc?.wind_speed_10m;
+    const windDir = wc?.wind_direction_10m;
+    /* Kick smart layer + regional chl; first paint may run without chl, then refresh once cache fills. */
+    ensureFishSmart().then(()=>{
+      if(activeTab() === 'fishing'){
+        try{
+          const rankedS = rankFishSpots(ctx);
+          const synthS = attachSpotComfort(rankedS, ctx, sw, windSpd, windDir);
+          const biteS = fishBiteScore(ctx);
+          const advS = $('fishAdvice');
+          if(advS){ advS.textContent = fishAdviceWithPicks(ctx, biteS, rankedS, synthS); advS.classList.remove('skel'); }
+          renderFishSmartPanel(ctx, rankedS);
+          renderFishTopPicks(rankedS, ctx, sol);
+          if(lastFishUtilRow && activeSubtab('fishing') === 'onsite')
+            renderFishUtilDetail(lastFishUtilRow, ctx, sw, sol);
+        }catch(e){ console.warn('fish smart paint', e); }
+      }
+    }).catch(()=>{});
+    const oceanReady = refreshFishOceanContext(false).then(()=>{
+      if(window.BoatFishSmart && activeTab() === 'fishing'){
+        /* Re-rank once plankton lands so site-fit includes productivity. */
+        try{
+          const ranked2 = rankFishSpots(ctx);
+          const allPin2 = rankFishSpots(ctx, { everyPin: true });
+          const synth2 = attachSpotComfort(ranked2, ctx, sw, windSpd, windDir);
+          const bite2 = fishBiteScore(ctx);
+          const adv2 = $('fishAdvice');
+          if(adv2){ adv2.textContent = fishAdviceWithPicks(ctx, bite2, ranked2, synth2); adv2.classList.remove('skel'); }
+          renderFishSmartPanel(ctx, ranked2);
+          renderFishTopPicks(ranked2, ctx, sol);
+          if(activeSubtab('fishing') === 'onsite') renderFishUtil(synth2, ctx, sw, sol);
+          if(activeSubtab('fishing') === 'plan'){
+            renderFishMap(synth2, allPin2, sol, tide, ctx);
+            lastFishPlanAllRanked = allPin2;
+          }
+          const g2 = $('fishGlance');
+          if(g2 && fishOceanCache){
+            const chlSub = fishOceanCache.chlBand
+              ? (fishOceanCache.chlBand + (fishOceanCache.chlAvg != null ? ' · avg '+fishOceanCache.chlAvg.toFixed(2) : ''))
+              : (fishOceanCache.takeawayText ? 'see Plankton takeaway' : 'no sample yet');
+            const existing = g2.querySelector('[data-fish-chl]');
+            const html = '<h3>Plankton</h3><div class="big" style="font-size:18px">'+esc(fishOceanCache.chlBand || '—')+'</div><div class="sub">'+esc(chlSub)+'</div>';
+            if(existing) existing.innerHTML = html;
+            else {
+              const card = document.createElement('div');
+              card.className = 'card';
+              card.setAttribute('data-fish-chl', '1');
+              card.innerHTML = html;
+              g2.appendChild(card);
+            }
+          }
+        }catch(e){ console.warn('fish ocean refresh paint', e); }
+      }
+    }).catch(()=>{});
+
     const bite = fishBiteScore(ctx);
     const biteCol = bite.score >= BITE_GOOD_AT ? 'var(--good)' : bite.score >= BITE_FAIR_AT ? 'var(--fair)' : 'var(--poor)';
     const near = solSt.nearest;
@@ -10726,9 +10958,6 @@ function renderFishing(){
 
     const ranked = rankFishSpots(ctx);
     const allPinRanked = rankFishSpots(ctx, { everyPin: true });
-    const sw = currentSwellsAt(planWhen);
-    const windSpd = wc?.wind_speed_10m;
-    const windDir = wc?.wind_direction_10m;
     const synthRanked = attachSpotComfort(ranked, ctx, sw, windSpd, windDir);
 
     const adv = $('fishAdvice');
@@ -10736,6 +10965,8 @@ function renderFishing(){
       adv.textContent = fishAdviceWithPicks(ctx, bite, ranked, synthRanked);
       adv.classList.remove('skel');
     }
+    renderFishSmartPanel(ctx, ranked);
+    void oceanReady;
 
     const isNowTrip = Math.abs(planMs - Date.now()) < 3600000;
     const topSec = $('fishTopPicksSec');
@@ -10795,12 +11026,14 @@ function renderFishing(){
         const modNote = spot.featureGroupSize > 1
           ? ' · ' + (spot.featureGroupName || fishFeatureDisplayName(spot.name)) + ' · ' + spot.featureGroupSize + ' modules'
           : '';
-        return '<div class="fish-spot '+cls+'"><div class="spot-h"><span><b>'+esc(label)+'</b>'+fishStyleBadgeHtml(spot)+'</span><span>Bite '+score+'/100 '+scoreLbl+' · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm</span></div>'+
+        const howTech = window.BoatFishSmart ? BoatFishSmart.recommendTechnique(spot, ctx, fishOceanForCtx(ctx)) : null;
+        return '<div class="fish-spot '+cls+'"><div class="spot-h"><span><b>'+esc(label)+'</b>'+fishStyleBadgeHtml(spot)+fishTechBadgeHtml(spot, ctx)+'</span><span>Bite '+score+'/100 '+scoreLbl+' · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm</span></div>'+
           '<div class="spot-coords mono" style="font-size:11px;color:var(--ink3);margin:2px 0 6px">'+esc(fmtFishCoordsDepth(spot))+esc(modNote)+'</div>'+
           '<div class="tags">'+species+'</div>'+
           (whenTxt ? '<div class="spot-when">'+esc(whenTxt)+'</div>' : '')+
           comfortTxt+
           '<div class="spot-rec">'+esc(spotConditionRec(spot, score, ctx))+'</div>'+
+          (howTech ? '<div class="spot-rec"><strong>How:</strong> '+esc(howTech.label)+' — '+esc(howTech.presentation)+'</div>' : '')+
           '<div class="spot-bait"><strong>Bait:</strong> '+esc(spotBaitLine(spot))+' · <strong>Gear:</strong> '+esc(spotGearLine(spot))+'</div>'+
           spotMiniBarHtml(tl)+
           '<div class="note"><strong>'+esc(spot.habitat)+'</strong> · '+esc(spot.depth)+'<br>'+esc(spot.tactics)+'</div></div>';

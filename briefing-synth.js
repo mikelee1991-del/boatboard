@@ -533,6 +533,7 @@
     var wind = cond.windLabel != null && cond.windLabel !== '' ? cond.windLabel : '\u2014';
     var tide = cond.tideLabel != null && cond.tideLabel !== '' ? cond.tideLabel : '\u2014';
     var sst = cond.sstLabel != null && cond.sstLabel !== '' ? cond.sstLabel : '\u2014';
+    var chl = cond.chlLabel != null && cond.chlLabel !== '' ? cond.chlLabel : '';
     var seasWind = swell === '\u2014' && wind === '\u2014' ? '\u2014' :
       (swell === '\u2014' ? wind : (wind === '\u2014' ? swell : swell + ' · ' + wind));
     var caveat = cond.caveat || 'Live model near the boat — not baked into briefing prose.';
@@ -542,6 +543,7 @@
       '<div><span>Swell / wind</span><b>' + esc(seasWind) + '</b></div>' +
       '<div><span>Tide window</span><b>' + esc(tide) + '</b></div>' +
       '<div><span>SST</span><b>' + esc(sst) + '</b></div>' +
+      (chl ? '<div><span>Plankton</span><b>' + esc(chl) + '</b></div>' : '') +
       '</div>' +
       '<p class="briefing-live-caveat">' + esc(caveat) + '</p></div>';
   }
