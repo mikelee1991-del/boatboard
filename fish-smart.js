@@ -216,6 +216,42 @@
     return best ? { sample: best, nmApprox: bestD } : null;
   }
 
+  function chlBandFromVal(v) {
+    if (v == null || !isFinite(v)) return null;
+    if (v < 0.12) return 'ultra-clear';
+    if (v < 0.25) return 'clear';
+    if (v < 0.45) return 'green';
+    if (v < 0.8) return 'very-green';
+    return 'bloom';
+  }
+
+  /**
+   * Bias ocean context toward a mark: nearest CHL_ZONES sample (not a pin-local pixel).
+   * SST stays boat/model — never invent pin GPS or pin SST.
+   */
+  function localizeOceanToSpot(spot, oceanIn, ctx) {
+    var ocean = normalizeOcean(oceanIn, ctx);
+    ocean.sourceNotes = (ocean.sourceNotes || []).slice().filter(function (n) {
+      return !/^chl nearest zone/i.test(String(n || ''));
+    });
+    delete ocean.localChlName;
+    delete ocean.localChlNm;
+    if (!spot || spot.lat == null || spot.lon == null) return ocean;
+    var near = nearestChlSample(spot.lat, spot.lon, ocean.chlSamples);
+    if (near && near.sample && near.sample.val != null && isFinite(near.sample.val)) {
+      ocean.chlAvg = near.sample.val;
+      ocean.chlBand = chlBandFromVal(near.sample.val) || ocean.chlBand;
+      ocean.localChlName = near.sample.name || near.sample.id || null;
+      ocean.localChlNm = near.nmApprox;
+      ocean.hasChl = true;
+      var note = 'chl nearest zone' +
+        (ocean.localChlName ? ' · ' + ocean.localChlName : '') +
+        (near.nmApprox != null && isFinite(near.nmApprox) ? ' (~' + Math.round(near.nmApprox * 10) / 10 + ' nm)' : '');
+      ocean.sourceNotes.push(note);
+    }
+    return ocean;
+  }
+
   /** Modest site-fit adjustment from SST match + nearby chlorophyll productivity. */
   function oceanSiteDelta(spot, ctx, oceanIn) {
     var ocean = normalizeOcean(oceanIn, ctx);
@@ -358,11 +394,12 @@
   }
 
   function speciesLikelihoodForSpot(spot, ctx, oceanIn) {
+    var ocean = localizeOceanToSpot(spot, oceanIn, ctx);
     var list = (spot && spot.species && spot.species.length) ? spot.species : ['calico bass', 'sand bass'];
     var seen = {};
     var out = [];
     for (var i = 0; i < list.length; i++) {
-      var row = speciesBiteLikelihood(list[i], ctx, oceanIn);
+      var row = speciesBiteLikelihood(list[i], ctx, ocean);
       var key = row.id || row.species;
       if (seen[key]) continue;
       seen[key] = true;
@@ -376,6 +413,7 @@
     return out;
   }
 
+  /** Boat-centric / multi-spot aggregate when no mark is selected. */
   function speciesLikelihoodPanel(ctx, oceanIn, rankedTop) {
     var ocean = normalizeOcean(oceanIn, ctx);
     var bag = {};
@@ -409,7 +447,7 @@
    * Technique band: surface | mid | bottom | mixed — tied to mark style, TOD, SST/chl, species.
    */
   function recommendTechnique(spot, ctx, oceanIn) {
-    var ocean = normalizeOcean(oceanIn, ctx);
+    var ocean = localizeOceanToSpot(spot, oceanIn, ctx);
     var style = classifyFishStyle(spot);
     var hour = ctx && ctx.hour != null ? ctx.hour : new Date().getHours();
     var period = dayPeriod(hour);
@@ -488,8 +526,9 @@
     else whyParts.push('structure mark');
     whyParts.push(period + ' window');
     if (top && top.pct != null) whyParts.push(top.species + ' leading (~' + top.pct + '%)');
-    if (ocean.sstF != null) whyParts.push('SST ~' + Math.round(ocean.sstF) + '°F');
-    if (ocean.chlBand) whyParts.push(ocean.chlBand + ' plankton');
+    if (ocean.sstF != null) whyParts.push('SST ~' + Math.round(ocean.sstF) + '°F (boat/model)');
+    if (ocean.localChlName) whyParts.push('nearest chl · ' + ocean.localChlName);
+    else if (ocean.chlBand) whyParts.push(ocean.chlBand + ' plankton');
     if (!ocean.hasChl) whyParts.push('plankton thin/missing — technique leans on time + SST');
 
     return {
@@ -597,7 +636,7 @@
 
   /** Extra briefing paragraphs when live ocean context is available. */
   function briefingOceanParagraphs(spot, ctx, oceanIn) {
-    var ocean = normalizeOcean(oceanIn, ctx);
+    var ocean = localizeOceanToSpot(spot, oceanIn, ctx);
     var tech = recommendTechnique(spot, ctx, ocean);
     var likes = speciesLikelihoodForSpot(spot, ctx, ocean).slice(0, 4);
     var likeTxt = likes.map(function (r) {
@@ -606,13 +645,17 @@
     var p1 = 'Conditions synthesis: fish ' + tech.label.toLowerCase() +
       ' here — ' + tech.presentation + ' (' + tech.why + ').';
     var p2 = likeTxt
-      ? ('Bite lean at trip time: ' + likeTxt +
+      ? ('Bite lean at this mark (trip time): ' + likeTxt +
         (ocean.sstF == null && !ocean.hasChl
           ? ' — confidence limited until SST/plankton load.'
           : '.'))
       : '';
     var p3 = '';
-    if (ocean.takeawayText) p3 = 'Regional plankton: ' + ocean.takeawayText;
+    if (ocean.localChlName) {
+      p3 = 'Nearest chlorophyll zone for this mark: ' + ocean.localChlName +
+        (ocean.chlAvg != null ? ' (~' + ocean.chlAvg.toFixed(2) + ' mg m⁻³, ' + (ocean.chlBand || 'band n/a') + ')' : '') +
+        ' — zone sample, not a pin-local satellite pixel.';
+    } else if (ocean.takeawayText) p3 = 'Regional plankton: ' + ocean.takeawayText;
     else if (ocean.chlBand) p3 = 'Regional chlorophyll band: ' + ocean.chlBand +
       (ocean.chlAvg != null ? ' (~' + ocean.chlAvg.toFixed(2) + ' mg m⁻³)' : '') + '.';
     else p3 = 'No fresh chlorophyll sample in cache — use Plankton tab map for color breaks; do not invent a pin-local reading.';
@@ -625,17 +668,30 @@
     var tech = opts.tech;
     var likes = opts.likes || [];
     var ocean = normalizeOcean(opts.ocean, opts.ctx);
+    var spotLabel = opts.spotLabel || '';
+    var localized = !!opts.localized;
     var html = '<div class="fish-smart-card">';
-    html += '<div class="fish-smart-h">Smart read · where & how</div>';
+    html += '<div class="fish-smart-h">' +
+      (localized && spotLabel
+        ? ('Smart read · ' + esc(spotLabel))
+        : 'Smart read · where & how') +
+      '</div>';
     if (opts.whereLine) html += '<p class="fish-tech-body">' + esc(opts.whereLine) + '</p>';
     if (tech) html += techniquePanelHtml(tech, esc);
+    var likeTitle = localized && spotLabel
+      ? ('Species bite lean · ' + spotLabel)
+      : 'Species bite lean (trip time)';
+    var likeFoot = localized
+      ? ('This mark’s listed species + trip time, solunar/tide, boat/model SST, and nearest regional chlorophyll zone — not a pin-local pixel. Missing plankton = wider uncertainty.')
+      : 'Heuristic from time of day, solunar/tide, Open-Meteo SST, and regional chlorophyll — not a guarantee. Missing plankton = wider uncertainty.';
     html += likelihoodBarHtml(likes, esc, {
-      title: 'Species bite lean (trip time)',
-      footnote: 'Heuristic from time of day, solunar/tide, Open-Meteo SST, and regional chlorophyll — not a guarantee. Missing plankton = wider uncertainty.'
+      title: likeTitle,
+      footnote: likeFoot
     });
-    if (ocean.chlTime || ocean.sourceNotes.length) {
+    if (ocean.chlTime || (ocean.sourceNotes && ocean.sourceNotes.length) || ocean.localChlName) {
       var src = [];
       if (ocean.chlTime) src.push('chl scene ' + String(ocean.chlTime).slice(0, 10));
+      if (ocean.localChlName) src.push('nearest zone · ' + ocean.localChlName);
       if (ocean.sourceNotes && ocean.sourceNotes.length) src = src.concat(ocean.sourceNotes);
       html += '<p class="fish-smart-meta">' + esc(src.join(' · ')) + '</p>';
     }
@@ -647,6 +703,8 @@
     SPECIES_PROFILES: SPECIES_PROFILES,
     dayPeriod: dayPeriod,
     normalizeOcean: normalizeOcean,
+    localizeOceanToSpot: localizeOceanToSpot,
+    nearestChlSample: nearestChlSample,
     oceanSiteDelta: oceanSiteDelta,
     oceanBiteDelta: oceanBiteDelta,
     speciesBiteLikelihood: speciesBiteLikelihood,
