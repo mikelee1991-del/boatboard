@@ -498,6 +498,10 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .fish-smart-meta{font-size:11px;color:var(--ink3);font-family:var(--mono);line-height:1.45;margin:8px 0 0}
 .fish-tech-panel{margin:0 0 12px}
 .fish-tech-body{font-size:13px;color:var(--ink);line-height:1.5;margin:0 0 4px}
+.fish-intel-badges{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}
+.fish-intel-badge{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.02em;padding:2px 7px;border-radius:3px;border:1px solid var(--line2);color:var(--ink2);background:var(--bg2)}
+.fish-intel-list{margin:4px 0 0;padding:0 0 0 1.1em;font-size:12px;color:var(--ink2);line-height:1.45}
+.fish-intel-list li{margin:2px 0}
 .fish-species-like{margin-top:4px}
 .fish-like-row{display:grid;grid-template-columns:minmax(72px,28%) 1fr minmax(72px,auto);gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line2);font-size:12px}
 .fish-like-row:last-child{border-bottom:none}
@@ -2617,11 +2621,11 @@ const SST_SCALE_PAD_MIN_C = 0.35;
 const SST_SCALE_MIN_SPAN_C = 1.2;
 const SST_SCALE_CACHE_MS = 55000;
 const SST_SCALE_BOUNDS_STEP = 0.08;
-const FISH_MAP_MAX_MARKERS = 25; // numbered markers on plan map (top bite ranks among nearby groups)
+const FISH_MAP_MAX_MARKERS = 30; // numbered markers on plan map (top bite ranks among nearby groups)
 const FISH_MAP_FIT_NM = 10; // auto-fit bounds + ranking pool radius — far bank/regional pins still plot as dots
 const FISH_MAP_LOCAL_NM = 20; // comfort chart, secondary marker cutoff
 const FISH_MAP_DEFAULT_ZOOM = 11;
-const FISH_PICKER_POOL = 25; // ranked list + picker pool (nearest groups within FISH_MAP_FIT_NM; matches dive SITE_PICKER_POOL)
+const FISH_PICKER_POOL = 30; // ranked list + picker pool (nearest groups within FISH_MAP_FIT_NM; matches dive SITE_PICKER_POOL)
 const MPA_GEO_URL = 'https://services8.arcgis.com/JFYbogndXme7ddg8/arcgis/rest/services/MarineProtectedAreas_WebMer/FeatureServer/0/query?f=geojson&where=Study_Regi%3D%27SCSR%27&outFields=NAME,Type,FULLNAME,DFG_URL,CCR,Study_Regi,Acres&returnGeometry=true';
 const MPA_CACHE_MAX_AGE = 90 * 24 * HR;
 const MPA_LEGEND_HTML =
@@ -9221,7 +9225,7 @@ let _fishOceanPromise = null;
 function ensureFishSmart(){
   if(window.BoatFishSmart) return Promise.resolve(window.BoatFishSmart);
   if(_fishSmartPromise) return _fishSmartPromise;
-  _fishSmartPromise = loadScript('fish-smart.js?v=2').then(()=>{
+  _fishSmartPromise = loadScript('fish-smart.js?v=3').then(()=>{
     if(!window.BoatFishSmart) throw new Error('BoatFishSmart missing');
     return window.BoatFishSmart;
   }).catch(e=>{ _fishSmartPromise = null; throw e; });
@@ -9992,7 +9996,7 @@ function renderFishTopPicks(ranked, ctx, sol){
   if(!box) return;
   const isNowTrip = ctx.planWhen == null || Math.abs(ctx.planWhen - Date.now()) < 3600000;
   const scoreLbl = isNowTrip ? 'now' : 'at trip time';
-  const picks = ranked.slice(0, 10);
+  const picks = ranked.slice(0, FISH_PICKER_POOL);
   if(!picks.length){ box.innerHTML = '<div class="skel">No spots ranked</div>'; return; }
   ensureFishSpotSelected(ranked);
   box.innerHTML = picks.map(({ spot, score, distNm, siteDelta }, i) => {
@@ -10010,7 +10014,9 @@ function renderFishTopPicks(ranked, ctx, sol){
     let howTxt = '';
     if(window.BoatFishSmart){
       const tech = BoatFishSmart.recommendTechnique(spot, ctx, fishOceanForSpot(spot, ctx));
-      howTxt = '<div class="rec"><strong>How:</strong> '+esc(tech.label)+' — '+esc(tech.presentation)+'</div>';
+      const tip = BoatFishSmart.intelOneLiner ? BoatFishSmart.intelOneLiner(tech) : '';
+      howTxt = '<div class="rec"><strong>How:</strong> '+esc(tech.label)+
+        (tip ? ' — '+esc(tip) : ' — '+esc(tech.presentation))+'</div>';
     }
     return '<div class="fish-pick '+cls+'" tabindex="0" role="button" data-spot-key="'+esc(key)+'"'+(sel?' aria-current="true"':'')+'>'+
       '<span class="rank">#'+(i+1)+'</span>'+
@@ -11138,6 +11144,7 @@ function renderFishing(){
           ? ' · ' + (spot.featureGroupName || fishFeatureDisplayName(spot.name)) + ' · ' + spot.featureGroupSize + ' modules'
           : '';
         const howTech = window.BoatFishSmart ? BoatFishSmart.recommendTechnique(spot, ctx, fishOceanForSpot(spot, ctx)) : null;
+        const howTip = howTech && BoatFishSmart.intelOneLiner ? BoatFishSmart.intelOneLiner(howTech) : '';
         return '<div class="fish-spot '+cls+'" tabindex="0" role="button" data-spot-key="'+esc(key)+'"'+(sel?' aria-current="true"':'')+'>'+
           '<div class="spot-h"><span><b>'+esc(label)+(sel ? ' ✓' : '')+'</b>'+fishStyleBadgeHtml(spot)+fishTechBadgeHtml(spot, ctx)+'</span><span>Bite '+score+'/100 '+scoreLbl+' · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm</span></div>'+
           '<div class="spot-coords mono" style="font-size:11px;color:var(--ink3);margin:2px 0 6px">'+esc(fmtFishCoordsDepth(spot))+esc(modNote)+'</div>'+
@@ -11145,7 +11152,8 @@ function renderFishing(){
           (whenTxt ? '<div class="spot-when">'+esc(whenTxt)+'</div>' : '')+
           comfortTxt+
           '<div class="spot-rec">'+esc(spotConditionRec(spot, score, ctx))+'</div>'+
-          (howTech ? '<div class="spot-rec"><strong>How:</strong> '+esc(howTech.label)+' — '+esc(howTech.presentation)+'</div>' : '')+
+          (howTech ? '<div class="spot-rec"><strong>How:</strong> '+esc(howTech.label)+
+            (howTip ? ' — '+esc(howTip) : ' — '+esc(howTech.presentation))+'</div>' : '')+
           '<div class="spot-bait"><strong>Bait:</strong> '+esc(spotBaitLine(spot))+' · <strong>Gear:</strong> '+esc(spotGearLine(spot))+'</div>'+
           spotMiniBarHtml(tl)+
           '<div class="note"><strong>'+esc(spot.habitat)+'</strong> · '+esc(spot.depth)+'<br>'+esc(spot.tactics)+'</div></div>';

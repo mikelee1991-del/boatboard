@@ -1,6 +1,6 @@
 /**
  * BoatBoard Fish smart layer — SST + plankton synthesis, technique bands,
- * and species bite likelihood for intermediate anglers.
+ * species bite likelihood, and concise rig/iron tactics for intermediate anglers.
  * Consumes ocean samples / takeaways provided by index.html (no invented GPS).
  */
 (function (global) {
@@ -531,14 +531,211 @@
     else if (ocean.chlBand) whyParts.push(ocean.chlBand + ' plankton');
     if (!ocean.hasChl) whyParts.push('plankton thin/missing — technique leans on time + SST');
 
-    return {
+    var tech = {
       band: band,
       label: labels[band] || band,
       presentation: present[band] || present.mixed,
       why: whyParts.join(' · '),
       votes: votes,
-      topSpecies: top || null
+      topSpecies: top || null,
+      period: period,
+      style: style
     };
+    tech.intel = buildFishingIntel(spot, ctx, ocean, tech, sp);
+    return tech;
+  }
+
+  /**
+   * Concise intermediate tactics: depth call, rigs, iron/lure color, bait note.
+   * Driven by technique band + leading species + light/water (chl), not essays.
+   */
+  function buildFishingIntel(spot, ctx, ocean, tech, likes) {
+    var band = (tech && tech.band) || 'mixed';
+    var period = (tech && tech.period) || dayPeriod(ctx && ctx.hour != null ? ctx.hour : new Date().getHours());
+    var top = (likes && likes[0]) || (tech && tech.topSpecies) || null;
+    var sid = (top && top.id) || '';
+    var chl = ocean && ocean.chlBand;
+    var green =
+      chl === 'green' || chl === 'very-green' || chl === 'bloom';
+    var blue =
+      chl === 'ultra-clear' || chl === 'clear';
+    var lowLight =
+      period === 'dawn' || period === 'dusk' || period === 'night';
+    var midday = period === 'midday';
+    var windy = ctx && ctx.wind != null && ctx.wind >= 16;
+    var rough = ctx && ctx.seas != null && ctx.seas > 3;
+
+    var depthCalls = {
+      surface: { call: 'Top fish', why: 'Bait/birds up or warm surface window — stay shallow until marks fade.' },
+      mid: { call: 'Mid-column', why: 'Work 8–25 ft on kelp tops / module edges; sounder first, then settle.' },
+      bottom: { call: 'Bottom fish', why: 'Midday, cool water, or structure lean — fish the reef/sand transition.' },
+      mixed: { call: 'Mixed', why: 'Start where bait shows (top/mid); drop if the school settles on structure.' }
+    };
+    if (band === 'surface' && (windy || rough)) {
+      depthCalls.surface.why = 'Surface lean still on — shorten casts / tighter feathers if wind chops the top.';
+    }
+    if (band === 'bottom' && midday) {
+      depthCalls.bottom.why = 'Sun high — fish deeper / tighter to relief; skip a long surface hunt.';
+    }
+    if (band === 'surface' && (period === 'dawn' || period === 'dusk')) {
+      depthCalls.surface.why = 'Low-light window — top-water / shallow iron before the school drops.';
+    }
+    if (top && top.pct != null && top.pct >= 55) {
+      if (sid === 'rockfish' || sid === 'halibut' || sid === 'sandbass') {
+        if (band !== 'surface') depthCalls[band].why = top.species + ' leading — keep presentations on or near the bottom.';
+      } else if (sid === 'bonito' || sid === 'barracuda') {
+        if (band === 'surface' || band === 'mixed') {
+          depthCalls[band].why = top.species + ' leading — stay on top until bait disappears.';
+        }
+      } else if (sid === 'yellowtail' && band === 'mixed') {
+        depthCalls.mixed.why = 'YT leading — fly-line/iron first; yo-yo the high spot if they pin to structure.';
+      }
+    }
+    var depth = depthCalls[band] || depthCalls.mixed;
+
+    var rigs = pickRigs(band, sid, spot);
+    var iron = pickIronLure(band, sid, { green: green, blue: blue, lowLight: lowLight, midday: midday, chl: chl });
+    var bait = pickBaitNote(band, sid, period, ocean, ctx);
+
+    var bullets = [];
+    if (rigs.length) bullets.push('Rig: ' + rigs.join(' · '));
+    if (iron) {
+      var ironLine = 'Iron/lure: ' + iron.type;
+      if (iron.color) ironLine += ' · ' + iron.color;
+      bullets.push(ironLine);
+    }
+    if (bait) bullets.push(bait);
+
+    return {
+      depthCall: depth.call,
+      depthWhy: depth.why,
+      rigs: rigs,
+      iron: iron,
+      bait: bait || null,
+      bullets: bullets
+    };
+  }
+
+  function pickRigs(band, sid, spot) {
+    var depthStr = String((spot && spot.depth) || '');
+    var deep = /180|200|fathom|deep/i.test(depthStr) || (parseInt(depthStr, 10) >= 120);
+    var out = [];
+
+    if (sid === 'halibut') {
+      out.push('Sliding sinker / Carolina');
+      out.push('Soft plastic on ½–1 oz');
+    } else if (sid === 'rockfish') {
+      out.push(deep ? 'Dropper loop 8–16 oz' : 'Dropper loop 4–8 oz');
+      out.push(deep ? 'Slow-pitch / butterfly' : 'Yo-yo to the reef');
+    } else if (sid === 'sandbass') {
+      out.push('Drop-shot or Carolina');
+      out.push('Light sliding sinker');
+    } else if (sid === 'calico') {
+      out.push('Fly-line / free-spool live bait');
+      out.push('Weedless swimbait');
+    } else if (sid === 'white seabass') {
+      out.push('Fly-line live squid');
+      out.push('Slow mid-column drift');
+    } else if (sid === 'yellowtail') {
+      if (band === 'bottom' || band === 'mid') out.push('Yo-yo iron on the high spot');
+      else out.push('Fly-line / surface iron');
+      out.push('Troll feathers if bait is up');
+    } else if (sid === 'bonito' || sid === 'barracuda') {
+      out.push('Troll feathers');
+      out.push('Cast chrome / small iron');
+    } else {
+      /* band defaults when species profile thin */
+      if (band === 'surface') {
+        out.push('Troll feathers');
+        out.push('Cast yo-yo / surface iron');
+      } else if (band === 'mid') {
+        out.push('Fly-line live bait');
+        out.push('Swimbait 8–25 ft');
+      } else if (band === 'bottom') {
+        out.push(deep ? 'Dropper loop / slow-pitch' : 'Dropper loop or sliding sinker');
+        out.push('Yo-yo the relief');
+      } else {
+        out.push('Fly-line or surface iron first');
+        out.push('Dropper ready if they pin');
+      }
+    }
+    return out.slice(0, 2);
+  }
+
+  function pickIronLure(band, sid, env) {
+    var green = env.green;
+    var blue = env.blue;
+    var lowLight = env.lowLight;
+    var type = null;
+    var color = null;
+
+    if (sid === 'yellowtail') {
+      type = band === 'bottom' || band === 'mid' ? 'Yo-yo / surface iron' : 'Surface iron / fly-line iron';
+      if (lowLight || green) color = 'Green sardine or mackerel';
+      else if (blue) color = 'Chrome or blue/white';
+      else color = 'Blue/white or green chrome';
+    } else if (sid === 'bonito') {
+      type = 'Small iron / feathers';
+      color = lowLight || green ? 'Green/chrome or dark back' : 'Chrome or blue/white';
+    } else if (sid === 'barracuda') {
+      type = 'Feathers / slim iron';
+      color = 'Chrome or blue/white';
+    } else if (sid === 'calico') {
+      type = 'Swimbait / soft plastic';
+      color = green || lowLight ? 'Dark baitfish / green' : 'Sardine or blue/silver';
+    } else if (sid === 'sandbass') {
+      type = 'Grub / soft plastic';
+      color = green || lowLight ? 'Dark or motor oil' : 'White / chartreuse';
+    } else if (sid === 'halibut') {
+      type = 'Big swimbait / scampi';
+      color = 'White, silver, or sardine';
+    } else if (sid === 'rockfish') {
+      type = env.chl === 'bloom' ? 'Shrimp fly / dark jig' : 'Shrimp fly / metal jig';
+      color = lowLight || green ? 'Dark red / purple' : 'Pink shrimp or chrome';
+    } else if (sid === 'white seabass') {
+      type = 'Live squid first';
+      color = null;
+    } else if (band === 'surface' || band === 'mixed') {
+      type = 'Surface iron / feathers';
+      if (lowLight || green) color = 'Green sardine or dark';
+      else if (blue) color = 'Chrome or blue/white';
+      else color = 'Blue/white';
+    } else if (band === 'bottom') {
+      type = 'Yo-yo iron or soft plastic';
+      color = green || lowLight ? 'Dark profile' : 'Chrome / white';
+    } else {
+      type = 'Swimbait or live bait';
+      color = green || lowLight ? 'Darker baitfish' : 'Sardine tone';
+    }
+
+    if (env.chl === 'bloom' && color && sid !== 'white seabass') {
+      color = color + ' (bigger silhouette in murk)';
+    }
+    if (!type) return null;
+    return { type: type, color: color };
+  }
+
+  function pickBaitNote(band, sid, period, ocean, ctx) {
+    if (sid === 'white seabass') return 'Bait: live squid — dawn/dusk priority.';
+    if (sid === 'yellowtail' && (band === 'surface' || band === 'mixed')) {
+      return period === 'midday'
+        ? 'Bait: live sardine yo-yo if irons quiet.'
+        : 'Bait: fly-line sardine when birds/bait show.';
+    }
+    if (sid === 'calico' && (period === 'dawn' || period === 'dusk')) {
+      return 'Bait: live sardine on the edge — short bites at light change.';
+    }
+    if (sid === 'halibut' && ctx && ctx.tide && ctx.tide.rising === false) {
+      return 'Bait: drag sand edges on the outgoing.';
+    }
+    if (sid === 'rockfish') return 'Bait: squid strip on dropper — stay vertical.';
+    if (sid === 'bonito' && ocean && ocean.sstF != null && ocean.sstF >= 64) {
+      return 'Bait optional — feathers/iron usually enough.';
+    }
+    if (band === 'bottom' && period === 'midday') {
+      return 'Skip a long top hunt — bait the relief.';
+    }
+    return null;
   }
 
   function techniqueBadgeHtml(tech, escFn) {
@@ -576,10 +773,39 @@
   function techniquePanelHtml(tech, escFn) {
     var esc = typeof escFn === 'function' ? escFn : function (s) { return String(s == null ? '' : s); };
     if (!tech) return '';
-    return '<div class="fish-tech-panel">' +
-      '<div class="fish-smart-h">How to fish · ' + esc(tech.label) + '</div>' +
-      '<p class="fish-tech-body">' + esc(tech.presentation) + '</p>' +
-      '<p class="fish-smart-meta">' + esc(tech.why) + '</p></div>';
+    var intel = tech.intel || null;
+    var html = '<div class="fish-tech-panel">' +
+      '<div class="fish-smart-h">How to fish · ' + esc(tech.label) + '</div>';
+    if (intel && intel.depthCall) {
+      html += '<div class="fish-intel-badges">' +
+        '<span class="fish-intel-badge fish-tech-' + esc(tech.band) + '">' + esc(intel.depthCall) + '</span>' +
+        '</div>';
+      if (intel.depthWhy) html += '<p class="fish-tech-body">' + esc(intel.depthWhy) + '</p>';
+    } else {
+      html += '<p class="fish-tech-body">' + esc(tech.presentation) + '</p>';
+    }
+    if (intel && intel.bullets && intel.bullets.length) {
+      html += '<ul class="fish-intel-list">';
+      for (var i = 0; i < intel.bullets.length; i++) {
+        html += '<li>' + esc(intel.bullets[i]) + '</li>';
+      }
+      html += '</ul>';
+    }
+    html += '<p class="fish-smart-meta">' + esc(tech.why) + '</p></div>';
+    return html;
+  }
+
+  /** One-liner for top-pick cards — depth + rig + iron, no essay. */
+  function intelOneLiner(tech) {
+    if (!tech || !tech.intel) return '';
+    var intel = tech.intel;
+    var parts = [];
+    if (intel.depthCall) parts.push(intel.depthCall);
+    if (intel.rigs && intel.rigs[0]) parts.push(intel.rigs[0]);
+    if (intel.iron) {
+      parts.push(intel.iron.type + (intel.iron.color ? ' · ' + intel.iron.color : ''));
+    }
+    return parts.slice(0, 3).join(' — ');
   }
 
   /** Prose for Plan advice — intermediate voice, synthesizes SST + plankton. */
@@ -642,8 +868,15 @@
     var likeTxt = likes.map(function (r) {
       return r.species + ' ' + (r.pct == null ? '?' : r.pct + '% (' + r.label + ')');
     }).join('; ');
-    var p1 = 'Conditions synthesis: fish ' + tech.label.toLowerCase() +
-      ' here — ' + tech.presentation + ' (' + tech.why + ').';
+    var intel = tech.intel;
+    var p1 = 'Conditions synthesis: ' +
+      (intel && intel.depthCall ? intel.depthCall + ' (' + tech.label.toLowerCase() + ')' : 'fish ' + tech.label.toLowerCase()) +
+      ' — ' + (intel && intel.depthWhy ? intel.depthWhy : tech.presentation) +
+      ' (' + tech.why + ').';
+    var pIntel = '';
+    if (intel && intel.bullets && intel.bullets.length) {
+      pIntel = intel.bullets.join(' ');
+    }
     var p2 = likeTxt
       ? ('Bite lean at this mark (trip time): ' + likeTxt +
         (ocean.sstF == null && !ocean.hasChl
@@ -659,7 +892,7 @@
     else if (ocean.chlBand) p3 = 'Regional chlorophyll band: ' + ocean.chlBand +
       (ocean.chlAvg != null ? ' (~' + ocean.chlAvg.toFixed(2) + ' mg m⁻³)' : '') + '.';
     else p3 = 'No fresh chlorophyll sample in cache — use Plankton tab map for color breaks; do not invent a pin-local reading.';
-    return [p1, p2, p3].filter(Boolean);
+    return [p1, pIntel, p2, p3].filter(Boolean);
   }
 
   function smartPlanPanelHtml(escFn, opts) {
@@ -711,9 +944,11 @@
     speciesLikelihoodForSpot: speciesLikelihoodForSpot,
     speciesLikelihoodPanel: speciesLikelihoodPanel,
     recommendTechnique: recommendTechnique,
+    buildFishingIntel: buildFishingIntel,
     techniqueBadgeHtml: techniqueBadgeHtml,
     likelihoodBarHtml: likelihoodBarHtml,
     techniquePanelHtml: techniquePanelHtml,
+    intelOneLiner: intelOneLiner,
     oceanAdviceBits: oceanAdviceBits,
     enrichAdviceText: enrichAdviceText,
     briefingOceanParagraphs: briefingOceanParagraphs,
