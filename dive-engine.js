@@ -10,9 +10,9 @@
   const SLOTS = [{ h: 7, lbl: '7 AM' }, { h: 12, lbl: 'Noon' }, { h: 17, lbl: '5 PM' }];
   const SLIP = { lat: 33 + 50/60 + 53.4/3600, lon: -(118 + 23/60 + 46.8/3600) };
   /** Nearest-site pool for On site picker and Plan tab list (map plots all trusted DIVE_SITES). */
-  const SITE_PICKER_POOL = 25;
+  const SITE_PICKER_POOL = 30;
   /** Numbered markers on plan map = top N of the score-ranked pool (feature groups). */
-  const DIVE_MAP_MAX_MARKERS = 25;
+  const DIVE_MAP_MAX_MARKERS = 30;
   const DIVE_MAP_LOCAL_NM = 30;
   /** Fit the dive map to this radius around the boat so far CDFG modules don't zoom the view to all of CA. */
   const DIVE_MAP_FIT_NM = 10;

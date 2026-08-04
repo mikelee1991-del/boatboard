@@ -154,7 +154,7 @@ WScript.Echo('Feature groups: ' + groupCount);
 WScript.Echo('CDFG pins: ' + cdfgPins + ' -> groups: ' + cdfgGroups);
 WScript.Echo('Hermosa/Redondo (~33.86,-118.40) within ' + FIT + ' nm:');
 WScript.Echo('  pins: ' + pins35 + ' -> groups: ' + groups35);
-WScript.Echo('SITE_PICKER_POOL counts groups (max 25 spots), not raw pins');
+WScript.Echo('SITE_PICKER_POOL counts groups (max 30 spots), not raw pins');
 WScript.Echo('Multi-module groups (' + multiList.length + '):');
 for (i = 0; i < multiList.length; i++) WScript.Echo('  - ' + multiList[i]);
 WScript.Echo('Hermosa A -> ' + groupOf('Hermosa Beach Artificial Reef A'));

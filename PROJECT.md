@@ -183,16 +183,16 @@ Subtabs:
 
 **Live counts (Aug 2, 2026):** **~595** `FISH_SPOTS` (verified / kml / cdfg / userTrusted flags overlap). GPS coords shown in list/popups via `fmtFishCoordsDepth`. See **CONTEXT.md**.
 
-Map auto-fit / ranking radius: **`FISH_MAP_FIT_NM` = 10**. Ranked picker pool: **`FISH_PICKER_POOL` = 25**. Plan map basemap = SeafloorRender BlueTopo+DEM (not split imagery).
+Map auto-fit / ranking radius: **`FISH_MAP_FIT_NM` = 10**. Ranked picker pool: **`FISH_PICKER_POOL` = 30**. Plan map basemap = SeafloorRender BlueTopo+DEM (not split imagery).
 
 ### Dive
 Subtabs:
-- **Plan** — calendar date, ranked sites (shared **25**-site picker pool), map with numbered markers, 5-day outlook, factors; GPS + depth in list
+- **Plan** — calendar date, ranked sites (shared **30**-site picker pool), map with numbered markers, 5-day outlook, factors; GPS + depth in list
 - **On site** — nearest-site dropdown, **pre-dive briefing**, site guide, seafloor bathymetry/kelp
 
 **Live counts (Aug 2, 2026):** **~412** `DIVE_SITES`. `siteMapPos()` uses raw water-side GPS (no runtime `mapDisplayPos` push). See **CONTEXT.md**.
 
-Map auto-fit / ranking radius: **`DIVE_MAP_FIT_NM` = 10**. Ranked picker pool: **`SITE_PICKER_POOL` = 25**. Plan map basemap = SeafloorRender BlueTopo+DEM.
+Map auto-fit / ranking radius: **`DIVE_MAP_FIT_NM` = 10**. Ranked picker pool: **`SITE_PICKER_POOL` = 30**. Plan map basemap = SeafloorRender BlueTopo+DEM.
 
 **Pre-dive briefings** (On site tab):
 - Data in `dive-briefings-data.js` → loaded as `window.__BOAT_DIVE_BRIEFINGS__`
