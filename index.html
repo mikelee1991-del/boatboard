@@ -280,10 +280,10 @@ svg text{font-family:var(--font-mono)}
 .score-ramp-status .srs-worst{color:#ff1a1a;text-align:left}
 .score-ramp-status .srs-poor{color:#ff7a00}
 .score-ramp-status .srs-fair{color:#ffd400}
-.score-ramp-status .srs-good{color:#2ee85a}
-.score-ramp-status .srs-best{color:#00ff55;text-align:right}
+.score-ramp-status .srs-good{color:#22e800}
+.score-ramp-status .srs-best{color:#00ff00;text-align:right}
 .score-ramp-track{position:relative;width:100%}
-.score-ramp-bar{display:block;width:100%;height:14px;border-radius:6px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(90deg,#ff0a0a 0%,#ff2a00 6%,#ff4a00 12%,#ff6a00 18%,#ff8800 25%,#ffa800 32%,#ffc400 40%,#ffe000 48%,#e8f000 55%,#b8ec00 62%,#7ae820 70%,#3ce038 78%,#18e848 85%,#00f555 92%,#00ff55 100%);box-sizing:border-box}
+.score-ramp-bar{display:block;width:100%;height:14px;border-radius:6px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(90deg,#ff0a0a 0%,#ff2a00 6%,#ff4a00 12%,#ff6a00 18%,#ff8800 25%,#ffa800 32%,#ffc400 40%,#ffe000 48%,#e8f000 55%,#b8ec00 62%,#7ae820 70%,#3ce018 78%,#22e800 82%,#12f400 88%,#08fc00 94%,#00ff00 100%);box-sizing:border-box}
 .score-ramp-good-mark,.score-ramp-fair-mark{position:absolute;top:-2px;bottom:-2px;width:0;transform:translateX(-50%);pointer-events:none}
 .score-ramp-good-mark{border-left:1.5px dashed rgba(232,236,255,.85)}
 .score-ramp-fair-mark{border-left:1.5px dashed rgba(255,212,0,.55)}
@@ -9676,11 +9676,11 @@ const SCORE_COLOR_STOPS = [
   [55, '#e8f000'],
   [62, '#b8ec00'],
   [70, '#7ae820'],
-  [78, '#3ce038'],
-  [82, '#18e848'],
-  [88, '#08f050'],
-  [94, '#00fc55'],
-  [100, '#00ff55']
+  [78, '#3ce018'],
+  [82, '#22e800'],
+  [88, '#12f400'],
+  [94, '#08fc00'],
+  [100, '#00ff00']
 ];
 function scoreHexToRgb(hex){
   const h = String(hex || '').replace('#', '');
@@ -9774,7 +9774,7 @@ function scoreRampLegendHtml(kind){
       '<span class="score-ramp-good-mark" style="left:' + goodAt + '%" title="Good ≥' + goodAt + '"></span>' +
       '<div class="score-ramp-ticks" aria-hidden="true"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>' +
     '</div>' +
-    '<p class="score-ramp-note"><b style="color:#ff0a0a">Bright red = worst</b> · <b style="color:#00ff55">bright green = best</b>. ' +
+    '<p class="score-ramp-note"><b style="color:#ff0a0a">Bright red = worst</b> · <b style="color:#00ff00">bright green = best</b>. ' +
       'Fill tracks the numeric ' + scoreNoun + ' score continuously' +
       (kind === 'dive' ? '' : kind === 'lobster' ? ' · night + structure + calm seas score highest; out-of-season scores are capped' : ' · fish Plan fill matches the glance bite (site-fit only ranks order)') +
       '. Marks: fair ≥' + fairAt + ', good ≥' + goodAt + '.</p>' +

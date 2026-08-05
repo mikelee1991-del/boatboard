@@ -44,7 +44,7 @@
   }
   function scoreColor(score){
     if(global.BoatScoreColor && global.BoatScoreColor.color) return global.BoatScoreColor.color(score);
-    if(score >= 82) return '#00ff55';
+    if(score >= 82) return '#00ff00';
     if(score >= 60) return '#7ae820';
     if(score >= 40) return '#ffc400';
     return '#ff2a00';

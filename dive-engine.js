@@ -577,11 +577,11 @@
     [55, '#e8f000'],
     [62, '#b8ec00'],
     [70, '#7ae820'],
-    [78, '#3ce038'],
-    [82, '#18e848'],
-    [88, '#08f050'],
-    [94, '#00fc55'],
-    [100, '#00ff55']
+    [78, '#3ce018'],
+    [82, '#22e800'],
+    [88, '#12f400'],
+    [94, '#08fc00'],
+    [100, '#00ff00']
   ];
   function diveScoreHexToRgb(hex) {
     const h = String(hex || '').replace('#', '');
@@ -678,7 +678,7 @@
         '<span class="score-ramp-good-mark" style="left:' + goodAt + '%" title="Good ≥' + goodAt + '"></span>' +
         '<div class="score-ramp-ticks" aria-hidden="true"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>' +
       '</div>' +
-      '<p class="score-ramp-note"><b style="color:#ff0a0a">Bright red = worst</b> · <b style="color:#00ff55">bright green = best</b>. ' +
+      '<p class="score-ramp-note"><b style="color:#ff0a0a">Bright red = worst</b> · <b style="color:#00ff00">bright green = best</b>. ' +
         'Fill tracks the numeric dive score continuously. Marks: fair ≥' + fairAt + ', good ≥' + goodAt + '.</p>' +
       '</div>';
   }
