@@ -226,23 +226,48 @@
   }
 
   /**
-   * Bias ocean context toward a mark: nearest CHL_ZONES sample (not a pin-local pixel).
-   * SST stays boat/model — never invent pin GPS or pin SST.
+   * Bias ocean context toward a mark: prefer pin-local CHL cell when present,
+   * else nearest CHL_ZONES sample. SST stays boat/model (Open-Meteo at vessel).
    */
   function localizeOceanToSpot(spot, oceanIn, ctx) {
     var ocean = normalizeOcean(oceanIn, ctx);
     ocean.sourceNotes = (ocean.sourceNotes || []).slice().filter(function (n) {
-      return !/^chl nearest zone/i.test(String(n || ''));
+      return !/^chl nearest zone/i.test(String(n || '')) && !/^chl at mark/i.test(String(n || ''));
     });
     delete ocean.localChlName;
     delete ocean.localChlNm;
+    delete ocean.pinLocalChl;
     if (!spot || spot.lat == null || spot.lon == null) return ocean;
+
+    var pin = null;
+    var samples = ocean.chlSamples || [];
+    for (var i = 0; i < samples.length; i++) {
+      var s = samples[i];
+      if (!s || !s.pinLocal || s.val == null || !isFinite(s.val)) continue;
+      if (s.lat == null || s.lon == null) continue;
+      if (Math.abs(s.lat - spot.lat) < 1e-3 && Math.abs(s.lon - spot.lon) < 1e-3) {
+        pin = s;
+        break;
+      }
+    }
+    if (pin) {
+      ocean.chlAvg = pin.val;
+      ocean.chlBand = chlBandFromVal(pin.val) || ocean.chlBand;
+      ocean.localChlName = pin.name || 'mark cell';
+      ocean.localChlNm = 0;
+      ocean.pinLocalChl = true;
+      ocean.hasChl = true;
+      ocean.sourceNotes.push('chl at mark · VIIRS 4 km cell');
+      return ocean;
+    }
+
     var near = nearestChlSample(spot.lat, spot.lon, ocean.chlSamples);
     if (near && near.sample && near.sample.val != null && isFinite(near.sample.val)) {
       ocean.chlAvg = near.sample.val;
       ocean.chlBand = chlBandFromVal(near.sample.val) || ocean.chlBand;
       ocean.localChlName = near.sample.name || near.sample.id || null;
       ocean.localChlNm = near.nmApprox;
+      ocean.pinLocalChl = false;
       ocean.hasChl = true;
       var note = 'chl nearest zone' +
         (ocean.localChlName ? ' · ' + ocean.localChlName : '') +
@@ -885,13 +910,15 @@
       : '';
     var p3 = '';
     if (ocean.localChlName) {
-      p3 = 'Nearest chlorophyll zone for this mark: ' + ocean.localChlName +
+      p3 = (ocean.pinLocalChl ? 'Chlorophyll at this mark' : ('Nearest chlorophyll zone: ' + ocean.localChlName)) +
         (ocean.chlAvg != null ? ' (~' + ocean.chlAvg.toFixed(2) + ' mg m⁻³, ' + (ocean.chlBand || 'band n/a') + ')' : '') +
-        ' — zone sample, not a pin-local satellite pixel.';
+        (ocean.pinLocalChl
+          ? ' — VIIRS 4 km cell at the published pin (not inventing GPS).'
+          : ' — nearest regional zone sample.');
     } else if (ocean.takeawayText) p3 = 'Regional plankton: ' + ocean.takeawayText;
     else if (ocean.chlBand) p3 = 'Regional chlorophyll band: ' + ocean.chlBand +
       (ocean.chlAvg != null ? ' (~' + ocean.chlAvg.toFixed(2) + ' mg m⁻³)' : '') + '.';
-    else p3 = 'No fresh chlorophyll sample in cache — use Plankton tab map for color breaks; do not invent a pin-local reading.';
+    else p3 = 'No fresh chlorophyll sample yet — open the Plankton tab (NASA 1 km map) or wait for VIIRS NRT; clouds often blank the latest day.';
     return [p1, pIntel, p2, p3].filter(Boolean);
   }
 
@@ -901,6 +928,14 @@
     var tech = opts.tech;
     var likes = opts.likes || [];
     var ocean = normalizeOcean(opts.ocean, opts.ctx);
+    if (opts.ocean && (opts.ocean.localChlName || opts.ocean.pinLocalChl)) {
+      ocean.localChlName = opts.ocean.localChlName || ocean.localChlName;
+      ocean.localChlNm = opts.ocean.localChlNm;
+      ocean.pinLocalChl = !!opts.ocean.pinLocalChl;
+      if (opts.ocean.chlAvg != null) ocean.chlAvg = opts.ocean.chlAvg;
+      if (opts.ocean.chlBand) ocean.chlBand = opts.ocean.chlBand;
+      ocean.hasChl = true;
+    }
     var spotLabel = opts.spotLabel || '';
     var localized = !!opts.localized;
     var html = '<div class="fish-smart-card">';
@@ -914,9 +949,27 @@
     var likeTitle = localized && spotLabel
       ? ('Species bite lean · ' + spotLabel)
       : 'Species bite lean (trip time)';
-    var likeFoot = localized
-      ? ('This mark’s listed species + trip time, solunar/tide, boat/model SST, and nearest regional chlorophyll zone — not a pin-local pixel. Missing plankton = wider uncertainty.')
-      : 'Heuristic from time of day, solunar/tide, Open-Meteo SST, and regional chlorophyll — not a guarantee. Missing plankton = wider uncertainty.';
+    var likeFoot;
+    if (localized) {
+      if (ocean.hasChl) {
+        if (ocean.pinLocalChl) {
+          likeFoot = 'Listed species + trip time + boat/model SST + chlorophyll at this mark (VIIRS 4 km cell).';
+        } else if (ocean.localChlName) {
+          likeFoot = 'Listed species + trip time + boat/model SST + chlorophyll near ' + ocean.localChlName +
+            (ocean.localChlNm != null && isFinite(ocean.localChlNm)
+              ? ' (~' + (Math.round(ocean.localChlNm * 10) / 10) + ' nm)'
+              : '') + '.';
+        } else {
+          likeFoot = 'Listed species + trip time + boat/model SST + regional chlorophyll.';
+        }
+      } else {
+        likeFoot = 'Listed species + trip time + boat/model SST — plankton sample missing (clouds/lag); wider uncertainty until VIIRS loads.';
+      }
+    } else {
+      likeFoot = ocean.hasChl
+        ? 'Heuristic from time of day, solunar/tide, Open-Meteo SST, and regional chlorophyll — not a guarantee.'
+        : 'Heuristic from time of day, solunar/tide, and SST — plankton not loaded yet; wider uncertainty.';
+    }
     html += likelihoodBarHtml(likes, esc, {
       title: likeTitle,
       footnote: likeFoot
@@ -924,7 +977,7 @@
     if (ocean.chlTime || (ocean.sourceNotes && ocean.sourceNotes.length) || ocean.localChlName) {
       var src = [];
       if (ocean.chlTime) src.push('chl scene ' + String(ocean.chlTime).slice(0, 10));
-      if (ocean.localChlName) src.push('nearest zone · ' + ocean.localChlName);
+      if (ocean.localChlName) src.push((ocean.pinLocalChl ? 'mark cell · ' : 'nearest zone · ') + ocean.localChlName);
       if (ocean.sourceNotes && ocean.sourceNotes.length) src = src.concat(ocean.sourceNotes);
       html += '<p class="fish-smart-meta">' + esc(src.join(' · ')) + '</p>';
     }

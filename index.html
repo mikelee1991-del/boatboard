@@ -1162,7 +1162,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
     </section>
 
     <section class="tabpanel" id="tab-chlorophyll" data-tab="chlorophyll">
-      <p class="prose" style="margin-bottom:10px"><strong>Chlorophyll-a</strong> satellite overlay — green water = plankton &amp; bait; blue = clear pelagic water. Choose <strong>NOAA</strong> (4 km), <strong>NASA OBPG</strong> (1 km), or <strong>Blended</strong> (both). Centered on LA offshore from King Harbor to Catalina.</p>
+      <p class="prose" style="margin-bottom:10px"><strong>Chlorophyll-a</strong> satellite overlay — green water = plankton &amp; bait; blue = clear pelagic water. Choose <strong>NOAA</strong> (VIIRS NRT <strong>4 km</strong> via PFEG — also feeds Fish point samples), <strong>NASA OBPG</strong> (<strong>1 km</strong> map detail), or <strong>Blended</strong> (both). Fish smart-read samples the mark’s 4 km cell + denser SoCal zones with multi-day cloud lookback. Centered on LA offshore from King Harbor to Catalina.</p>
       <div class="chl-mapbox">
         <h3>Chlorophyll map</h3>
         <p>▲ = your boat · chlorophyll overlay · pan/zoom · dates are UTC noon composites</p>
@@ -2547,14 +2547,25 @@ const FIB_MAP_ZOOM = 10;
 /** Surf/dive adjacency to elevated FIB stations — ~0.27 nm / beach-scale (not harbor-wide). */
 const FIB_NEAR_M = 500;
 const CHL_SOURCES = {
+  /* Point samples + NOAA map layer: PFEG ERDDAP (coastwatch.noaa.gov griddap/info is 403 for browsers).
+     Dual NRT 4 km VIIRS (S-NPP + NOAA-20). Map detail stays NASA GIBS ~1 km. */
   noaa: {
-    id:'noaa', label:'NOAA CoastWatch', resolution:'4 km', lagDays:2,
-    wmsUrl:'https://coastwatch.noaa.gov/erddap/wms/noaacwNPPVIIRSchlaDaily/request',
-    wmsVersion:'1.3.0', layer:'noaacwNPPVIIRSchlaDaily:chlor_a', crs:'EPSG:4326',
+    id:'noaa', label:'NOAA VIIRS NRT', resolution:'4 km', lagDays:2,
+    wmsUrl:'https://coastwatch.pfeg.noaa.gov/erddap/wms/nesdisVHNchlaDaily/request',
+    wmsVersion:'1.3.0', layer:'nesdisVHNchlaDaily:chlor_a', crs:'EPSG:4326',
     bboxOrder:'latlon', timeMode:'iso', maxDim:512, debounceMs:200, cssClass:'chl-src-noaa',
-    griddap:'https://coastwatch.noaa.gov/erddap/griddap/noaacwNPPVIIRSchlaDaily.json',
-    info:'https://coastwatch.noaa.gov/erddap/info/noaacwNPPVIIRSchlaDaily/index.json',
-    link:'https://coastwatch.noaa.gov/erddap/wms/noaacwNPPVIIRSchlaDaily/index.html'
+    griddap:'https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNchlaDaily.json',
+    griddapFallbacks:[
+      'https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaa20chlaDaily.json',
+      'https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNchlaDaily.json'
+    ],
+    info:'https://coastwatch.pfeg.noaa.gov/erddap/info/nesdisVHNchlaDaily/index.json',
+    infoFallbacks:[
+      'https://coastwatch.pfeg.noaa.gov/erddap/info/nesdisVHNnoaa20chlaDaily/index.json',
+      'https://coastwatch.pfeg.noaa.gov/erddap/info/nesdisVHNchlaDaily/index.json'
+    ],
+    link:'https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNchlaDaily.html',
+    lookbackDays: 6
   },
   nasa: {
     id:'nasa', label:'NASA OBPG (GIBS)', resolution:'1 km', lagDays:3,
@@ -4421,13 +4432,47 @@ async function ovFetchHabAlert(lat, lon){
   return null;
 }
 
-async function ovSampleChlorophyll(){
-  const zones = CHL_ZONES.filter(z => OV_CHL_ZONE_IDS.includes(z.id));
+async function ovSampleChlorophyll(opts){
+  opts = opts || {};
+  const zones = opts.allZones
+    ? CHL_ZONES.slice()
+    : CHL_ZONES.filter(z => OV_CHL_ZONE_IDS.includes(z.id));
+  const extras = Array.isArray(opts.extraPoints) ? opts.extraPoints : [];
   try{
     const meta = await fetchChlMeta(false);
     const time = meta?.end || chlSelectedTime || chlFallbackEndDate(CHL_SOURCES.noaa.lagDays);
-    const samples = await Promise.all(zones.map(async z => ({ zone: z, val: await fetchChlPoint(time, z.lat, z.lon) })));
-    return { time, samples, fallback: !!meta?.fallback };
+    const lookback = opts.lookbackDays != null ? opts.lookbackDays : CHL_SOURCES.noaa.lookbackDays;
+    const zoneSamples = await Promise.all(zones.map(async z => {
+      const hit = await fetchChlPoint(time, z.lat, z.lon, { lookbackDays: lookback, withMeta: true });
+      return {
+        zone: z,
+        val: hit?.val != null ? hit.val : null,
+        sampleTime: hit?.time || null,
+        lookbackDays: hit?.lookbackDays != null ? hit.lookbackDays : null
+      };
+    }));
+    const extraSamples = await Promise.all(extras.map(async p => {
+      if(p?.lat == null || p?.lon == null) return null;
+      const hit = await fetchChlPoint(time, p.lat, p.lon, { lookbackDays: lookback, withMeta: true });
+      return {
+        zone: {
+          id: p.id || 'mark',
+          name: p.name || 'Selected mark',
+          lat: +p.lat,
+          lon: +p.lon,
+          pinLocal: true
+        },
+        val: hit?.val != null ? hit.val : null,
+        sampleTime: hit?.time || null,
+        lookbackDays: hit?.lookbackDays != null ? hit.lookbackDays : null,
+        pinLocal: true
+      };
+    }));
+    return {
+      time,
+      samples: zoneSamples.concat(extraSamples.filter(Boolean)),
+      fallback: !!meta?.fallback
+    };
   }catch(e){
     console.warn('ov chl sample', e);
     return { time: null, samples: zones.map(z => ({ zone: z, val: null })), fallback: true };
@@ -9235,7 +9280,7 @@ let _fishOceanPromise = null;
 function ensureFishSmart(){
   if(window.BoatFishSmart) return Promise.resolve(window.BoatFishSmart);
   if(_fishSmartPromise) return _fishSmartPromise;
-  _fishSmartPromise = loadScript('fish-smart.js?v=3').then(()=>{
+  _fishSmartPromise = loadScript('fish-smart.js?v=4').then(()=>{
     if(!window.BoatFishSmart) throw new Error('BoatFishSmart missing');
     return window.BoatFishSmart;
   }).catch(e=>{ _fishSmartPromise = null; throw e; });
@@ -9243,17 +9288,80 @@ function ensureFishSmart(){
 }
 /**
  * Pull Plankton-tab / Overview chlorophyll zone samples into Fish.
- * Uses fixed CHL_ZONES only — never moves pins or invents bathymetry.
+ * Uses fixed CHL_ZONES (+ optional mark sample) — never invents pin GPS.
  */
-async function refreshFishOceanContext(force){
+async function refreshFishOceanContext(force, opts){
+  opts = opts || {};
+  const mark = opts.mark || null;
   const sstFBoat = (()=>{
     const mc = marineSnapshotAt(getFishPlanWhen ? getFishPlanWhen() : new Date()) || marine?.current;
     return mc?.sea_surface_temperature != null ? mc.sea_surface_temperature * 9/5 + 32 : null;
   })();
-  if(!force && fishOceanCache && (Date.now() - fishOceanCache.at < 8 * 60e3)){
-    return { ...fishOceanCache, sstF: fishOceanCache.sstF != null ? fishOceanCache.sstF : sstFBoat };
+  const markKey = mark && mark.lat != null && mark.lon != null
+    ? (Number(mark.lat).toFixed(4) + ',' + Number(mark.lon).toFixed(4))
+    : '';
+
+  async function attachMarkSample(cache){
+    if(!markKey || !mark) return cache;
+    const already = (cache.chlSamples || []).some(s =>
+      s.pinLocal && s.val != null &&
+      s.lat != null && s.lon != null &&
+      Math.abs(s.lat - mark.lat) < 1e-4 && Math.abs(s.lon - mark.lon) < 1e-4
+    );
+    if(already){
+      cache.markKey = markKey;
+      cache.pinLocalOk = true;
+      return cache;
+    }
+    try{
+      const time = cache.chlTime || chlSelectedTime || chlFallbackEndDate(CHL_SOURCES.noaa.lagDays);
+      const hit = await fetchChlPoint(time, mark.lat, mark.lon, {
+        lookbackDays: CHL_SOURCES.noaa.lookbackDays,
+        withMeta: true
+      });
+      const samples = (cache.chlSamples || []).filter(s => !s.pinLocal);
+      if(hit && hit.val != null){
+        samples.push({
+          id: 'mark',
+          name: mark.name || 'Selected mark',
+          lat: +mark.lat,
+          lon: +mark.lon,
+          val: hit.val,
+          pinLocal: true,
+          sampleTime: hit.time || null,
+          lookbackDays: hit.lookbackDays
+        });
+        cache.pinLocalOk = true;
+        if(!(cache.sourceNotes || []).some(n => /mark cell/i.test(n))){
+          cache.sourceNotes = (cache.sourceNotes || []).concat(['Chl: mark cell (published pin GPS)']);
+        }
+      }else{
+        cache.pinLocalOk = false;
+      }
+      cache.chlSamples = samples;
+      const vals = samples.map(s => s.val).filter(v => v != null && isFinite(v));
+      cache.chlAvg = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+      cache.hasChl = cache.chlAvg != null || !!cache.takeawayText;
+      if(typeof chlLevel === 'function' && cache.chlAvg != null){
+        const lv = chlLevel(cache.chlAvg);
+        const map = { 'Ultra-clear':'ultra-clear', 'Clear blue-green':'clear', 'Green':'green', 'Very green':'very-green', 'Bloom':'bloom' };
+        cache.chlBand = map[lv.label] || cache.chlBand;
+      }
+      cache.markKey = markKey;
+    }catch(e){
+      console.warn('fish mark chl', e);
+    }
+    return cache;
   }
-  if(_fishOceanPromise && !force) return _fishOceanPromise;
+
+  if(!force && fishOceanCache && (Date.now() - fishOceanCache.at < 8 * 60e3)){
+    const out = { ...fishOceanCache, sstF: fishOceanCache.sstF != null ? fishOceanCache.sstF : sstFBoat };
+    if(markKey) return attachMarkSample(out);
+    return out;
+  }
+  if(_fishOceanPromise && !force){
+    return _fishOceanPromise.then(c => markKey ? attachMarkSample({ ...c }) : c);
+  }
   _fishOceanPromise = (async ()=>{
     const sourceNotes = ['SST: Open-Meteo marine at boat'];
     let chlSamples = [];
@@ -9262,13 +9370,27 @@ async function refreshFishOceanContext(force){
     let chlAvg = null;
     try{
       if(typeof ovSampleChlorophyll === 'function'){
-        const chl = await ovSampleChlorophyll();
+        const chl = await ovSampleChlorophyll({
+          allZones: true,
+          lookbackDays: CHL_SOURCES.noaa.lookbackDays
+        });
         chlTime = chl?.time || null;
         chlSamples = (chl?.samples || []).map(s => ({
-          id: s.zone?.id, name: s.zone?.name, lat: s.zone?.lat, lon: s.zone?.lon, val: s.val
+          id: s.zone?.id,
+          name: s.zone?.name,
+          lat: s.zone?.lat,
+          lon: s.zone?.lon,
+          val: s.val,
+          pinLocal: false,
+          sampleTime: s.sampleTime || null,
+          lookbackDays: s.lookbackDays
         }));
-        if(chlSamples.some(s => s.val != null)) sourceNotes.push('Chl: NOAA VIIRS zone samples');
-        else sourceNotes.push('Chl: zone sample empty (cloud/CORS) — using takeaway if any');
+        const nOk = chlSamples.filter(s => s.val != null).length;
+        if(nOk){
+          sourceNotes.push('Chl: NOAA VIIRS 4 km zones via PFEG (≤'+CHL_SOURCES.noaa.lookbackDays+'-day cloud lookback)');
+        }else{
+          sourceNotes.push('Chl: zone sample empty (cloud/CORS) — using takeaway if any');
+        }
       }
     }catch(e){
       console.warn('fish ocean chl', e);
@@ -9294,11 +9416,16 @@ async function refreshFishOceanContext(force){
       sstF: sstFBoat,
       chlAvg, chlBand, chlSamples, takeawayText, chlTime, sourceNotes,
       hasChl: chlAvg != null || !!takeawayText,
-      hasSst: sstFBoat != null
+      hasSst: sstFBoat != null,
+      markKey: '',
+      pinLocalOk: false
     };
     return fishOceanCache;
   })().finally(()=>{ _fishOceanPromise = null; });
-  return _fishOceanPromise;
+  const base = await _fishOceanPromise;
+  const out = { ...base, sstF: base.sstF != null ? base.sstF : sstFBoat };
+  if(markKey) return attachMarkSample(out);
+  return out;
 }
 function fishOceanForCtx(ctx){
   const base = fishOceanCache ? { ...fishOceanCache } : { sourceNotes: [], chlSamples: [] };
@@ -9338,23 +9465,32 @@ function selectFishSpot(key){
   try{
     const pack = lastFishRankPack;
     if(pack?.ctx && pack.ranked){
-      renderFishSmartPanel(pack.ctx, pack.ranked);
-      renderFishTopPicks(pack.ranked, pack.ctx, pack.sol);
-      const pool = lastFishSynthRanked || pack.synth || pack.ranked;
-      const row = findFishRankedRow(pool, key);
-      if(row && pack.sw && pack.sol != null)
-        renderFishUtilDetail(row, pack.ctx, pack.sw, pack.sol);
-      else if(row && pack.ctx)
-        renderFishUtilDetail(row, pack.ctx, pack.sw || [], pack.sol || solunarPeriods(boatPos().lat, boatPos().lon, new Date()));
-      /* Refresh On site list highlight without full re-rank */
-      const spotBox = $('fishSpots');
-      if(spotBox){
-        spotBox.querySelectorAll('.fish-spot[data-spot-key]').forEach(el=>{
-          const on = el.getAttribute('data-spot-key') === key;
-          el.classList.toggle('active', on);
-          if(on) el.setAttribute('aria-current', 'true');
-          else el.removeAttribute('aria-current');
-        });
+      const row0 = findFishRankedRow(pack.ranked, key);
+      const mark = row0?.spot || null;
+      const paint = ()=>{
+        renderFishSmartPanel(pack.ctx, pack.ranked);
+        renderFishTopPicks(pack.ranked, pack.ctx, pack.sol);
+        const pool = lastFishSynthRanked || pack.synth || pack.ranked;
+        const row = findFishRankedRow(pool, key);
+        if(row && pack.sw && pack.sol != null)
+          renderFishUtilDetail(row, pack.ctx, pack.sw, pack.sol);
+        else if(row && pack.ctx)
+          renderFishUtilDetail(row, pack.ctx, pack.sw || [], pack.sol || solunarPeriods(boatPos().lat, boatPos().lon, new Date()));
+        const spotBox = $('fishSpots');
+        if(spotBox){
+          spotBox.querySelectorAll('.fish-spot[data-spot-key]').forEach(el=>{
+            const on = el.getAttribute('data-spot-key') === key;
+            el.classList.toggle('active', on);
+            if(on) el.setAttribute('aria-current', 'true');
+            else el.removeAttribute('aria-current');
+          });
+        }
+      };
+      paint();
+      if(mark){
+        refreshFishOceanContext(false, { mark }).then(()=>{
+          if(fishUtilSpotKey === key) paint();
+        }).catch(()=>{});
       }
     }else{
       renderFishing();
@@ -10958,9 +11094,18 @@ function renderFishUtilDetail(row, ctx, sw, sol){
     const ocean = fishOceanForSpot(spot, ctx);
     const tech = BoatFishSmart.recommendTechnique(spot, ctx, ocean);
     const likes = BoatFishSmart.speciesLikelihoodForSpot(spot, ctx, ocean);
-    const chlNote = ocean.localChlName
-      ? 'Nearest chlorophyll zone: '+ocean.localChlName+(ocean.chlAvg != null ? ' (~'+ocean.chlAvg.toFixed(2)+')' : '')+' — zone sample, not a pin pixel.'
-      : 'Uses trip time, tide/solunar, boat SST, and nearest regional chlorophyll zone — not a pin-local satellite pixel.';
+    let chlNote;
+    if(ocean.hasChl){
+      if(ocean.localChlName){
+        chlNote = (ocean.pinLocalChl ? 'Chlorophyll at this mark' : 'Nearest chlorophyll zone: '+ocean.localChlName) +
+          (ocean.chlAvg != null ? ' (~'+ocean.chlAvg.toFixed(2)+' mg m⁻³)' : '') +
+          (ocean.pinLocalChl ? ' — VIIRS 4 km cell at published pin GPS.' : ' — zone sample, not a 1 km pixel.');
+      }else{
+        chlNote = 'Trip time + tide/solunar + boat SST + regional chlorophyll.';
+      }
+    }else{
+      chlNote = 'Trip time + tide/solunar + boat SST — plankton sample missing (clouds/lag); open Plankton tab or wait for VIIRS refresh.';
+    }
     smartBox.innerHTML =
       BoatFishSmart.techniquePanelHtml(tech, esc) +
       BoatFishSmart.likelihoodBarHtml(likes, esc, {
@@ -11045,7 +11190,11 @@ function renderFishing(){
         }catch(e){ console.warn('fish smart paint', e); }
       }
     }).catch(()=>{});
-    const oceanReady = refreshFishOceanContext(false).then(()=>{
+    const oceanReady = (()=>{
+      const mark = (lastFishRankPack && findFishRankedRow(lastFishRankPack.ranked, fishUtilSpotKey)?.spot)
+        || null;
+      return refreshFishOceanContext(false, mark ? { mark } : {});
+    })().then(()=>{
       if(window.BoatFishSmart && activeTab() === 'fishing'){
         /* Re-rank once plankton lands so site-fit includes productivity. */
         try{
@@ -14036,10 +14185,13 @@ async function initMap(){
 /* ============ chlorophyll — NOAA CoastWatch + NASA OBPG/GIBS ============ */
 const CHL_ZONES = [
   { id:'sm_bay', name:'Santa Monica Bay', lat:33.92, lon:-118.52, fish:'Calico bass · halibut · sand bass on inshore structure', dive:'Rocky reefs — green water cuts viz; blue patches near PV are clearer' },
+  { id:'sm_outer', name:'SM Bay outer', lat:33.88, lon:-118.62, fish:'Bait/pelagic edge west of SM Bay', dive:'Often clearer than inshore green plumes' },
   { id:'pv', name:'Palos Verdes Point', lat:33.72, lon:-118.48, fish:'Yellowtail · barracuda on kelp edges where green meets blue', dive:'PV kelp — prefer blue water; green plumes after runoff or upwelling' },
+  { id:'pv_west', name:'PV west kelp', lat:33.76, lon:-118.44, fish:'Calico · yt on west PV kelp line', dive:'West PV clarity swings with plankton' },
   { id:'san_pedro', name:'San Pedro Shelf', lat:33.62, lon:-118.28, fish:'Rockfish · sculpin · sheephead on reef & oil rigs', dive:'Outer kelp — plankton blooms reduce viz; check front side vs backside' },
   { id:'catalina_ch', name:'Catalina Channel', lat:33.55, lon:-118.55, fish:'Pelagic corridor — troll chlorophyll edges for yt · dorado · bonito', dive:'Transit lane — water color signals bait; blue = pelagic hunting' },
   { id:'catalina', name:'Catalina vicinity', lat:33.40, lon:-118.35, fish:'Offshore yt · yellowfin on chlorophyll filaments & temp breaks', dive:'Front side clearer; backside greener after upwelling events' },
+  { id:'redondo_canyon', name:'Redondo Canyon', lat:33.80, lon:-118.45, fish:'Deep canyon edge — bait and yt when green meets blue', dive:'Canyon blue water often clearer than bay' },
   { id:'slip', name:'King Harbor / slip', lat: SLIP_LAT, lon: SLIP_LON, fish:'Launch point — run toward greener offshore edges for bait', dive:'Harbor murky — head offshore for clearer water' }
 ];
 
@@ -14302,33 +14454,84 @@ function chlStoreMarineTakeaway(samples, time){
 
 async function fetchChlMeta(force){
   if(chlMeta && !force) return chlMeta;
-  const infoUrl = CHL_SOURCES.noaa.info;
-  try{
-    const j = await fetchJSON(infoUrl, CHL_INFO_TIMEOUT_MS);
-    const parsed = parseChlInfo(j);
-    if(parsed.end){
-      chlStoreMetaEnd(parsed.end);
-      chlMeta = { ...parsed, fallback: false };
-      return chlMeta;
+  const src = CHL_SOURCES.noaa;
+  const infos = [src.info].concat(src.infoFallbacks || []).filter((u, i, a) => u && a.indexOf(u) === i);
+  let lastErr = null;
+  for(const infoUrl of infos){
+    try{
+      let j = null;
+      if(typeof fetchErddapJsonp === 'function'){
+        try{ j = await fetchErddapJsonp(infoUrl, CHL_INFO_TIMEOUT_MS); }
+        catch(eJp){ j = await fetchJSON(infoUrl, CHL_INFO_TIMEOUT_MS); }
+      }else{
+        j = await fetchJSON(infoUrl, CHL_INFO_TIMEOUT_MS);
+      }
+      const parsed = parseChlInfo(j);
+      if(parsed.end){
+        chlStoreMetaEnd(parsed.end);
+        chlMeta = { ...parsed, fallback: false, infoUrl };
+        return chlMeta;
+      }
+    }catch(e){
+      lastErr = e;
     }
-  }catch(e){
-    console.warn('chl meta', e);
   }
-  chlMeta = { end: chlFallbackEndDate(CHL_SOURCES.noaa.lagDays), start: null, fallback: true };
+  if(lastErr) console.warn('chl meta', lastErr);
+  chlMeta = { end: chlFallbackEndDate(src.lagDays), start: null, fallback: true };
   if(chlMeta.end) chlStoreMetaEnd(chlMeta.end);
   return chlMeta;
 }
 
-async function fetchChlPoint(time, lat, lon){
-  const src = CHL_SOURCES.noaa;
-  if(!src.griddap) return null;
-  const wmsTime = chlFormatWmsTime(time, src);
-  const q = src.griddap + '?chlor_a[(' + encodeURIComponent(wmsTime) + ')][(0.0)][(' + lat + ')][(' + lon + ')]';
+function chlShiftIsoDays(time, dayDelta){
+  const d = new Date(String(time).indexOf('T') >= 0 ? time : (String(time).slice(0, 10) + 'T12:00:00Z'));
+  if(!isFinite(+d)) return null;
+  d.setUTCDate(d.getUTCDate() + dayDelta);
+  return d.toISOString().replace(/\.\d{3}Z$/, 'Z');
+}
+
+async function fetchChlPointOnce(griddapUrl, time, lat, lon){
+  if(!griddapUrl) return null;
+  const wmsTime = chlFormatWmsTime(time, CHL_SOURCES.noaa);
+  const q = griddapUrl + '?chlor_a[(' + encodeURIComponent(wmsTime) + ')][(0.0)][(' + lat + ')][(' + lon + ')]';
   try{
-    const j = await fetchJSON(q, CHL_GRIDDAP_TIMEOUT_MS);
-    const v = j?.table?.rows?.[0]?.[4];
-    return (v != null && isFinite(v)) ? v : null;
+    let j = null;
+    if(typeof fetchErddapJsonp === 'function'){
+      try{ j = await fetchErddapJsonp(q, CHL_GRIDDAP_TIMEOUT_MS); }
+      catch(eJp){ j = await fetchJSON(q, CHL_GRIDDAP_TIMEOUT_MS); }
+    }else{
+      j = await fetchJSON(q, CHL_GRIDDAP_TIMEOUT_MS);
+    }
+    /* ERDDAP row layout varies — prefer last numeric cell. */
+    const row = j?.table?.rows?.[0];
+    if(!row || !row.length) return null;
+    for(let i = row.length - 1; i >= 0; i--){
+      const v = row[i];
+      if(v != null && isFinite(+v) && +v >= 0 && +v < 100) return +v;
+    }
+    return null;
   }catch(e){ return null; }
+}
+
+/** Point chlorophyll with satellite + multi-day lookback (clouds often blank the latest scene). */
+async function fetchChlPoint(time, lat, lon, opts){
+  opts = opts || {};
+  const src = CHL_SOURCES.noaa;
+  if(lat == null || lon == null || !isFinite(+lat) || !isFinite(+lon)) return null;
+  const grids = [src.griddap].concat(src.griddapFallbacks || []).filter((u, i, a) => u && a.indexOf(u) === i);
+  const lookback = opts.lookbackDays != null ? opts.lookbackDays : (src.lookbackDays != null ? src.lookbackDays : 5);
+  const base = time || chlSelectedTime || chlFallbackEndDate(src.lagDays);
+  for(let day = 0; day <= lookback; day++){
+    const t = day === 0 ? base : chlShiftIsoDays(base, -day);
+    if(!t) continue;
+    for(const g of grids){
+      const v = await fetchChlPointOnce(g, t, +lat, +lon);
+      if(v != null){
+        if(opts.withMeta) return { val: v, time: t, lookbackDays: day, griddap: g };
+        return v;
+      }
+    }
+  }
+  return opts.withMeta ? null : null;
 }
 
 function chlUpdateStatus(time, src, datesFallback){
