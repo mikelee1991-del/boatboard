@@ -225,6 +225,7 @@ svg text{font-family:var(--font-mono)}
 .plan-mapbox p{font-size:11px;color:var(--ink3);padding:0 12px 8px}
 .plan-split{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:8px}
 @media(min-width:720px){.plan-split{grid-template-columns:minmax(240px,36%) 1fr;align-items:start}}
+@media(min-width:720px){.plan-split.plan-split--map-first{grid-template-columns:1fr minmax(240px,36%)}}
 .plan-split-list{min-width:0;display:flex;flex-direction:column;gap:0}
 .plan-split-list .sec{margin-top:0}
 @media(min-width:720px){
@@ -771,11 +772,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <span class="plan-note">Use the date button or calendar icon — rankings update for swell, wind, tide, and site exposure.</span>
         </div>
         <div id="diveBanner" class="banner" hidden></div>
-        <div class="plan-split">
-          <div class="plan-split-list">
-            <div class="sec">Recommended dive sites</div>
-            <div class="card" id="diveRecs"><div class="skel">Loading site rankings…</div></div>
-          </div>
+        <div class="plan-split plan-split--map-first">
           <div class="plan-split-map">
             <div class="plan-mapbox">
               <h3>Dive sites — ranked</h3>
@@ -788,6 +785,10 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
                 <div id="divePlanMpaDetailBody" hidden></div>
               </div>
             </div>
+          </div>
+          <div class="plan-split-list">
+            <div class="sec">Recommended dive sites</div>
+            <div class="card" id="diveRecs"><div class="skel">Loading site rankings…</div></div>
           </div>
         </div>
         <div class="sec">Selected site — detail</div>
@@ -902,11 +903,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         <div class="card" id="fishSmartPanel" style="margin-top:10px">
           <div class="skel">Synthesizing SST, plankton, technique &amp; species lean…</div>
         </div>
-        <div class="plan-split">
-          <div class="plan-split-list">
-            <div class="sec" id="fishTopPicksSec">Top picks — for your trip</div>
-            <div class="card" id="fishTopPicks"><div class="skel">Ranking spots…</div></div>
-          </div>
+        <div class="plan-split plan-split--map-first">
           <div class="plan-split-map">
             <div class="plan-mapbox">
               <h3>Fishing spots — ranked</h3>
@@ -919,6 +916,10 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
                 <div id="fishPlanMpaDetailBody" hidden></div>
               </div>
             </div>
+          </div>
+          <div class="plan-split-list">
+            <div class="sec" id="fishTopPicksSec">Top picks — for your trip</div>
+            <div class="card" id="fishTopPicks"><div class="skel">Ranking spots…</div></div>
           </div>
         </div>
         <div class="sec">Bite index — next 72 hours</div>
