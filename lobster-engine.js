@@ -44,10 +44,10 @@
   }
   function scoreColor(score){
     if(global.BoatScoreColor && global.BoatScoreColor.color) return global.BoatScoreColor.color(score);
-    if(score >= 82) return '#1ed4a8';
-    if(score >= 60) return '#7adf28';
-    if(score >= 40) return '#f5d000';
-    return '#ff7a1a';
+    if(score >= 82) return '#00ff00';
+    if(score >= 60) return '#7ae820';
+    if(score >= 40) return '#ffc400';
+    return '#ff2a00';
   }
   function rampLegendHtml(){
     if(global.BoatScoreColor && global.BoatScoreColor.legendHtml){
