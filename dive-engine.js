@@ -562,26 +562,32 @@
   }
   /**
    * Continuous score colormap (0–100) — same stops as index.html fishScoreColor.
-   * Wide hue arc (HSL lerp): deep red → orange → yellow → chartreuse → green → teal → cyan → blue.
+   * Bright red (worst) → orange → yellow → chartreuse → bright green (best).
+   * Prefer window.BoatScoreColor when the dashboard has loaded.
    */
   const DIVE_SCORE_COLOR_STOPS = [
-    [0, '#d62828'],
-    [10, '#f04e2e'],
-    [20, '#ff7a1a'],
-    [30, '#ffaa00'],
-    [40, '#f5d000'],
-    [50, '#c8e600'],
-    [60, '#7adf28'],
-    [70, '#2ed95a'],
-    [82, '#1ed4a8'],
-    [90, '#28c8e8'],
-    [100, '#6eb5ff']
+    [0, '#ff0a0a'],
+    [6, '#ff2a00'],
+    [12, '#ff4a00'],
+    [18, '#ff6a00'],
+    [25, '#ff8800'],
+    [32, '#ffa800'],
+    [40, '#ffc400'],
+    [48, '#ffe000'],
+    [55, '#e8f000'],
+    [62, '#b8ec00'],
+    [70, '#7ae820'],
+    [78, '#3ce038'],
+    [82, '#18e848'],
+    [88, '#08f050'],
+    [94, '#00fc55'],
+    [100, '#00ff55']
   ];
   function diveScoreHexToRgb(hex) {
     const h = String(hex || '').replace('#', '');
     const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
     const n = parseInt(full, 16);
-    if (!isFinite(n)) return [255, 102, 68];
+    if (!isFinite(n)) return [255, 10, 10];
     return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
   }
   function diveScoreRgbToHex(r, g, b) {
@@ -639,8 +645,7 @@
         const ha = diveScoreRgbToHsl(...diveScoreHexToRgb(stops[i][1]));
         const hb = diveScoreRgbToHsl(...diveScoreHexToRgb(stops[i + 1][1]));
         let dh = hb[0] - ha[0];
-        if (dh > 0.5) dh -= 1;
-        if (dh < -0.5) dh += 1;
+        if (dh < -0.25) dh += 1;
         const h = (ha[0] + dh * t + 1) % 1;
         const sat = ha[1] + (hb[1] - ha[1]) * t;
         const lit = ha[2] + (hb[2] - ha[2]) * t;
@@ -657,14 +662,24 @@
       return window.BoatScoreColor.legendHtml('dive');
     }
     const goodAt = DIVE_GOOD_AT || 82;
+    const fairAt = DIVE_FAIR_AT || 50;
     return '<div class="score-ramp-legend">' +
-      '<div class="score-ramp-title">Dive score — continuous marker color (0–100) · good ≥' + goodAt + '</div>' +
+      '<div class="score-ramp-title">Dive score — marker color (0–100)</div>' +
+      '<div class="score-ramp-status" aria-hidden="true">' +
+        '<span class="srs-worst">Worst</span>' +
+        '<span class="srs-poor">Poor</span>' +
+        '<span class="srs-fair">Fair</span>' +
+        '<span class="srs-good">Good</span>' +
+        '<span class="srs-best">Best</span>' +
+      '</div>' +
       '<div class="score-ramp-track">' +
         '<i class="score-ramp-bar" style="background:' + diveScoreRampGradientCss() + '" aria-hidden="true"></i>' +
+        '<span class="score-ramp-fair-mark" style="left:' + fairAt + '%" title="Fair ≥' + fairAt + '"></span>' +
         '<span class="score-ramp-good-mark" style="left:' + goodAt + '%" title="Good ≥' + goodAt + '"></span>' +
         '<div class="score-ramp-ticks" aria-hidden="true"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>' +
       '</div>' +
-      '<p class="score-ramp-note">Fill color tracks the numeric dive score continuously — not Great/Good/Fair/Poor buckets. Dashed line marks good (≥' + goodAt + ').</p>' +
+      '<p class="score-ramp-note"><b style="color:#ff0a0a">Bright red = worst</b> · <b style="color:#00ff55">bright green = best</b>. ' +
+        'Fill tracks the numeric dive score continuously. Marks: fair ≥' + fairAt + ', good ≥' + goodAt + '.</p>' +
       '</div>';
   }
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

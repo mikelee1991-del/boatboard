@@ -275,9 +275,18 @@ svg text{font-family:var(--font-mono)}
 .plan-map-legend{font-size:11px;color:var(--ink3);padding:10px 12px 12px;border-top:1px solid var(--line2);display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-start;font-family:var(--mono)}
 .score-ramp-legend{flex:1 1 100%;width:100%;max-width:100%;margin:0 0 2px}
 .score-ramp-title{font-size:11px;font-weight:600;color:var(--ink2);margin:0 0 6px;line-height:1.35;font-family:var(--font-ui,var(--font))}
+.score-ramp-status{display:flex;justify-content:space-between;gap:4px;margin:0 0 5px;font-size:10px;font-weight:700;letter-spacing:.02em;line-height:1.2;font-family:var(--font-ui,var(--font))}
+.score-ramp-status span{flex:1;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.55)}
+.score-ramp-status .srs-worst{color:#ff1a1a;text-align:left}
+.score-ramp-status .srs-poor{color:#ff7a00}
+.score-ramp-status .srs-fair{color:#ffd400}
+.score-ramp-status .srs-good{color:#2ee85a}
+.score-ramp-status .srs-best{color:#00ff55;text-align:right}
 .score-ramp-track{position:relative;width:100%}
-.score-ramp-bar{display:block;width:100%;height:12px;border-radius:6px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(90deg,#d62828 0%,#f04e2e 10%,#ff7a1a 20%,#ffaa00 30%,#f5d000 40%,#c8e600 50%,#7adf28 60%,#2ed95a 70%,#1ed4a8 82%,#28c8e8 90%,#6eb5ff 100%);box-sizing:border-box}
-.score-ramp-good-mark{position:absolute;top:-2px;bottom:-2px;width:0;border-left:1.5px dashed rgba(232,236,255,.7);transform:translateX(-50%);pointer-events:none}
+.score-ramp-bar{display:block;width:100%;height:14px;border-radius:6px;border:1px solid rgba(255,255,255,.22);background:linear-gradient(90deg,#ff0a0a 0%,#ff2a00 6%,#ff4a00 12%,#ff6a00 18%,#ff8800 25%,#ffa800 32%,#ffc400 40%,#ffe000 48%,#e8f000 55%,#b8ec00 62%,#7ae820 70%,#3ce038 78%,#18e848 85%,#00f555 92%,#00ff55 100%);box-sizing:border-box}
+.score-ramp-good-mark,.score-ramp-fair-mark{position:absolute;top:-2px;bottom:-2px;width:0;transform:translateX(-50%);pointer-events:none}
+.score-ramp-good-mark{border-left:1.5px dashed rgba(232,236,255,.85)}
+.score-ramp-fair-mark{border-left:1.5px dashed rgba(255,212,0,.55)}
 .score-ramp-ticks{display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--ink3);line-height:1.2}
 .score-ramp-note{font-size:10px;color:var(--ink3);margin:5px 0 0;line-height:1.4;font-family:var(--font-ui,var(--font))}
 .score-ramp{display:inline-flex;align-items:center;gap:6px;vertical-align:middle;max-width:100%;flex-wrap:wrap}
@@ -9649,29 +9658,35 @@ function bestNearbyFishSpot(ctx, maxNm){
 }
 
 /**
- * Continuous score colormap (0–100) — same stops as dive-engine diveScoreColor.
- * Wide hue arc (HSL lerp) for max discrimination on small dark-UI markers:
- * deep red → orange → amber → yellow → chartreuse → lime → green → teal → cyan → blue.
- * Good threshold mark on legend = BITE_GOOD_AT (82).
+ * Continuous score colormap (0–100) — shared by fish / dive / lobster markers.
+ * Traffic-light hue arc (HSL lerp), bright & saturated for dark-UI pins:
+ * bright red (worst) → orange → amber → yellow → chartreuse → lime → bright green (best).
+ * No teal/cyan/blue on the high end — green alone means “go.”
+ * Legend marks fair (≈55) and good (BITE_GOOD_AT = 82).
  */
 const SCORE_COLOR_STOPS = [
-  [0, '#d62828'],
-  [10, '#f04e2e'],
-  [20, '#ff7a1a'],
-  [30, '#ffaa00'],
-  [40, '#f5d000'],
-  [50, '#c8e600'],
-  [60, '#7adf28'],
-  [70, '#2ed95a'],
-  [82, '#1ed4a8'],
-  [90, '#28c8e8'],
-  [100, '#6eb5ff']
+  [0, '#ff0a0a'],
+  [6, '#ff2a00'],
+  [12, '#ff4a00'],
+  [18, '#ff6a00'],
+  [25, '#ff8800'],
+  [32, '#ffa800'],
+  [40, '#ffc400'],
+  [48, '#ffe000'],
+  [55, '#e8f000'],
+  [62, '#b8ec00'],
+  [70, '#7ae820'],
+  [78, '#3ce038'],
+  [82, '#18e848'],
+  [88, '#08f050'],
+  [94, '#00fc55'],
+  [100, '#00ff55']
 ];
 function scoreHexToRgb(hex){
   const h = String(hex || '').replace('#', '');
   const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
   const n = parseInt(full, 16);
-  if(!isFinite(n)) return [255, 102, 68];
+  if(!isFinite(n)) return [255, 10, 10];
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
 }
 function scoreRgbToHex(r, g, b){
@@ -9725,10 +9740,9 @@ function fishScoreColor(score){
       const t = (s - a) / (b - a || 1);
       const ha = scoreRgbToHsl(...scoreHexToRgb(stops[i][1]));
       const hb = scoreRgbToHsl(...scoreHexToRgb(stops[i + 1][1]));
-      /* Shortest hue arc keeps yellow→lime→teal→blue vivid (no muddy RGB mix). */
+      /* Forward hue arc only (red→yellow→green) — never wrap toward blue/magenta. */
       let dh = hb[0] - ha[0];
-      if(dh > 0.5) dh -= 1;
-      if(dh < -0.5) dh += 1;
+      if(dh < -0.25) dh += 1;
       const h = (ha[0] + dh * t + 1) % 1;
       const sat = ha[1] + (hb[1] - ha[1]) * t;
       const lit = ha[2] + (hb[2] - ha[2]) * t;
@@ -9742,24 +9756,35 @@ function scoreRampGradientCss(){
 }
 function scoreRampLegendHtml(kind){
   const goodAt = typeof BITE_GOOD_AT !== 'undefined' ? BITE_GOOD_AT : 82;
+  const fairAt = typeof BITE_FAIR_AT !== 'undefined' ? BITE_FAIR_AT : 55;
   const label = kind === 'dive' ? 'Dive score' : (kind === 'lobster' ? 'Lobster hunt score' : 'Bite score');
+  const scoreNoun = kind === 'dive' ? 'dive' : kind === 'lobster' ? 'hunt' : 'bite';
   return '<div class="score-ramp-legend">' +
-    '<div class="score-ramp-title">' + label + ' — continuous marker color (0–100) · good ≥' + goodAt + '</div>' +
+    '<div class="score-ramp-title">' + label + ' — marker color (0–100)</div>' +
+    '<div class="score-ramp-status" aria-hidden="true">' +
+      '<span class="srs-worst">Worst</span>' +
+      '<span class="srs-poor">Poor</span>' +
+      '<span class="srs-fair">Fair</span>' +
+      '<span class="srs-good">Good</span>' +
+      '<span class="srs-best">Best</span>' +
+    '</div>' +
     '<div class="score-ramp-track">' +
       '<i class="score-ramp-bar" style="background:' + scoreRampGradientCss() + '" aria-hidden="true"></i>' +
+      '<span class="score-ramp-fair-mark" style="left:' + fairAt + '%" title="Fair ≥' + fairAt + '"></span>' +
       '<span class="score-ramp-good-mark" style="left:' + goodAt + '%" title="Good ≥' + goodAt + '"></span>' +
       '<div class="score-ramp-ticks" aria-hidden="true"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>' +
     '</div>' +
-    '<p class="score-ramp-note">Fill color tracks the numeric ' + (kind === 'dive' ? 'dive' : kind === 'lobster' ? 'hunt' : 'bite') +
-      ' score continuously — not Great/Good/Fair/Poor buckets' +
+    '<p class="score-ramp-note"><b style="color:#ff0a0a">Bright red = worst</b> · <b style="color:#00ff55">bright green = best</b>. ' +
+      'Fill tracks the numeric ' + scoreNoun + ' score continuously' +
       (kind === 'dive' ? '' : kind === 'lobster' ? ' · night + structure + calm seas score highest; out-of-season scores are capped' : ' · fish Plan fill matches the glance bite (site-fit only ranks order)') +
-      '. Dashed line marks good (≥' + goodAt + ').</p>' +
+      '. Marks: fair ≥' + fairAt + ', good ≥' + goodAt + '.</p>' +
     '</div>';
 }
 window.BoatScoreColor = {
   color: fishScoreColor,
   stops: SCORE_COLOR_STOPS,
   goodAt: typeof BITE_GOOD_AT !== 'undefined' ? BITE_GOOD_AT : 82,
+  fairAt: typeof BITE_FAIR_AT !== 'undefined' ? BITE_FAIR_AT : 55,
   gradientCss: scoreRampGradientCss,
   legendHtml: scoreRampLegendHtml
 };
