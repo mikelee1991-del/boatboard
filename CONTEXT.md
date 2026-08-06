@@ -70,6 +70,7 @@ Cruise default-on Enterococcus stations (LA/OC/Catalina). Surf/Dive spots within
 - Dive: `scoreDive` · Fish bite: `fishBiteScore` — recalibrated SoCal-relative (**normal ~45–60**, **good ≥82**)
 - Glance bite = map Bite (**pure** `fishBiteScore`); list **order** uses modest site-fit only
 - Continuous **16-stop** traffic-light colormap (bright red = worst → bright green = best) + status-labeled ramp legends under Plan maps (`SCORE_COLOR_STOPS` / dive twin / lobster hunt)
+- Fish plankton: NOAA VIIRS **4 km** point samples via **PFEG ERDDAP** (JSONP + multi-day cloud lookback + mark cell); Plankton tab NASA GIBS remains **1 km** map detail
 
 ### Lobster
 - Tab: habitat hunt planner (`lobster-engine.js`) — structure pins from Fish + Dive (no new GPS); excludes known SMR/no-take by name + MPA polygons
