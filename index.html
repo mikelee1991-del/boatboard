@@ -2506,6 +2506,8 @@ let aisWs = null, aisConnected = false, map = null, boatMarker = null, aisLayer 
 let aisMarkers = {}, aisPinnedMmsi = null, aisRefreshing = false;
 let aisReconnectTimer = null, aisConnectTimer = null, aisBackoffMs = 2000;
 let aisDirectBlocked = false, aisMixedContent = false, aisReconnectAttempt = 0;
+/** Consecutive subscribe→silence reconnects (AISStream outages stay open with 0 frames). */
+let aisSilenceStreak = 0;
 let aisStatusHint = '';
 let aisHelpDismissed = false;
 let aisNeedsKey = false;
@@ -2782,6 +2784,7 @@ function saveSettings(){
     aisHelpDismissed = false;
     aisBackoffMs = 2000;
     aisReconnectAttempt = 0;
+    aisSilenceStreak = 0;
     closeAisSocket(true);
     reconnectAis();
   } else {
@@ -13632,6 +13635,8 @@ async function handleAisFrame(raw){
   aisStats.lastRx = Date.now();
   aisStats.lastErr = '';
   aisNeedsKey = false;
+  aisSilenceStreak = 0;
+  aisBackoffMs = 2000;
   clearAisWaitWatchdog();
   updateAisMarkers();
   if(aisStats.rx === 1 || aisStats.rx % 10 === 0) saveAisCache();
@@ -13720,6 +13725,8 @@ function updateAisHelpPanel(forceOpen){
       why.innerHTML = 'This page is <strong>HTTPS</strong>, so a plain boat-Wi‑Fi <span class="mono">ws://</span> address is blocked. Clear the relay override or use <span class="mono">wss://boatboard-ais.aisrelay.workers.dev</span>.'+cached;
     } else if(!settings.aisKey || aisNeedsKey){
       why.innerHTML = 'Cloud relay is ready (<span class="mono">boatboard-ais.aisrelay.workers.dev</span>). Paste your free <strong>AISStream API key</strong> in Settings — browsers cannot talk to AISStream directly.'+cached;
+    } else if(aisSilenceStreak > 0 || (aisStats.subSent && aisStats.rx === 0 && aisStats.subAt && Date.now() - aisStats.subAt > 40000)){
+      why.innerHTML = 'BoatBoard’s relay is connected, but <strong>AISStream is not sending vessel positions</strong> (socket open, zero frames). This is usually an upstream outage — check <a href="https://github.com/aisstream/issues/issues" target="_blank" rel="noopener">aisstream/issues</a>. Cached ships stay on the map until live data returns.'+cached;
     } else if(aisDirectBlocked && !aisUsesRelay()){
       why.innerHTML = '<strong>AISStream</strong> refuses browser connections. The default cloud relay should be used automatically — check Settings if you overrode the relay URL.'+cached;
     } else {
@@ -13760,13 +13767,23 @@ function updateAisStatus(){
     st.textContent = count
       ? count+' cached vessels · reconnecting…'
       : (aisStatusHint || 'Connecting to AIS…');
-  } else if(!aisStats.subSent) st.textContent = 'Connected — sending subscription…';
+  }   else if(!aisStats.subSent) st.textContent = 'Connected — sending subscription…';
   else if(aisStats.rx === 0){
     const waited = aisStats.subAt ? Math.round((now - aisStats.subAt)/1000) : 0;
-    st.textContent = 'Subscribed — waiting for ships'+
-      (waited ? ' ('+waited+'s)' : '')+
-      (aisStats.bboxLabel ? ' near '+aisStats.bboxLabel : '')+
-      (aisStats.lastErr ? ' · '+aisStats.lastErr.slice(0,48) : '');
+    /* Prolonged silence with an open socket usually means AISStream accepted the
+       key but is not delivering (see aisstream/issues#257) — not a BoatBoard relay failure. */
+    if(waited >= 40 || aisSilenceStreak > 0){
+      st.textContent = (count ? count+' cached · ' : '')+
+        'AISStream silent'+
+        (waited ? ' ('+waited+'s)' : '')+
+        (aisSilenceStreak ? ' · retry #'+aisSilenceStreak : '')+
+        ' — relay up; upstream feed idle';
+    } else {
+      st.textContent = 'Subscribed — waiting for ships'+
+        (waited ? ' ('+waited+'s)' : '')+
+        (aisStats.bboxLabel ? ' near '+aisStats.bboxLabel : '')+
+        (aisStats.lastErr ? ' · '+aisStats.lastErr.slice(0,48) : '');
+    }
   }
   else st.textContent = count+' vessels · '+aisStats.rx+' msgs · '+(dr?dr+' DR · ':'')+(stale?stale+' stale (>3m) · ':'')+(aisStats.lastRx ? fmtAge(Math.round((now-aisStats.lastRx)/1000))+' ago' : '');
   updateAisHelpPanel(false);
@@ -13901,15 +13918,21 @@ function clearAisWaitWatchdog(){
 }
 function armAisWaitWatchdog(){
   clearAisWaitWatchdog();
+  /* AISStream outages keep the socket open with zero frames. An 8s reconnect
+     loop looks like BoatBoard is broken and can rate-limit the key. Wait longer
+     and grow the silence timeout with the silence streak. */
+  const waitMs = Math.min(180000, 45000 * Math.pow(1.5, Math.min(aisSilenceStreak, 6)));
   aisWaitTimer = setTimeout(()=>{
     aisWaitTimer = null;
     if(!aisWs || aisWs.readyState !== WebSocket.OPEN) return;
     if(aisStats.rx > 0) return;
-    /* No frames after subscribe — likely dead upstream (mobile race) or empty bbox; force new handshake */
-    aisStats.lastErr = 'no AIS frames — reconnecting';
+    aisSilenceStreak++;
+    aisBackoffMs = Math.min(300000, Math.round(Math.max(aisBackoffMs, 10000) * 1.8));
+    aisStats.lastErr = 'AISStream silent — reconnecting';
+    aisStatusHint = 'AISStream not delivering';
     updateAisStatus();
     try{ aisWs.close(); }catch(e){}
-  }, 8000);
+  }, waitMs);
 }
 
 function sendAisSubscription(){
@@ -14023,11 +14046,15 @@ function reconnectAis(){
     aisWs.onopen = ()=>{
       clearAisConnectTimer();
       aisConnected = true;
-      aisBackoffMs = 2000;
-      aisReconnectAttempt = 0;
+      /* Do not reset backoff on bare open — during AISStream outages every
+         handshake succeeds while data never arrives; resetting caused a reconnect storm. */
+      if(aisSilenceStreak === 0){
+        aisBackoffMs = 2000;
+        aisReconnectAttempt = 0;
+      }
       aisDirectBlocked = false;
       aisMixedContent = false;
-      aisStatusHint = '';
+      if(aisSilenceStreak === 0) aisStatusHint = '';
       aisStats.lastErr = '';
       lastBbox = '';
       sendAisSubscription();

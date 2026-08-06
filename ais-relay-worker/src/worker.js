@@ -14,14 +14,28 @@
  * Deploy:
  *   cd ais-relay-worker && npx wrangler deploy
  * Optional: npx wrangler secret put AISSTREAM_API_KEY
+ *
+ * Health: GET /probe — confirms Worker → AISStream WebSocket *upgrade* only.
+ * It does not prove message delivery (AISStream can accept sockets while silent).
  */
 
 const UPSTREAM = 'https://stream.aisstream.io/v0/stream';
 
+function corsHeaders(extra = {}) {
+  return { 'Access-Control-Allow-Origin': '*', ...extra };
+}
+
 function jsonError(msg, status = 400) {
   return new Response(JSON.stringify({ error: msg }), {
     status,
-    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    headers: corsHeaders({ 'Content-Type': 'application/json' })
+  });
+}
+
+function jsonOk(obj, status = 200) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: corsHeaders({ 'Content-Type': 'application/json' })
   });
 }
 
@@ -52,6 +66,46 @@ async function openUpstream() {
   if (!ws) throw new Error('AISStream rejected WebSocket upgrade');
   ws.accept({ allowHalfOpen: true });
   return ws;
+}
+
+/** Probe Worker → AISStream upgrade path (not end-to-end message delivery). */
+async function probeUpstream() {
+  const t0 = Date.now();
+  try {
+    const resp = await fetch(UPSTREAM, { headers: { Upgrade: 'websocket' } });
+    const ws = resp.webSocket;
+    if (!ws) {
+      return jsonOk({
+        service: 'boatboard-ais-relay',
+        upstream: UPSTREAM,
+        ok: false,
+        ms: Date.now() - t0,
+        detail: 'AISStream rejected WebSocket upgrade',
+        at: new Date().toISOString()
+      });
+    }
+    try {
+      ws.accept({ allowHalfOpen: true });
+      ws.close(1000, 'probe');
+    } catch (_) {}
+    return jsonOk({
+      service: 'boatboard-ais-relay',
+      upstream: UPSTREAM,
+      ok: true,
+      ms: Date.now() - t0,
+      detail: 'AISStream WebSocket upgrade succeeded',
+      at: new Date().toISOString()
+    });
+  } catch (e) {
+    return jsonOk({
+      service: 'boatboard-ais-relay',
+      upstream: UPSTREAM,
+      ok: false,
+      ms: Date.now() - t0,
+      detail: e.message || String(e),
+      at: new Date().toISOString()
+    });
+  }
 }
 
 /**
@@ -102,7 +156,9 @@ function handleClientSocket(client, env) {
             })();
           });
           upstream.addEventListener('close', (uev) => {
-            closeBoth(uev.code || 1000, uev.reason || 'upstream closed');
+            const reason = uev.reason || 'upstream closed';
+            /* Prefer a stable client-facing reason when AISStream drops auth/key failures */
+            closeBoth(uev.code || 1000, reason);
           });
           upstream.addEventListener('error', () => closeBoth(1011, 'upstream error'));
 
@@ -114,8 +170,9 @@ function handleClientSocket(client, env) {
         /* Later messages = subscription updates */
         if (upstream && upstream.readyState === 1) forwardText(upstream, subText);
       } catch (e) {
-        try { client.send(JSON.stringify({ error: e.message || String(e) })); } catch (_) {}
-        closeBoth(1008, 'bad subscription');
+        const msg = e.message || String(e);
+        try { client.send(JSON.stringify({ error: msg })); } catch (_) {}
+        closeBoth(1008, /missing.*api key|api key/i.test(msg) ? 'missing-key' : 'bad subscription');
       }
     })();
   });
@@ -128,6 +185,23 @@ function handleClientSocket(client, env) {
 
 export default {
   async fetch(request, env) {
+    const url = new URL(request.url);
+    const path = url.pathname.replace(/\/+$/, '') || '/';
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: corsHeaders({
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Upgrade, Connection'
+        })
+      });
+    }
+
+    if (request.method === 'GET' && (path === '/probe' || path === '/health')) {
+      return probeUpstream();
+    }
+
     const upgrade = request.headers.get('Upgrade') || '';
     if (upgrade.toLowerCase() !== 'websocket') {
       return new Response(
@@ -138,15 +212,13 @@ export default {
           'Use this origin as https://… or wss://…',
           '',
           'Upstream AISStream opens only after your first subscription (mobile-safe).',
+          'Health: GET /probe  (tests Worker → AISStream WebSocket upgrade)',
           'Deploy: cd ais-relay-worker && npx wrangler deploy',
           ''
         ].join('\n'),
         {
           status: 200,
-          headers: {
-            'Content-Type': 'text/plain; charset=utf-8',
-            'Access-Control-Allow-Origin': '*'
-          }
+          headers: corsHeaders({ 'Content-Type': 'text/plain; charset=utf-8' })
         }
       );
     }
