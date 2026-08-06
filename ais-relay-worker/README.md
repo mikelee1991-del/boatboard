@@ -40,6 +40,14 @@ Then the phone only needs the relay URL (subscription still works without a clie
 - No cloudflared, no home PC, no Raspberry Pi required for normal use.
 - Optional: set `AIS_HOSTED_RELAY_DEFAULT` in `index.html` to your `wss://….workers.dev` URL so every device inherits it after you ship a Pages update (still don’t commit secrets).
 
+### Health check
+
+```bash
+curl -s https://boatboard-ais.<you>.workers.dev/probe
+```
+
+Returns JSON `{ ok, ms, detail }`. `ok: false` means this Worker cannot open a WebSocket to AISStream (provider outage or CF→AISStream block) — BoatBoard will show that in the AIS status bar after reconnect attempts.
+
 ## Local / LAN alternative
 
 Power users can still run `../ais-relay.mjs` on a laptop (see root README). That path needs the machine online (or a temporary cloudflared tunnel).

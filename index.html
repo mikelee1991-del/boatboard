@@ -1436,6 +1436,7 @@ const AIS_BBOX_DEG = 0.55;
 /**
  * Baked-in Cloudflare Worker relay (phones/laptops inherit this when Settings relay is empty).
  * Override anytime in Settings → AIS relay URL. Never put API keys here.
+ * Cache note: AIS client error-state + relay upstream timeout — 2026-08-06.
  */
 const AIS_HOSTED_RELAY_DEFAULT = 'wss://boatboard-ais.aisrelay.workers.dev';
 const COMPASS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
@@ -2509,6 +2510,9 @@ let aisDirectBlocked = false, aisMixedContent = false, aisReconnectAttempt = 0;
 let aisStatusHint = '';
 let aisHelpDismissed = false;
 let aisNeedsKey = false;
+/** Sticky when relay cannot reach AISStream (external outage / CF→AISStream hang). */
+let aisFeedUnreachable = false;
+let aisSilentFailStreak = 0;
 let shippingLanesLayer = null, shippingLanesVisible = store.get('aisShippingLanes') !== '0';
 let mapInited = false;
 let swellMap = null, swellMapInited = false, swellRayLayer = null, swellObstLayer = null, swellBuoyLayer = null, swellBoatMarker = null;
@@ -2780,6 +2784,7 @@ function saveSettings(){
     aisMixedContent = false;
     aisNeedsKey = false;
     aisHelpDismissed = false;
+    aisClearFeedUnreachable();
     aisBackoffMs = 2000;
     aisReconnectAttempt = 0;
     closeAisSocket(true);
@@ -13298,6 +13303,7 @@ const AIS_DR_TRI_HALF = 11;
 const AIS_FUTURE_DOT_R = 2;
 let aisStats = { rx:0, lastRx:0, lastErr:'', subSent:false, subAt:0, bboxLabel:'' };
 let aisWaitTimer = null;
+const AIS_SILENT_FAIL_LIMIT = 3;
 
 function normAisSog(sog){
   const s = +sog;
@@ -13611,6 +13617,18 @@ async function aisDataToText(data){
   return String(data);
 }
 
+function aisMarkFeedUnreachable(reason){
+  aisFeedUnreachable = true;
+  aisStatusHint = 'AIS feed unreachable';
+  aisStats.lastErr = reason || aisStats.lastErr || 'AISStream unreachable via relay';
+  updateAisStatus();
+}
+
+function aisClearFeedUnreachable(){
+  aisFeedUnreachable = false;
+  aisSilentFailStreak = 0;
+}
+
 async function handleAisFrame(raw){
   const text = await aisDataToText(raw);
   if(!text || text === '[object Blob]') return;
@@ -13621,6 +13639,8 @@ async function handleAisFrame(raw){
     if(/missing.*api key|api key/i.test(err)){
       aisNeedsKey = true;
       aisStatusHint = 'add AISStream API key';
+    } else if(/unreachable|timed out|upstream|rejected WebSocket/i.test(err)){
+      aisMarkFeedUnreachable(err);
     }
     updateAisStatus();
     return;
@@ -13632,6 +13652,7 @@ async function handleAisFrame(raw){
   aisStats.lastRx = Date.now();
   aisStats.lastErr = '';
   aisNeedsKey = false;
+  aisClearFeedUnreachable();
   clearAisWaitWatchdog();
   updateAisMarkers();
   if(aisStats.rx === 1 || aisStats.rx % 10 === 0) saveAisCache();
@@ -13703,6 +13724,7 @@ function aisNeedsSetupHelp(){
   if(!settings.aisKey) return true;
   if(aisNeedsKey) return true;
   if(aisMixedContent) return true;
+  if(aisFeedUnreachable) return true;
   if(aisDirectBlocked && !aisUsesRelay()) return true;
   return false;
 }
@@ -13720,6 +13742,8 @@ function updateAisHelpPanel(forceOpen){
       why.innerHTML = 'This page is <strong>HTTPS</strong>, so a plain boat-Wi‑Fi <span class="mono">ws://</span> address is blocked. Clear the relay override or use <span class="mono">wss://boatboard-ais.aisrelay.workers.dev</span>.'+cached;
     } else if(!settings.aisKey || aisNeedsKey){
       why.innerHTML = 'Cloud relay is ready (<span class="mono">boatboard-ais.aisrelay.workers.dev</span>). Paste your free <strong>AISStream API key</strong> in Settings — browsers cannot talk to AISStream directly.'+cached;
+    } else if(aisFeedUnreachable){
+      why.innerHTML = '<strong>Live AIS feed is unreachable</strong> right now (cloud relay cannot open AISStream). Cached ships still show. Tap <strong>Save</strong> in Settings to retry, or check <span class="mono">/probe</span> on the relay.'+cached;
     } else if(aisDirectBlocked && !aisUsesRelay()){
       why.innerHTML = '<strong>AISStream</strong> refuses browser connections. The default cloud relay should be used automatically — check Settings if you overrode the relay URL.'+cached;
     } else {
@@ -13750,12 +13774,16 @@ function updateAisStatus(){
     if(ds.drActive) dr++;
   }
   const ws = aisWs ? ['connecting','open','closing','closed'][aisWs.readyState] : 'none';
+  const cachedPrefix = count ? count+' cached · ' : '';
   if(!settings.aisKey || aisNeedsKey){
-    st.textContent = (count ? count+' cached · ' : '')+'Add AISStream API key — Setup help';
+    st.textContent = cachedPrefix+'Add AISStream API key — Setup help';
   } else if(aisMixedContent){
-    st.textContent = (count ? count+' cached · ' : '')+'Bad relay URL — Setup help';
+    st.textContent = cachedPrefix+'Bad relay URL — Setup help';
   } else if(aisDirectBlocked && !aisUsesRelay()){
-    st.textContent = (count ? count+' cached · ' : '')+'Need cloud relay — tap Setup help';
+    st.textContent = cachedPrefix+'Need cloud relay — tap Setup help';
+  } else if(aisFeedUnreachable){
+    const detail = (aisStats.lastErr || 'AISStream unreachable via cloud relay').slice(0, 72);
+    st.textContent = cachedPrefix+'AIS feed down — '+detail;
   } else if(ws !== 'open'){
     st.textContent = count
       ? count+' cached vessels · reconnecting…'
@@ -13905,8 +13933,14 @@ function armAisWaitWatchdog(){
     aisWaitTimer = null;
     if(!aisWs || aisWs.readyState !== WebSocket.OPEN) return;
     if(aisStats.rx > 0) return;
-    /* No frames after subscribe — likely dead upstream (mobile race) or empty bbox; force new handshake */
+    /* No frames after subscribe — dead upstream, empty bbox, or AISStream silence */
+    aisSilentFailStreak++;
     aisStats.lastErr = 'no AIS frames — reconnecting';
+    if(aisSilentFailStreak >= AIS_SILENT_FAIL_LIMIT){
+      aisMarkFeedUnreachable('no vessels from AISStream after '+aisSilentFailStreak+' tries — feed may be down');
+      try{ aisWs.close(); }catch(e){}
+      return;
+    }
     updateAisStatus();
     try{ aisWs.close(); }catch(e){}
   }, 8000);
@@ -13968,8 +14002,9 @@ function reconnectAis(){
   closeAisSocket(true);
   /* Preserve vessel cache + lastRx across reconnects — only reset stream counters */
   const prevLastRx = aisStats.lastRx;
-  aisStats = { rx:0, lastRx: prevLastRx, lastErr:'', subSent:false, subAt:0, bboxLabel:'' };
-  aisStatusHint = '';
+  const prevErr = aisFeedUnreachable ? aisStats.lastErr : '';
+  aisStats = { rx:0, lastRx: prevLastRx, lastErr: prevErr, subSent:false, subAt:0, bboxLabel:'' };
+  if(!aisFeedUnreachable) aisStatusHint = '';
 
   if(!settings.aisKey && !aisRelayUrlRaw()){
     aisDirectBlocked = false;
@@ -13986,6 +14021,12 @@ function reconnectAis(){
     return;
   }
   aisNeedsKey = false;
+
+  /* After repeated silent failures, pause hammering; Settings→Save clears and retries. */
+  if(aisFeedUnreachable){
+    updateAisStatus();
+    return;
+  }
 
   const url = aisWsUrl();
   if(aisMixedContent || !url){
@@ -14060,6 +14101,13 @@ function reconnectAis(){
           updateAisStatus();
           return;
         }
+      }
+      /* Upstream open failed / AISStream unreachable — stop spinning until Save. */
+      if(aisFeedUnreachable || /upstream open failed|unreachable/i.test(ev.reason || '')){
+        if(!aisFeedUnreachable) aisMarkFeedUnreachable(ev.reason || aisStats.lastErr);
+        saveAisCache();
+        updateAisStatus();
+        return;
       }
       aisBackoffMs = Math.min(60000, Math.round(aisBackoffMs * 1.7));
       aisStatusHint = aisLiveVesselCount() ? '' : 'reconnecting…';
@@ -16076,13 +16124,18 @@ function boot(){
     refreshForecasts(true);
     aisBackoffMs = 2000;
     if(aisDirectBlocked && !aisUsesRelay()) updateAisStatus();
-    else reconnectAis();
+    else {
+      aisClearFeedUnreachable();
+      reconnectAis();
+    }
   });
   window.addEventListener('offline', ()=>{ offline=true; saveAisCache(); setBanner('<strong>Offline.</strong> Showing cached forecasts & last AIS positions.',''); });
   document.addEventListener('visibilitychange', ()=>{
     if(document.visibilityState === 'hidden'){ saveAisCache(); return; }
     if(aisWs && aisWs.readyState === WebSocket.OPEN) return;
     if(aisDirectBlocked && !aisUsesRelay()) return;
+    /* Retry after feed-down pause when user returns to the tab. */
+    if(aisFeedUnreachable) aisClearFeedUnreachable();
     aisBackoffMs = Math.min(aisBackoffMs, 3000);
     scheduleAisReconnect(500);
   });

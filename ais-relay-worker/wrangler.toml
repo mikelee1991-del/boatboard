@@ -1,5 +1,6 @@
 name = "boatboard-ais"
 main = "src/worker.js"
+# Keep pre-2026-04-07 close behavior defaults; Worker uses allowHalfOpen for proxying.
 compatibility_date = "2024-11-01"
 workers_dev = true
 
