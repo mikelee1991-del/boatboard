@@ -139,12 +139,26 @@ svg text{font-family:var(--font-mono)}
   .briefing-live-grid{grid-template-columns:1fr;gap:6px}
 }
 
+#tab-ais.tabpanel.active{display:flex;flex-direction:column;overflow:hidden;min-height:0;height:100%;padding:0}
+#tab-ais .mapbar,#tab-ais .ais-upstream{flex:0 0 auto}
 #mapWrap{position:relative;height:calc(100% - 44px);min-height:300px}
+#tab-ais #mapWrap{flex:1 1 auto;min-height:0;height:auto}
 #map{height:100%;width:100%;background:var(--bg2)}
 .mapbar{padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--card);border-bottom:1px solid var(--line);font-size:12px;color:var(--ink2)}
 .mapbar .grow{flex:1}
 .ais-help-btn{flex:0 0 auto;min-height:32px;padding:4px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg2);color:var(--accent);font-size:11px;font-weight:600;cursor:pointer;touch-action:manipulation;letter-spacing:.02em}
 .ais-help-btn:active{transform:scale(.97)}
+.ais-upstream{display:flex;gap:8px;align-items:flex-start;padding:7px 12px;border-bottom:1px solid var(--line);background:var(--bg2);font-size:12px;line-height:1.4;color:var(--ink2)}
+.ais-upstream[hidden]{display:none!important}
+.ais-upstream .ais-up-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;margin-top:4px;background:var(--ink3)}
+.ais-upstream.ok .ais-up-dot{background:var(--good)}
+.ais-upstream.warn .ais-up-dot{background:var(--fair)}
+.ais-upstream.bad .ais-up-dot{background:var(--poor)}
+.ais-upstream .ais-up-body{flex:1;min-width:0}
+.ais-upstream .ais-up-title{font-weight:700;color:var(--ink);margin:0 0 1px}
+.ais-upstream .ais-up-detail{margin:0;color:var(--ink2)}
+.ais-upstream a{color:var(--accent);text-decoration:none}
+.ais-upstream a:hover{text-decoration:underline}
 .ais-setup{position:absolute;left:8px;right:8px;top:8px;z-index:500;max-height:min(58%,360px);overflow:auto;-webkit-overflow-scrolling:touch;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(10,16,24,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 8px 28px rgba(0,0,0,.45);color:var(--ink2);font-size:13px;line-height:1.45}
 .ais-setup[hidden]{display:none!important}
 .ais-setup h3{margin:0 0 6px;font-size:14px;font-weight:700;color:var(--ink);letter-spacing:.01em}
@@ -1248,6 +1262,13 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <span style="margin-left:6px">Basemap: imagery (land) · BlueTopo (water)</span>
         </div>
       </div>
+      <div id="aisUpstream" class="ais-upstream" hidden aria-live="polite">
+        <span class="ais-up-dot" aria-hidden="true"></span>
+        <div class="ais-up-body">
+          <p class="ais-up-title" id="aisUpstreamTitle">AISStream status</p>
+          <p class="ais-up-detail" id="aisUpstreamDetail">Checking community monitor…</p>
+        </div>
+      </div>
       <div id="mapWrap">
         <div id="aisSetup" class="ais-setup" hidden>
           <h3>How to connect AIS on phone</h3>
@@ -1433,6 +1454,10 @@ const REFRESH_NWS = 10 * 60e3;
 const REFRESH_CDIP = 15 * 60e3;
 const REFRESH_TIDES = 15 * 60e3;
 const AIS_BBOX_DEG = 0.55;
+/** Community AISStream uptime monitor (CORS-open JSON). Distinguishes handshake vs silent feed. */
+const AIS_UPTIME_STATUS_URL = 'https://aisuptime.buttermilkgreen.fyi/api/v1/status?simple=true';
+const AIS_UPTIME_PAGE_URL = 'https://aisuptime.buttermilkgreen.fyi/';
+const REFRESH_AIS_UPTIME = 60e3;
 /**
  * Baked-in Cloudflare Worker relay (phones/laptops inherit this when Settings relay is empty).
  * Override anytime in Settings → AIS relay URL. Never put API keys here.
@@ -1485,6 +1510,21 @@ const fmtDayTime = d => ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+
 window.fmtDayTime = fmtDayTime;
 function parseTideTime(s){ return new Date(String(s).replace(' ','T')); }
 const fmtAge = sec => sec < 60 ? sec+'s' : sec < 3600 ? Math.round(sec/60)+'m' : (sec/3600).toFixed(1)+'h';
+/** Human duration like the community AIS uptime page ("2 days, 1 hour and 53 minutes"). */
+function fmtDurationParts(ms){
+  if(!isFinite(ms) || ms < 0) ms = 0;
+  const totalSec = Math.floor(ms / 1000);
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const parts = [];
+  if(days) parts.push(days + (days === 1 ? ' day' : ' days'));
+  if(hours) parts.push(hours + (hours === 1 ? ' hour' : ' hours'));
+  if(mins || !parts.length) parts.push(mins + (mins === 1 ? ' minute' : ' minutes'));
+  if(parts.length === 1) return parts[0];
+  if(parts.length === 2) return parts[0] + ' and ' + parts[1];
+  return parts[0] + ', ' + parts[1] + ' and ' + parts[2];
+}
 
 const store = {
   get(k){ try{return localStorage.getItem(k);}catch(e){return null;} },
@@ -2511,6 +2551,10 @@ let aisSilenceStreak = 0;
 let aisStatusHint = '';
 let aisHelpDismissed = false;
 let aisNeedsKey = false;
+/** Latest community AISStream status JSON (or null). */
+let aisUpstreamStatus = null;
+let aisUpstreamFetchedAt = 0;
+let aisUpstreamFetchPromise = null;
 let shippingLanesLayer = null, shippingLanesVisible = store.get('aisShippingLanes') !== '0';
 let mapInited = false;
 let swellMap = null, swellMapInited = false, swellRayLayer = null, swellObstLayer = null, swellBuoyLayer = null, swellBoatMarker = null;
@@ -13712,6 +13756,116 @@ function aisNeedsSetupHelp(){
   return false;
 }
 
+function aisUpstreamIsDegraded(st){
+  if(!st || !st.state) return false;
+  const s = String(st.state).toLowerCase();
+  return /silent|outage|down|auth|failure|partial/.test(s) && !/^operational$|^up$|^ok$/.test(s);
+}
+
+function aisUpstreamTone(st){
+  if(!st || !st.state) return '';
+  const s = String(st.state).toLowerCase();
+  if(/silent|partial/.test(s)) return 'warn';
+  if(/outage|down|failure|auth/.test(s)) return 'bad';
+  if(/operational|receiving|connected|up|ok|live/.test(s) && st.websocketConnected !== false) return 'ok';
+  if(st.websocketConnected && st.lastMessageReceived){
+    const age = Date.now() - Date.parse(st.lastMessageReceived);
+    if(isFinite(age) && age < 180000) return 'ok';
+  }
+  return 'warn';
+}
+
+function aisUpstreamHeadline(st){
+  if(!st || !st.state) return 'AISStream status unknown';
+  const s = String(st.state);
+  if(/silent failure/i.test(s)) return 'AISStream partial outage';
+  if(/service outage/i.test(s)) return 'AISStream outage';
+  if(/auth/i.test(s)) return 'AISStream monitor auth issue';
+  if(/operational|receiving|connected/i.test(s)) return 'AISStream operational';
+  return 'AISStream: ' + s;
+}
+
+function aisUpstreamDetailHtml(st){
+  const link = '<a href="'+esc(AIS_UPTIME_PAGE_URL)+'" target="_blank" rel="noopener">community monitor</a>';
+  if(!st){
+    return 'Could not reach the '+link+' — BoatBoard relay may still be fine.';
+  }
+  const lastMs = st.lastMessageReceived ? Date.parse(st.lastMessageReceived) : NaN;
+  const silence = isFinite(lastMs) ? Date.now() - lastMs : null;
+  const sinceLocal = isFinite(lastMs)
+    ? new Date(lastMs).toLocaleString(undefined, { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' })
+    : '';
+  if(/silent failure/i.test(String(st.state || ''))){
+    return 'Websocket connected but no ship data received for <strong>'+
+      esc(fmtDurationParts(silence || 0))+'</strong>'+
+      (sinceLocal ? ' (since '+esc(sinceLocal)+')' : '')+
+      '. Source: '+link+'.';
+  }
+  if(/service outage/i.test(String(st.state || ''))){
+    return 'Stream endpoint unreachable or offline per '+link+'.';
+  }
+  if(st.websocketConnected && isFinite(silence) && silence < 180000){
+    return 'Receiving ship positions (last community message '+esc(fmtAge(Math.round(silence/1000)))+' ago). '+link+'.';
+  }
+  if(st.websocketConnected){
+    return 'Websocket connected'+
+      (isFinite(silence) ? '; last community message '+esc(fmtDurationParts(silence))+' ago' : '')+
+      '. '+link+'.';
+  }
+  return 'Reported state: '+esc(String(st.state))+'. '+link+'.';
+}
+
+function renderAisUpstreamBanner(){
+  const box = $('aisUpstream');
+  const title = $('aisUpstreamTitle');
+  const detail = $('aisUpstreamDetail');
+  if(!box || !title || !detail) return;
+  box.hidden = false;
+  box.classList.remove('ok', 'warn', 'bad');
+  const tone = aisUpstreamTone(aisUpstreamStatus);
+  if(tone) box.classList.add(tone);
+  if(!aisUpstreamStatus && !aisUpstreamFetchedAt){
+    title.textContent = 'AISStream status';
+    detail.textContent = 'Checking community monitor…';
+    return;
+  }
+  title.textContent = aisUpstreamHeadline(aisUpstreamStatus);
+  detail.innerHTML = aisUpstreamDetailHtml(aisUpstreamStatus);
+}
+
+async function refreshAisUpstreamStatus(force){
+  if(aisUpstreamFetchPromise) return aisUpstreamFetchPromise;
+  if(!force && aisUpstreamFetchedAt && Date.now() - aisUpstreamFetchedAt < REFRESH_AIS_UPTIME * 0.8){
+    renderAisUpstreamBanner();
+    return aisUpstreamStatus;
+  }
+  aisUpstreamFetchPromise = (async ()=>{
+    try{
+      const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const t = ctrl ? setTimeout(()=>ctrl.abort(), 10000) : null;
+      const res = await fetch(AIS_UPTIME_STATUS_URL, {
+        cache: 'no-store',
+        signal: ctrl ? ctrl.signal : undefined
+      });
+      if(t) clearTimeout(t);
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data = await res.json();
+      aisUpstreamStatus = data && typeof data === 'object' ? data : null;
+      aisUpstreamFetchedAt = Date.now();
+    }catch(e){
+      /* Keep last good sample; only clear if we never had one */
+      if(!aisUpstreamStatus) aisUpstreamStatus = null;
+      aisUpstreamFetchedAt = Date.now();
+    }finally{
+      aisUpstreamFetchPromise = null;
+      renderAisUpstreamBanner();
+      updateAisHelpPanel(false);
+    }
+    return aisUpstreamStatus;
+  })();
+  return aisUpstreamFetchPromise;
+}
+
 function updateAisHelpPanel(forceOpen){
   const box = $('aisSetup');
   const why = $('aisSetupWhy');
@@ -13725,8 +13879,8 @@ function updateAisHelpPanel(forceOpen){
       why.innerHTML = 'This page is <strong>HTTPS</strong>, so a plain boat-Wi‑Fi <span class="mono">ws://</span> address is blocked. Clear the relay override or use <span class="mono">wss://boatboard-ais.aisrelay.workers.dev</span>.'+cached;
     } else if(!settings.aisKey || aisNeedsKey){
       why.innerHTML = 'Cloud relay is ready (<span class="mono">boatboard-ais.aisrelay.workers.dev</span>). Paste your free <strong>AISStream API key</strong> in Settings — browsers cannot talk to AISStream directly.'+cached;
-    } else if(aisSilenceStreak > 0 || (aisStats.subSent && aisStats.rx === 0 && aisStats.subAt && Date.now() - aisStats.subAt > 40000)){
-      why.innerHTML = 'BoatBoard’s relay is connected, but <strong>AISStream is not sending vessel positions</strong> (socket open, zero frames). This is usually an upstream outage — check <a href="https://github.com/aisstream/issues/issues" target="_blank" rel="noopener">aisstream/issues</a>. Cached ships stay on the map until live data returns.'+cached;
+    } else if(aisSilenceStreak > 0 || (aisStats.subSent && aisStats.rx === 0 && aisStats.subAt && Date.now() - aisStats.subAt > 40000) || aisUpstreamIsDegraded(aisUpstreamStatus)){
+      why.innerHTML = 'BoatBoard’s relay is connected, but <strong>AISStream is not sending vessel positions</strong> (socket open, zero frames). Community monitor: <a href="'+esc(AIS_UPTIME_PAGE_URL)+'" target="_blank" rel="noopener">aisuptime.buttermilkgreen.fyi</a> · also <a href="https://github.com/aisstream/issues/issues" target="_blank" rel="noopener">aisstream/issues</a>. Cached ships stay on the map until live data returns.'+cached;
     } else if(aisDirectBlocked && !aisUsesRelay()){
       why.innerHTML = '<strong>AISStream</strong> refuses browser connections. The default cloud relay should be used automatically — check Settings if you overrode the relay URL.'+cached;
     } else {
@@ -15768,6 +15922,7 @@ function switchTab(name){
     if(!mapInited) setTimeout(()=>initMap(), 50);
     else { setTimeout(()=>map.invalidateSize(), 150); updateAisMarkers(); }
     if(!aisWs || aisWs.readyState !== WebSocket.OPEN) reconnectAis();
+    refreshAisUpstreamStatus(false);
   }
   if(name==='underway'){
     loadCoastOverlayLite().then(()=>{
@@ -16089,6 +16244,7 @@ function boot(){
   }, 30000);
   timers.aisTick = setInterval(()=>{
     if(aisStats.subSent && aisStats.rx === 0) updateAisStatus();
+    if(aisUpstreamStatus) renderAisUpstreamBanner();
     if(!Object.keys(aisVessels).length) return;
     if(mapInited) updateAisMarkers();
     else {
@@ -16097,11 +16253,14 @@ function boot(){
     }
     saveAisCache();
   }, 5000);
+  timers.aisUpstream = setInterval(()=> refreshAisUpstreamStatus(false), REFRESH_AIS_UPTIME);
+  refreshAisUpstreamStatus(true);
 
   window.addEventListener('online', ()=>{
     offline=false;
     refreshForecasts(true);
     aisBackoffMs = 2000;
+    aisSilenceStreak = 0;
     if(aisDirectBlocked && !aisUsesRelay()) updateAisStatus();
     else reconnectAis();
   });
