@@ -4357,7 +4357,7 @@ function ovHabTakeaway(hab, chl){
     return { cls: 'tk-poor', text: 'Elevated Pseudo-nitzschia / domoic acid probability near King Harbor'+(pct ? ' (~'+pct+')' : '')+cachedSuffix+' — skip local shellfish; expect possible green-water vis loss.' };
   }
   if(lvl === 'watch'){
-    return { cls: 'tk-warn', text: 'HAB watch offshore'+(pct ? ' (~'+pct+' max)' : '')+cachedSuffix+' — monitor CDPH shellfish advisories; diving/fishing vis may run lower than swell suggests.' };
+    return { cls: 'tk-warn', text: 'HAB watch offshore'+(pct ? ' (~'+pct+' max)' : '')+cachedSuffix+' — monitor CDPH shellfish advisories; green-water clarity may run lower than swell suggests.' };
   }
   if(lvl === 'clear'){
     return {
@@ -4532,7 +4532,8 @@ function ovChlTakeaway(chl){
   // Prefer a fresh Plankton-tab takeaway when it already resolved point samples.
   if(!hasPoints && chlLastMarineTakeaway?.hasSamples &&
       (Date.now() - chlLastMarineTakeaway.at < OV_TAKEAWAYS_TTL)){
-    return { cls: chlLastMarineTakeaway.cls, text: chlLastMarineTakeaway.text };
+    const text = chlLastMarineTakeaway.fishText || chlLastMarineTakeaway.text;
+    return { cls: chlLastMarineTakeaway.cls, text };
   }
   return chlStoreMarineTakeaway(samples, chl?.time);
 }
@@ -4650,8 +4651,8 @@ function ovFallbackTakeawaysState(partialItems, sources, dayLabel){
   }
   if(!have.has('Plankton')){
     const t = (chlLastMarineTakeaway && (Date.now() - chlLastMarineTakeaway.at < OV_TAKEAWAYS_TTL))
-      ? { cls: chlLastMarineTakeaway.cls, text: chlLastMarineTakeaway.text }
-      : chlMarineTakeawayBrief(null);
+      ? { cls: chlLastMarineTakeaway.cls, text: chlLastMarineTakeaway.fishText || chlLastMarineTakeaway.text }
+      : chlMarineTakeawayBrief(null, 'fish');
     items.push({ label: 'Plankton', cls: t.cls, text: t.text, ord: 2 });
   }
   if(!have.has('Wildlife')){
@@ -9327,7 +9328,7 @@ let _fishOceanPromise = null;
 function ensureFishSmart(){
   if(window.BoatFishSmart) return Promise.resolve(window.BoatFishSmart);
   if(_fishSmartPromise) return _fishSmartPromise;
-  _fishSmartPromise = loadScript('fish-smart.js?v=4').then(()=>{
+  _fishSmartPromise = loadScript('fish-smart.js?v=5').then(()=>{
     if(!window.BoatFishSmart) throw new Error('BoatFishSmart missing');
     return window.BoatFishSmart;
   }).catch(e=>{ _fishSmartPromise = null; throw e; });
@@ -9443,11 +9444,15 @@ async function refreshFishOceanContext(force, opts){
       console.warn('fish ocean chl', e);
       sourceNotes.push('Chl sample failed');
     }
-    if(chlLastMarineTakeaway?.text && (Date.now() - (chlLastMarineTakeaway.at || 0) < OV_TAKEAWAYS_TTL * 3)){
-      takeawayText = chlLastMarineTakeaway.text;
-      if(!chlSamples.some(s => s.val != null)) sourceNotes.push('Chl narrative from Plankton/Overview cache');
-    }else if(typeof chlMarineTakeawayBrief === 'function' && chlSamples.length){
-      const brief = chlMarineTakeawayBrief(chlSamples.map(s => ({ zone: { name: s.name }, val: s.val })));
+    if(chlLastMarineTakeaway?.fishText || chlLastMarineTakeaway?.text){
+      const fresh = Date.now() - (chlLastMarineTakeaway.at || 0) < OV_TAKEAWAYS_TTL * 3;
+      if(fresh){
+        takeawayText = chlLastMarineTakeaway.fishText || chlLastMarineTakeaway.text;
+        if(!chlSamples.some(s => s.val != null)) sourceNotes.push('Chl narrative from Plankton/Overview cache');
+      }
+    }
+    if(!takeawayText && typeof chlMarineTakeawayBrief === 'function' && chlSamples.length){
+      const brief = chlMarineTakeawayBrief(chlSamples.map(s => ({ zone: { name: s.name }, val: s.val })), 'fish');
       takeawayText = brief?.text || '';
     }
     const vals = chlSamples.map(s => s.val).filter(v => v != null && isFinite(v));
@@ -14558,79 +14563,129 @@ function chlFmtDate(iso){
   return d.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric', timeZone:'UTC' });
 }
 
-function chlLevel(v){
-  if(v == null || !isFinite(v)) return { label:'No data', cls:'', tip:'Cloud/mask or coastal gap — read map color nearby.' };
-  if(v < 0.12) return { label:'Ultra-clear', cls:'a', tip:'Blue water — pelagics may run deeper; diving viz often excellent offshore.' };
-  if(v < 0.25) return { label:'Clear blue-green', cls:'g', tip:'Typical SoCal offshore — moderate plankton, good mixed fishing.' };
-  if(v < 0.45) return { label:'Green', cls:'y', tip:'Productive water — bait likely; fish kelp edges and chlorophyll fronts.' };
-  if(v < 0.8) return { label:'Very green', cls:'y', tip:'Plankton-rich — great for yt/halibut near edges; diving viz reduced.' };
-  return { label:'Bloom', cls:'r', tip:'Dense chlorophyll — bait balls common but murky; troll the blue-water edge.' };
+function chlLevel(v, audience){
+  const mode = audience === 'dive' || audience === 'fish' ? audience : 'both';
+  if(v == null || !isFinite(v)){
+    return { label:'No data', cls:'', tip:'Cloud/mask or coastal gap — read map color nearby.' };
+  }
+  if(v < 0.12){
+    const fish = 'Blue water — pelagics may run deeper; fish subtle color breaks if you find a green filament.';
+    const dive = 'Ultra-clear blue water — diving viz often excellent offshore of any green filaments.';
+    return { label:'Ultra-clear', cls:'a', tip: mode === 'dive' ? dive : mode === 'fish' ? fish : fish + ' ' + dive };
+  }
+  if(v < 0.25){
+    const fish = 'Typical SoCal offshore — moderate plankton, good mixed fishing on kelp and structure.';
+    const dive = 'Clear blue-green — workable diving viz for SoCal; still check swell and wind history.';
+    return { label:'Clear blue-green', cls:'g', tip: mode === 'dive' ? dive : mode === 'fish' ? fish : fish };
+  }
+  if(v < 0.45){
+    const fish = 'Productive water — bait likely; fish kelp edges and chlorophyll fronts.';
+    const dive = 'Green water — fish activity often good, but clarity is reduced vs blue patches.';
+    return { label:'Green', cls:'y', tip: mode === 'dive' ? dive : mode === 'fish' ? fish : fish };
+  }
+  if(v < 0.8){
+    const fish = 'Plankton-rich — strong bait signal; work yt/halibut near green-to-blue edges.';
+    const dive = 'Plankton-rich — diving viz reduced in the greenest patches; prefer blue pockets.';
+    return { label:'Very green', cls:'y', tip: mode === 'dive' ? dive : mode === 'fish' ? fish : fish };
+  }
+  const fish = 'Dense chlorophyll — bait balls common in the soup; troll the blue-water edge.';
+  const dive = 'Bloom conditions — expect murky diving in green patches; hunt clear blue water instead.';
+  return { label:'Bloom', cls:'r', tip: mode === 'dive' ? dive : mode === 'fish' ? fish : fish };
 }
 
 /**
- * Shared "Marine life & fishing" takeaway used by Plankton tab + Overview.
- * Same conclusions as the regional signal / map-read path in chlMarineLifeHtml.
+ * Plankton takeaway copy. audience: 'fish' | 'dive' | 'both'
+ * Fishing surfaces use 'fish'; dive tab / dive lines use 'dive';
+ * Plankton/Overview regional signal prefers 'fish' (dive has its own section).
  */
-function chlMarineTakeawayBrief(samples){
+function chlMarineTakeawayBrief(samples, audience){
+  const mode = audience === 'dive' || audience === 'both' ? audience : 'fish';
   const valid = (samples || []).filter(s => s.val != null);
   const avg = valid.length ? valid.reduce((a, s) => a + s.val, 0) / valid.length : null;
   const maxS = valid.length ? valid.reduce((a, b) => a.val > b.val ? a : b) : null;
-  const lv = chlLevel(avg);
+  const lv = chlLevel(avg, mode === 'both' ? 'fish' : mode);
   const isLateJuly = new Date().getUTCMonth() === 6;
+  const densest = maxS ? maxS.zone.name : '';
 
   if(avg != null){
     if(avg >= 0.8){
+      const fish = 'Notable bloom signal (avg ~'+avg.toFixed(2)+' mg m⁻³'+(densest ? ', densest at '+densest : '')+
+        ') — fish green-to-blue edges; skip the thickest green soup.';
+      const dive = 'Notable bloom signal (avg ~'+avg.toFixed(2)+' mg m⁻³'+(densest ? ', densest at '+densest : '')+
+        ') — expect murky diving in green patches; prefer blue-water pockets.';
       return {
         cls: 'tk-warn',
-        text: 'Notable bloom signal (avg ~'+avg.toFixed(2)+' mg m⁻³'+(maxS ? ', densest at '+maxS.zone.name : '')+
-          ') — fish green-to-blue edges; expect murky diving in green patches.'
+        text: mode === 'dive' ? dive : mode === 'both' ? fish + ' ' + dive : fish
       };
     }
     if(avg >= 0.45){
+      const fish = 'Elevated plankton ('+lv.label+', avg ~'+avg.toFixed(2)+')'+
+        (densest ? ' — bait likely near '+densest : '')+
+        '; troll color breaks SW of PV / Catalina.';
+      const dive = 'Elevated plankton ('+lv.label+', avg ~'+avg.toFixed(2)+')'+
+        (densest ? ' near '+densest : '')+
+        ' — diving viz reduced in green water; hunt clearer blue patches.';
       return {
         cls: 'tk-fair',
-        text: 'Elevated plankton ('+lv.label+', avg ~'+avg.toFixed(2)+')'+(maxS ? ' — bait likely near '+maxS.zone.name : '')+
-          '; troll color breaks SW of PV / Catalina; diving viz reduced in green water.'
+        text: mode === 'dive' ? dive : mode === 'both' ? fish + ' ' + dive : fish
       };
     }
     if(avg >= 0.2){
+      const fish = 'Moderate productivity ('+lv.label+', avg ~'+avg.toFixed(2)+
+        ') — classic SoCal summer bait; fish kelp edges and chlorophyll fronts at PV / SM Bay.';
+      const dive = 'Moderate productivity ('+lv.label+', avg ~'+avg.toFixed(2)+
+        ') — diving viz often workable outside the greenest filaments; still prefer blue pockets for clarity.';
       return {
         cls: '',
-        text: 'Moderate productivity ('+lv.label+', avg ~'+avg.toFixed(2)+
-          ') — classic SoCal summer bait; fish kelp edges and chlorophyll fronts at PV / SM Bay.'
+        text: mode === 'dive' ? dive : mode === 'both' ? fish + ' ' + dive : fish
       };
     }
+    const fish = 'Mostly clear blue water (avg ~'+avg.toFixed(2)+
+      ' mg m⁻³) — pelagics may run deeper; fish subtle color breaks if bait shows.';
+    const dive = 'Mostly clear blue water (avg ~'+avg.toFixed(2)+
+      ' mg m⁻³) — diving viz often better offshore of any remaining green patches.';
     return {
       cls: 'tk-good',
-      text: 'Mostly clear blue water (avg ~'+avg.toFixed(2)+
-        ' mg m⁻³) — pelagics may run deeper; diving viz often better offshore of green patches.'
+      text: mode === 'dive' ? dive : mode === 'both' ? fish + ' ' + dive : fish
     };
   }
 
-  // No point samples (CORS / cloud / NASA-only) — same intel Plankton marine-life card shows.
-  let text = 'Greener water = more phytoplankton → forage (anchovy, sardine, krill); predators stack on green-to-blue fronts. From King Harbor: SM Bay/PV kelp for calico & yt; Catalina Channel for pelagics; prefer blue patches for dive viz.';
+  // No point samples — audience-specific map-read guidance.
+  let fish = 'Greener water = more phytoplankton → forage (anchovy, sardine, krill); predators stack on green-to-blue fronts. From King Harbor: SM Bay/PV kelp for calico & yt; Catalina Channel for pelagics.';
+  let dive = 'Greener map pixels often mean reduced diving viz; prefer blue-water patches for clarity (Catalina front side vs backside plumes).';
   if(isLateJuly){
-    text = 'Late July LA offshore: whales often feed on krill along green filaments in SM Basin; dolphins patrol Catalina Channel; sea lions follow bait on San Pedro shelf. '+text;
+    fish = 'Late July LA offshore: whales often feed on krill along green filaments in SM Basin; dolphins patrol Catalina Channel; sea lions follow bait on San Pedro shelf. '+fish;
   }
-  return { cls: 'tk-fair', text };
+  return {
+    cls: 'tk-fair',
+    text: mode === 'dive' ? dive : mode === 'both' ? fish + ' ' + dive : fish
+  };
 }
 
 function chlStoreMarineTakeaway(samples, time){
-  const brief = chlMarineTakeawayBrief(samples);
+  const fish = chlMarineTakeawayBrief(samples, 'fish');
+  const dive = chlMarineTakeawayBrief(samples, 'dive');
   const hasSamples = (samples || []).some(s => s.val != null);
   // Keep a fresh sample-based takeaway if this pass has no point values (CORS / NASA-only).
   if(!hasSamples && chlLastMarineTakeaway?.hasSamples &&
       (Date.now() - chlLastMarineTakeaway.at < OV_TAKEAWAYS_TTL)){
-    return { cls: chlLastMarineTakeaway.cls, text: chlLastMarineTakeaway.text };
+    return {
+      cls: chlLastMarineTakeaway.cls,
+      text: chlLastMarineTakeaway.fishText || chlLastMarineTakeaway.text,
+      fishText: chlLastMarineTakeaway.fishText || chlLastMarineTakeaway.text,
+      diveText: chlLastMarineTakeaway.diveText || ''
+    };
   }
   chlLastMarineTakeaway = {
     at: Date.now(),
     time: time || null,
     hasSamples,
-    cls: brief.cls,
-    text: brief.text
+    cls: fish.cls,
+    text: fish.text,
+    fishText: fish.text,
+    diveText: dive.text
   };
-  return brief;
+  return { cls: fish.cls, text: fish.text, fishText: fish.text, diveText: dive.text };
 }
 
 async function fetchChlMeta(force){
@@ -14740,8 +14795,8 @@ function chlMarineLifeHtml(time, src, samples){
   const isLateJuly = new Date().getUTCMonth() === 6;
   let html = '<div class="chl-marine-h">What this means for marine life</div>';
   if(avg != null){
-    const brief = chlMarineTakeawayBrief(samples);
-    html += '<p class="chl-marine-item"><strong>Regional signal:</strong> '+esc(brief.text)+'</p>';
+    const fishBrief = chlMarineTakeawayBrief(samples, 'fish');
+    html += '<p class="chl-marine-item"><strong>Fishing:</strong> '+esc(fishBrief.text)+'</p>';
     if(maxS) html += '<p class="chl-marine-item"><strong>Greenest zone:</strong> '+esc(maxS.zone.name)+' ('+maxS.val.toFixed(2)+' mg m⁻³) — prioritize bait/predator edges here.</p>';
   } else {
     html += '<p class="chl-marine-item"><strong>Map read:</strong> Greener pixels = more phytoplankton → more forage fish (anchovy, sardine, krill). Predators (yellowtail, tuna, whales, dolphins) stack on chlorophyll <em>fronts</em> where green meets blue.</p>';
@@ -14751,7 +14806,8 @@ function chlMarineLifeHtml(time, src, samples){
     html += '<p class="chl-marine-item"><strong>Late July LA offshore:</strong> Blue & fin whales feed in Santa Monica Basin when krill aggregate on green filaments. Common & bottlenose dolphins patrol Catalina Channel. Sea lions follow bait along San Pedro shelf.</p>';
   }
   html += '<p class="chl-marine-item"><strong>From King Harbor:</strong> Run offshore toward greener water on the map — SM Bay/PV kelp edges for calico & yt; Catalina Channel for pelagics; San Pedro shelf for rockfish over structure.</p>';
-  html += '<p class="chl-marine-item"><strong>Diving:</strong> Prefer blue-water patches on the map for viz; green water can mean great fish activity but reduced clarity — check front side of Catalina vs backside plumes.</p>';
+  const diveBrief = chlMarineTakeawayBrief(samples, 'dive');
+  html += '<p class="chl-marine-item"><strong>Diving:</strong> '+esc(diveBrief.text)+'</p>';
   if(src.id === 'blend') html += '<p class="chl-marine-item"><strong>Blended view:</strong> NOAA shows broad 4 km patterns; NASA adds 1 km detail — overlap confirms persistent blooms vs one-day noise.</p>';
   return html;
 }
@@ -14809,14 +14865,14 @@ async function renderChlIntel(time, datesFallback){
   }
   summary += '<p class="chl-summary" style="font-size:13px">Kelp edges (PV · SM Bay · Catalina): moderate green (0.2–0.5) often means bait over structure. San Pedro shelf: check filaments wrapping around the peninsula. Catalina channel: troll color breaks SW of the island.</p>';
   const zones = samples.map(({ zone, val }) => {
-    const lv = chlLevel(val);
+    const fishLv = chlLevel(val, 'fish');
+    const diveLv = chlLevel(val, 'dive');
     const valTxt = val != null ? val.toFixed(3) + ' mg m⁻³' : 'no pixel';
     return '<div class="chl-intel-zone">'+
       '<b>'+esc(zone.name)+'</b>'+
-      '<div class="meta"><span class="chip '+lv.cls+'">'+esc(lv.label)+'</span> · '+esc(valTxt)+'</div>'+
-      '<div class="tip"><strong>Fish:</strong> '+esc(zone.fish)+'</div>'+
-      '<div class="tip" style="margin-top:4px"><strong>Dive:</strong> '+esc(zone.dive)+'</div>'+
-      '<div class="tip" style="margin-top:4px;color:var(--ink3)">'+esc(lv.tip)+'</div>'+
+      '<div class="meta"><span class="chip '+fishLv.cls+'">'+esc(fishLv.label)+'</span> · '+esc(valTxt)+'</div>'+
+      '<div class="tip"><strong>Fish:</strong> '+esc(zone.fish)+' — '+esc(fishLv.tip)+'</div>'+
+      '<div class="tip" style="margin-top:4px"><strong>Dive:</strong> '+esc(zone.dive)+' — '+esc(diveLv.tip)+'</div>'+
     '</div>';
   }).join('');
   box.innerHTML = summary + chlMarineLifeHtml(time, src, samples) + zones;
