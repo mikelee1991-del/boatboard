@@ -6,13 +6,19 @@
 (function (global) {
   'use strict';
 
-  /** Prefer matching longer keys first when normalizing free-text species chips. */
+  /**
+   * Prefer matching longer keys first when normalizing free-text species chips.
+   * table: 1–5 SoCal keep/table preference (culinary favor) — does NOT change bite %.
+   *   5 prime table · 4 good table · 3 fair table · 2 sport/smoke · 1 sport mostly
+   */
   var SPECIES_PROFILES = [
     {
       id: 'yellowtail',
       match: /\byellowtail\b|\byt\b|amberjack/i,
       label: 'Yellowtail',
       depth: 'mixed',
+      table: 5,
+      tableLabel: 'prime table',
       sstIdeal: [66, 74],
       sstOk: [63, 78],
       chl: 'edge',
@@ -27,6 +33,8 @@
       match: /\bbonito\b/i,
       label: 'Bonito',
       depth: 'surface',
+      table: 2,
+      tableLabel: 'sport / smoke',
       sstIdeal: [64, 72],
       sstOk: [60, 76],
       chl: 'edge',
@@ -41,6 +49,8 @@
       match: /\bbarracuda\b|\bcuda\b/i,
       label: 'Barracuda',
       depth: 'surface',
+      table: 1,
+      tableLabel: 'sport mostly',
       sstIdeal: [63, 72],
       sstOk: [58, 76],
       chl: 'moderate',
@@ -55,6 +65,8 @@
       match: /\bcalico\b|\bkelp bass\b/i,
       label: 'Calico bass',
       depth: 'mid',
+      table: 4,
+      tableLabel: 'good table',
       sstIdeal: [60, 70],
       sstOk: [55, 74],
       chl: 'moderate',
@@ -69,6 +81,8 @@
       match: /\bsand bass\b|\bsandbass\b/i,
       label: 'Sand bass',
       depth: 'bottom',
+      table: 3,
+      tableLabel: 'fair table',
       sstIdeal: [58, 70],
       sstOk: [54, 74],
       chl: 'green',
@@ -83,6 +97,8 @@
       match: /\bhalibut\b/i,
       label: 'Halibut',
       depth: 'bottom',
+      table: 5,
+      tableLabel: 'prime table',
       sstIdeal: [58, 68],
       sstOk: [54, 72],
       chl: 'green',
@@ -97,6 +113,8 @@
       match: /\brockfish\b|\blingcod\b|\bsculpin\b|\bsheephead\b/i,
       label: 'Rockfish / bottom',
       depth: 'bottom',
+      table: 4,
+      tableLabel: 'good table',
       sstIdeal: [52, 64],
       sstOk: [48, 70],
       chl: 'any',
@@ -111,6 +129,8 @@
       match: /\bwhite\s*seabass\b|\bwsb\b/i,
       label: 'White seabass',
       depth: 'mid',
+      table: 5,
+      tableLabel: 'prime table',
       sstIdeal: [58, 66],
       sstOk: [54, 70],
       chl: 'green',
@@ -121,6 +141,28 @@
       noteCool: 'WSB like cooler green water — dawn/dusk priority'
     }
   ];
+
+  /** Map table 1–5 → ranking weight. Bite % stays untouched; only priority/order uses this. */
+  function tableRankWeight(table) {
+    var t = table != null ? +table : 3;
+    if (!isFinite(t)) t = 3;
+    t = clamp(t, 1, 5);
+    return 0.72 + 0.08 * t; /* 1→0.80 · 3→0.96 · 5→1.12 */
+  }
+
+  function tableLabelFor(table) {
+    if (table >= 5) return 'prime table';
+    if (table >= 4) return 'good table';
+    if (table >= 3) return 'fair table';
+    if (table >= 2) return 'sport / smoke';
+    return 'sport mostly';
+  }
+
+  /** Bite likelihood × table weight — for ranking keepers when bite odds are close. */
+  function targetPriority(pct, table) {
+    if (pct == null || !isFinite(+pct)) return -1;
+    return (+pct) * tableRankWeight(table);
+  }
 
   function clamp(n, lo, hi) {
     n = +n;
@@ -400,6 +442,8 @@
 
     var pct = Math.round(clamp(score, 8, 96));
     var label = pct >= 72 ? 'likely' : pct >= 52 ? 'fair' : pct >= 35 ? 'slim' : 'poor';
+    var table = prof.table != null ? prof.table : 3;
+    var tableLab = prof.tableLabel || tableLabelFor(table);
     var bits = [];
     bits.push(period);
     if (sst.note) bits.push(sst.note);
@@ -413,9 +457,24 @@
       pct: pct,
       label: label,
       depth: prof.depth,
-      why: why + ' · ' + bits.join(', '),
+      table: table,
+      tableLabel: tableLab,
+      priority: targetPriority(pct, table),
+      why: why + ' · ' + bits.join(', ') + ' · ' + tableLab,
       uncertain: ocean.sstF == null && !ocean.hasChl
     };
+  }
+
+  function sortByKeeperPriority(rows) {
+    return (rows || []).slice().sort(function (a, b) {
+      var pa = a.priority != null ? a.priority : targetPriority(a.pct, a.table);
+      var pb = b.priority != null ? b.priority : targetPriority(b.pct, b.table);
+      if (pb !== pa) return pb - pa;
+      var ta = a.table != null ? a.table : 0;
+      var tb = b.table != null ? b.table : 0;
+      if (tb !== ta) return tb - ta;
+      return (b.pct == null ? -1 : b.pct) - (a.pct == null ? -1 : a.pct);
+    });
   }
 
   function speciesLikelihoodForSpot(spot, ctx, oceanIn) {
@@ -430,12 +489,7 @@
       seen[key] = true;
       out.push(row);
     }
-    out.sort(function (a, b) {
-      var pa = a.pct == null ? -1 : a.pct;
-      var pb = b.pct == null ? -1 : b.pct;
-      return pb - pa;
-    });
-    return out;
+    return sortByKeeperPriority(out);
   }
 
   /** Boat-centric / multi-spot aggregate when no mark is selected. */
@@ -449,23 +503,19 @@
       for (var j = 0; j < rows.length; j++) {
         var r = rows[j];
         var key = r.id || r.species;
-        if (!bag[key] || (r.pct != null && (bag[key].pct == null || r.pct > bag[key].pct))) {
+        if (!bag[key] || (r.priority != null && (bag[key].priority == null || r.priority > bag[key].priority))) {
           bag[key] = r;
         }
       }
     }
     /* Always include common SoCal targets so the panel isn't empty on thin spot lists. */
-    var defaults = ['calico bass', 'sand bass', 'halibut', 'bonito', 'yellowtail', 'rockfish'];
+    var defaults = ['calico bass', 'sand bass', 'halibut', 'bonito', 'yellowtail', 'rockfish', 'white seabass'];
     for (var d = 0; d < defaults.length; d++) {
       var row = speciesBiteLikelihood(defaults[d], ctx, ocean);
       var k = row.id || row.species;
       if (!bag[k]) bag[k] = row;
     }
-    var list = Object.keys(bag).map(function (k) { return bag[k]; });
-    list.sort(function (a, b) {
-      return (b.pct == null ? -1 : b.pct) - (a.pct == null ? -1 : a.pct);
-    });
-    return list.slice(0, 7);
+    return sortByKeeperPriority(Object.keys(bag).map(function (k) { return bag[k]; })).slice(0, 7);
   }
 
   /**
@@ -1030,13 +1080,23 @@
       var pct = r.pct == null ? 0 : r.pct;
       var lab = r.label || '—';
       var col = pct >= 72 ? 'var(--good)' : pct >= 52 ? 'var(--fair)' : 'var(--poor)';
-      html += '<div class="fish-like-row" title="' + esc(r.why || '') + '">' +
-        '<span class="fish-like-name">' + esc(r.species) + '</span>' +
+      var tableLab = r.tableLabel || tableLabelFor(r.table);
+      var tableCls = r.table >= 5 ? 'prime' : r.table >= 4 ? 'good' : r.table >= 3 ? 'fair' : 'sport';
+      var tip = (r.why || '') + (tableLab ? ' · keep/table: ' + tableLab : '');
+      html += '<div class="fish-like-row" title="' + esc(tip) + '">' +
+        '<span class="fish-like-name">' + esc(r.species) +
+        (tableLab ? ' <span class="fish-table-tag fish-table-' + tableCls + '">' + esc(tableLab) + '</span>' : '') +
+        '</span>' +
         '<span class="fish-like-bar"><i style="width:' + pct + '%;background:' + col + '"></i></span>' +
         '<span class="fish-like-pct" style="color:' + col + '">' + (r.pct == null ? '—' : pct + '%') + ' ' + esc(lab) + '</span>' +
         '</div>';
     }
-    if (opts.footnote) html += '<p class="fish-smart-meta">' + esc(opts.footnote) + '</p>';
+    var foot = opts.footnote || '';
+    if (!opts.skipTableFoot) {
+      var keepers = 'Bars = bite likelihood; order leans keep/table preference (prime table rises when odds are close).';
+      foot = foot ? (foot + ' ' + keepers) : keepers;
+    }
+    if (foot) html += '<p class="fish-smart-meta">' + esc(foot) + '</p>';
     html += '</div>';
     return html;
   }
@@ -1248,6 +1308,10 @@
     nearestChlSample: nearestChlSample,
     oceanSiteDelta: oceanSiteDelta,
     oceanBiteDelta: oceanBiteDelta,
+    tableRankWeight: tableRankWeight,
+    tableLabelFor: tableLabelFor,
+    targetPriority: targetPriority,
+    sortByKeeperPriority: sortByKeeperPriority,
     speciesBiteLikelihood: speciesBiteLikelihood,
     speciesLikelihoodForSpot: speciesLikelihoodForSpot,
     speciesLikelihoodPanel: speciesLikelihoodPanel,

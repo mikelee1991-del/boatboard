@@ -525,10 +525,15 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .fish-species-like{margin-top:4px}
 .fish-like-row{display:grid;grid-template-columns:minmax(72px,28%) 1fr minmax(72px,auto);gap:8px;align-items:center;padding:5px 0;border-bottom:1px solid var(--line2);font-size:12px}
 .fish-like-row:last-child{border-bottom:none}
-.fish-like-name{font-weight:600;color:var(--ink);min-width:0}
+.fish-like-name{font-weight:600;color:var(--ink);min-width:0;line-height:1.35}
 .fish-like-bar{height:7px;border-radius:4px;background:var(--line2);overflow:hidden}
 .fish-like-bar i{display:block;height:100%;border-radius:4px;min-width:2px}
 .fish-like-pct{font-family:var(--mono);font-size:10px;text-align:right;white-space:nowrap;color:var(--ink3)}
+.fish-table-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:650;letter-spacing:.02em;vertical-align:middle;text-transform:lowercase;border:1px solid var(--line2);color:var(--ink2);background:rgba(255,255,255,.04)}
+.fish-table-tag.fish-table-prime{color:#d8f5e4;border-color:rgba(61,255,154,.35);background:rgba(61,255,154,.1)}
+.fish-table-tag.fish-table-good{color:#e7f0ff;border-color:rgba(86,212,233,.35);background:rgba(86,212,233,.1)}
+.fish-table-tag.fish-table-fair{color:var(--ink2);border-color:var(--line2)}
+.fish-table-tag.fish-table-sport{color:var(--ink3);opacity:.9}
 .fish-pick{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line2);font-size:13px;cursor:pointer;touch-action:manipulation}
 .fish-pick:last-child{border-bottom:none}
 .fish-pick:hover,.fish-pick:focus{background:var(--bg2);margin:0 -12px;padding-left:12px;padding-right:12px;outline:none}
@@ -9328,7 +9333,7 @@ let _fishOceanPromise = null;
 function ensureFishSmart(){
   if(window.BoatFishSmart) return Promise.resolve(window.BoatFishSmart);
   if(_fishSmartPromise) return _fishSmartPromise;
-  _fishSmartPromise = loadScript('fish-smart.js?v=5').then(()=>{
+  _fishSmartPromise = loadScript('fish-smart.js?v=6').then(()=>{
     if(!window.BoatFishSmart) throw new Error('BoatFishSmart missing');
     return window.BoatFishSmart;
   }).catch(e=>{ _fishSmartPromise = null; throw e; });
@@ -9760,9 +9765,14 @@ function speciesLikelihoodSeries(opts){
     : { sourceNotes: [], chlSamples: [], hasChl: false, hasSst: false };
   const bags = names.map(name => {
     const prof = window.BoatFishSmart?.profileForSpecies?.(name);
+    const table = prof && prof.table != null ? prof.table : 3;
+    const tableLabel = (prof && prof.tableLabel) || (BoatFishSmart.tableLabelFor
+      ? BoatFishSmart.tableLabelFor(table) : '');
     return {
       id: (prof && prof.id) || String(name).toLowerCase().replace(/\s+/g, ''),
       name: (prof && prof.label) || name,
+      table,
+      tableLabel,
       pts: []
     };
   });
@@ -9788,13 +9798,19 @@ function speciesLikelihoodSeries(opts){
       bags[i].pts.push({ t, v: row.pct != null ? row.pct : 0 });
     });
   }
-  /* Rank series by likelihood at plan time (else now) so legend #1 is the leading species. */
+  /* Legend order: bite × table preference at PLAN (Y values stay pure likelihood). */
   const rankAt = (opts.planMs != null && isFinite(+opts.planMs)) ? +opts.planMs
     : (opts.nowMs != null ? opts.nowMs : Date.now());
+  const prio = BoatFishSmart.targetPriority
+    ? (pct, table) => BoatFishSmart.targetPriority(pct, table)
+    : (pct, table) => (pct == null ? -1 : pct * (0.72 + 0.08 * (table || 3)));
   bags.sort((a, b) => {
     const va = a.pts.reduce((best, p) => Math.abs(p.t - rankAt) < Math.abs(best.t - rankAt) ? p : best, a.pts[0]);
     const vb = b.pts.reduce((best, p) => Math.abs(p.t - rankAt) < Math.abs(best.t - rankAt) ? p : best, b.pts[0]);
-    return (vb?.v || 0) - (va?.v || 0);
+    const pa = prio(va?.v, a.table);
+    const pb = prio(vb?.v, b.table);
+    if(pb !== pa) return pb - pa;
+    return (b.table || 0) - (a.table || 0);
   });
   return { series: bags, tMin: win.tMin, tMax: win.tMax, coverage: win.coverage };
 }
@@ -9821,7 +9837,7 @@ function renderSpeciesLikelihoodChart(){
     const colors = api.MULTI_SERIES_COLORS || [];
     const series = pack.series.map((s, i) => ({
       id: s.id,
-      name: s.name,
+      name: s.name + (s.tableLabel ? ' · ' + s.tableLabel : ''),
       color: colors[i] || undefined,
       pts: s.pts
     }));
@@ -9831,6 +9847,7 @@ function renderSpeciesLikelihoodChart(){
     const chlNote = fishOceanCache?.hasChl
       ? 'Plankton is a regional snapshot (not hourly) — same as the bite chart.'
       : 'Plankton not loaded yet — curves lean on time of day, tide/solunar, and Open-Meteo SST/wind/seas.';
+    const keepers = pack.series.filter(s => s.table >= 4).slice(0, 3).map(s => s.name).join(', ');
     api.renderMultiScoreChart({
       host,
       nowEl: $('fishSpeciesChartNow'),
@@ -9853,9 +9870,10 @@ function renderSpeciesLikelihoodChart(){
         setFishPlanWhen(new Date(+ms));
         try{ renderFishing(); }catch(e){ console.error(e); }
       },
-      note: 'Y-axis: species bite likelihood 0–100 (BoatFishSmart — time of day, SST fit, solunar/tide, wind/seas; '+
-        chlNote + ' Same −'+TIDE_CHART_BACK_HR+' h / +'+TIDE_CHART_FWD_HR+
-        ' h window as the bite index. Legend ordered by likelihood at PLAN. Drag PLAN to retarget.',
+      note: 'Y-axis: bite likelihood 0–100 (not altered by table preference). '+
+        chlNote + ' Legend order blends bite × SoCal keep/table favor (YT / WSB / hali / calico rise when odds are close)' +
+        (keepers ? ' — keepers lean: ' + keepers : '') +
+        '. Same −'+TIDE_CHART_BACK_HR+' h / +'+TIDE_CHART_FWD_HR+' h window as the bite index. Drag PLAN to retarget.',
       CHART, WX_C, HR, clamp, f0, f1, esc, fmtDayTime
     });
   };
