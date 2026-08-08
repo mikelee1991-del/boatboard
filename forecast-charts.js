@@ -428,8 +428,258 @@
     }
   }
 
+  const MULTI_SERIES_COLORS = [
+    '#56d4e9', '#3dff9a', '#ffd966', '#ff8844', '#f0a0c0', '#a8d4ff', '#c4e86a'
+  ];
+
+  /**
+   * Multi-location score-over-time chart (top plan picks).
+   * @param {object} opts
+   * @param {{id?:string,name:string,color?:string,pts:{t:number,v:number}[]}[]} opts.series
+   * Same highlight / day-night / PLAN-drag options as renderScoreChart.
+   */
+  function renderMultiScoreChart(opts) {
+    opts = opts || {};
+    const $ = pick(opts, '$', global.$) || (id => (typeof id === 'string' ? document.getElementById(id) : id));
+    const host = typeof opts.host === 'string' ? $(opts.host) : opts.host;
+    const nowEl = typeof opts.nowEl === 'string' ? $(opts.nowEl) : opts.nowEl;
+    const metaEl = typeof opts.metaEl === 'string' ? $(opts.metaEl) : opts.metaEl;
+    const noteEl = typeof opts.noteEl === 'string' ? $(opts.noteEl) : opts.noteEl;
+    if (!host) return;
+
+    const clamp = pick(opts, 'clamp', (v, a, b) => Math.max(a, Math.min(b, v)));
+    const f0 = pick(opts, 'f0', v => (v == null || !isFinite(v) ? '—' : String(Math.round(v))));
+    const esc = pick(opts, 'esc', s => String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
+    const fmtDayTime = pick(opts, 'fmtDayTime', t => {
+      try { return new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' }); }
+      catch (e) { return String(t); }
+    });
+    const HR = pick(opts, 'HR', 3600000);
+    const CHART = pick(opts, 'CHART', {
+      now: '#e8ecff', good: '#3dff9a', fair: '#ffd966', poor: '#ff6644', muted: '#91a0b0'
+    });
+    const WX_C = pick(opts, 'WX_C', {
+      day: 'rgba(24,34,48,0.42)', night: 'rgba(4,8,14,0.72)', sunMarker: '#91a0b0'
+    });
+
+    host.classList.remove('score-plan-interactive', 'score-plan-dragging');
+
+    const seriesIn = (opts.series || []).map((s, i) => ({
+      id: s.id != null ? String(s.id) : String(i),
+      name: s.name || ('Series ' + (i + 1)),
+      color: s.color || MULTI_SERIES_COLORS[i % MULTI_SERIES_COLORS.length],
+      pts: (s.pts || []).filter(p => p && isFinite(p.t) && isFinite(p.v))
+        .slice()
+        .sort((a, b) => a.t - b.t)
+    })).filter(s => s.pts.length >= 2);
+
+    if (!seriesIn.length) {
+      host.innerHTML = '<div class="skel">Need ranked locations to compare scores over time</div>';
+      if (nowEl) nowEl.textContent = '—';
+      if (metaEl) metaEl.innerHTML = '';
+      if (noteEl && opts.note) noteEl.textContent = opts.note;
+      return;
+    }
+
+    let dataMin = Infinity, dataMax = -Infinity;
+    seriesIn.forEach(s => {
+      if (s.pts[0].t < dataMin) dataMin = s.pts[0].t;
+      if (s.pts[s.pts.length - 1].t > dataMax) dataMax = s.pts[s.pts.length - 1].t;
+    });
+    const tMin = opts.tMin != null ? Math.max(opts.tMin, dataMin) : dataMin;
+    const tMax = opts.tMax != null ? Math.min(opts.tMax, dataMax) : dataMax;
+    if (!(tMax > tMin)) {
+      host.innerHTML = '<div class="skel">Forecast does not cover chart window</div>';
+      return;
+    }
+
+    function valueAtSeries(pts, t) {
+      let v = null;
+      for (let i = 0; i < pts.length - 1; i++) {
+        if (t >= pts[i].t && t <= pts[i + 1].t) {
+          const r = (t - pts[i].t) / (pts[i + 1].t - pts[i].t || 1);
+          v = pts[i].v + r * (pts[i + 1].v - pts[i].v);
+          break;
+        }
+      }
+      if (v == null) {
+        let best = pts[0], bd = Math.abs(pts[0].t - t);
+        for (const p of pts) {
+          const d = Math.abs(p.t - t);
+          if (d < bd) { best = p; bd = d; }
+        }
+        if (bd <= 1.5 * HR) v = best.v;
+      }
+      return v;
+    }
+    /* PLAN / NOW use the lead (#1) series for the marker Y position */
+    function valueAt(t) {
+      return valueAtSeries(seriesIn[0].pts, t);
+    }
+
+    const now = opts.nowMs != null ? opts.nowMs : Date.now();
+    const nowV = valueAt(now);
+    if (nowEl) {
+      const bits = seriesIn.slice(0, 3).map((s, i) => {
+        const v = valueAtSeries(s.pts, now);
+        return v != null ? ('#' + (i + 1) + ' ' + f0(v)) : null;
+      }).filter(Boolean);
+      nowEl.textContent = bits.length ? ('Now ' + bits.join(' · ')) : '—';
+    }
+
+    const W = 860, H = 300, padL = 46, padR = 14, padT = 48, padB = 52;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const vMin = 0, vMax = 100;
+    const xS = t => padL + (t - tMin) / (tMax - tMin) * plotW;
+    const yS = v => padT + plotH - (v - vMin) / (vMax - vMin) * plotH;
+    const yLabel = opts.yLabel || 'score';
+    const interactive = typeof opts.onHighlightChange === 'function';
+    const goodAt = opts.goodAt != null ? opts.goodAt : 82;
+    const fairAt = opts.fairAt != null ? opts.fairAt : 55;
+
+    let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">';
+
+    const daily = opts.daily;
+    const dayNight = opts.dayNightBands || pick(opts, 'wxChartDayNightBands', null);
+    const sunMark = opts.sunMarkers || pick(opts, 'wxChartSunMarkers', null);
+    if (typeof dayNight === 'function' && daily) {
+      svg = dayNight(svg, daily, xS, padT, padT + plotH, tMin, tMax);
+    } else if (daily) {
+      svg += '<rect x="' + xS(tMin).toFixed(1) + '" y="' + padT + '" width="' + (xS(tMax) - xS(tMin)).toFixed(1) +
+        '" height="' + plotH + '" fill="' + WX_C.day + '" opacity="0.35" pointer-events="none"/>';
+    }
+    if (typeof sunMark === 'function' && daily) {
+      svg = sunMark(svg, daily, xS, padT, padT + plotH, tMin, tMax);
+    }
+
+    [[goodAt, CHART.good], [fairAt, CHART.fair]].forEach(([th, col]) => {
+      const y = yS(th);
+      svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y +
+        '" stroke="' + col + '" stroke-width="1" stroke-dasharray="4 5" opacity="0.45" pointer-events="none"/>';
+    });
+
+    for (let v = 0; v <= 100; v += 25) {
+      const y = yS(v);
+      svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y +
+        '" stroke="var(--line2)" stroke-width="1" pointer-events="none"/>';
+      svg += '<text x="' + (padL - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="var(--ink3)" font-weight="500" pointer-events="none">' + v + '</text>';
+    }
+
+    const tickMs = 24 * HR;
+    let tick = Math.ceil(tMin / tickMs) * tickMs;
+    while (tick <= tMax) {
+      const x = xS(tick);
+      svg += '<line x1="' + x + '" y1="' + padT + '" x2="' + x + '" y2="' + (padT + plotH) +
+        '" stroke="var(--line2)" stroke-width="1" stroke-dasharray="3 4" pointer-events="none"/>';
+      svg += '<text x="' + x + '" y="' + (H - 22) + '" text-anchor="middle" font-size="11" fill="var(--ink3)" font-weight="500" pointer-events="none">' +
+        esc(fmtDayTime(new Date(tick))) + '</text>';
+      tick += tickMs;
+    }
+
+    /* Draw #1 last so it sits on top */
+    const drawOrder = seriesIn.map((_, i) => i).reverse();
+    drawOrder.forEach(i => {
+      const s = seriesIn[i];
+      const winPts = s.pts.filter(p => p.t >= tMin && p.t <= tMax);
+      if (winPts.length < 2) return;
+      const line = winPts.map((p, j) => (j ? 'L' : 'M') + xS(p.t).toFixed(1) + ',' + yS(p.v).toFixed(1)).join(' ');
+      const sw = i === 0 ? 2.8 : 2;
+      const op = i === 0 ? '1' : '0.88';
+      svg += '<path d="' + line + '" fill="none" stroke="' + s.color + '" stroke-width="' + sw +
+        '" stroke-linejoin="round" stroke-linecap="round" opacity="' + op + '" pointer-events="none"/>';
+      /* End-cap + rank badge near the right edge */
+      const last = winPts[winPts.length - 1];
+      const lx = Math.min(xS(last.t), W - padR - 2);
+      const ly = yS(last.v);
+      svg += '<circle cx="' + lx.toFixed(1) + '" cy="' + ly.toFixed(1) + '" r="' + (i === 0 ? 4.5 : 3.5) +
+        '" fill="' + s.color + '" stroke="var(--card)" stroke-width="1.5" pointer-events="none"/>';
+    });
+
+    if (now >= tMin && now <= tMax && nowV != null) {
+      const nx = xS(now);
+      svg += '<line x1="' + nx + '" y1="' + padT + '" x2="' + nx + '" y2="' + (padT + plotH) +
+        '" stroke="' + CHART.now + '" stroke-width="2" opacity="0.95" pointer-events="none"/>';
+      svg += '<text x="' + nx + '" y="' + (padT - 4) + '" text-anchor="middle" font-size="11" fill="' + CHART.now +
+        '" font-weight="bold" pointer-events="none">NOW</text>';
+    }
+
+    const hlRaw = opts.highlightMs;
+    const hl = (hlRaw != null && isFinite(+hlRaw)) ? +hlRaw : null;
+    const hlLabel = opts.highlightLabel || 'PLAN';
+    const hlColor = opts.highlightColor || CHART.feel || '#56d4e9';
+    let hlShown = false;
+    if (hl != null && hl >= tMin && hl <= tMax) {
+      let hlV = valueAt(hl);
+      if (hlV == null) hlV = seriesIn[0].pts[0].v;
+      hlShown = true;
+      const hx = xS(hl), hy = yS(hlV);
+      let labelY = padT - 6;
+      if (now >= tMin && now <= tMax && Math.abs(hx - xS(now)) < 36) labelY = padT - 20;
+      svg += '<g class="score-plan-cursor" data-t="' + hl + '" aria-hidden="true">';
+      svg += '<line x1="' + hx + '" y1="' + padT + '" x2="' + hx + '" y2="' + (padT + plotH) +
+        '" stroke="' + hlColor + '" stroke-width="2.5" stroke-dasharray="7 4" opacity="0.95" pointer-events="none"/>';
+      svg += '<circle cx="' + hx + '" cy="' + hy + '" r="6" fill="' + hlColor + '" stroke="var(--card)" stroke-width="2" pointer-events="none"/>';
+      svg += '<text x="' + hx + '" y="' + labelY + '" text-anchor="middle" font-size="11" fill="' + hlColor +
+        '" font-weight="bold" pointer-events="none">' + esc(hlLabel) + '</text>';
+      if (interactive) {
+        svg += '<rect class="score-plan-hit" x="' + (hx - 18).toFixed(1) + '" y="' + padT +
+          '" width="36" height="' + plotH + '" fill="' + hlColor + '" fill-opacity="0.001" stroke="none"/>';
+      }
+      svg += '</g>';
+    } else if (interactive) {
+      svg += '<g class="score-plan-cursor" aria-hidden="true"></g>';
+    }
+
+    svg += '<text x="' + padL + '" y="' + (padT - 18) + '" font-size="10" fill="var(--ink3)" font-weight="600" pointer-events="none">' + esc(yLabel) + '</text>';
+
+    /* Compact color key along the bottom */
+    let keyX = padL;
+    seriesIn.forEach((s, i) => {
+      const label = '#' + (i + 1) + ' ' + s.name;
+      const short = label.length > 22 ? label.slice(0, 20) + '…' : label;
+      svg += '<rect x="' + keyX + '" y="' + (H - 14) + '" width="10" height="10" rx="2" fill="' + s.color + '" pointer-events="none"/>';
+      svg += '<text x="' + (keyX + 14) + '" y="' + (H - 5) + '" font-size="10" fill="var(--ink2)" font-weight="600" pointer-events="none">' +
+        esc(short) + '</text>';
+      keyX += 12 + short.length * 6.2 + 10;
+    });
+
+    svg += '</svg>';
+    host.innerHTML = svg;
+
+    if (interactive) {
+      attachHighlightInteraction(host, {
+        padL, padR, padT, plotW, plotH, W,
+        tMin, tMax, xS, yS, valueAt, clamp,
+        hlColor, hlLabel, nowMs: now,
+        highlightMs: hlShown ? hl : null,
+        snapMs: opts.snapMs,
+        onHighlightChange: opts.onHighlightChange
+      });
+    }
+
+    if (metaEl) {
+      metaEl.innerHTML =
+        '<span><i style="background:' + CHART.now + '"></i> Now</span>' +
+        (hlShown || interactive
+          ? '<span><i style="background:' + hlColor + '"></i> ' + esc(hlLabel) +
+            (interactive ? ' · drag / tap chart' : '') + '</span>'
+          : '') +
+        seriesIn.map((s, i) =>
+          '<span><i style="background:' + s.color + '"></i> #' + (i + 1) + ' ' + esc(s.name) + '</span>'
+        ).join('') +
+        '<span>' + esc(fmtDayTime(new Date(tMin))) + ' → ' + esc(fmtDayTime(new Date(tMax))) + '</span>';
+    }
+    if (noteEl) {
+      noteEl.textContent = opts.note || '';
+      noteEl.hidden = !opts.note;
+    }
+  }
+
   global.BoatForecastCharts = {
     renderScoreChart,
-    findPeaks
+    renderMultiScoreChart,
+    findPeaks,
+    MULTI_SERIES_COLORS
   };
 })(typeof window !== 'undefined' ? window : globalThis);
