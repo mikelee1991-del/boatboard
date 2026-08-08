@@ -2026,6 +2026,11 @@
         highlightMs,
         highlightLabel: 'PLAN',
         highlightColor: '#56d4e9',
+        onHighlightChange: function (ms) {
+          if (ms == null || !isFinite(+ms)) return;
+          setDiveWhen(new Date(+ms));
+          applyPlanWhenChange();
+        },
         note: diveScoreHonestyNote(site, series.coverage),
         CHART: window.CHART,
         WX_C: window.WX_C,
