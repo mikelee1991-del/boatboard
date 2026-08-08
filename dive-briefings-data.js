@@ -70,8 +70,8 @@ window.__BOAT_DIVE_BRIEFINGS__ = {
   ],
   malaga: [
     { h: 'Why dive here', body: [
-      'Malaga Cove on the north Palos Verdes Peninsula offers an easier entry than Abalone Cove with a protected cove feel and lush Macrocystis kelp a short swim from shore. The cove sits below bluff-top estates at the peninsula\u2019s north end \u2014 less hike than Abalone but similar underwater character of rocky reef, sand patches, and some of the clearest mainland water after calm spells.',
-      'Geology is uplifted sedimentary rock with cobble beach and offshore reef in 15\u201330 ft; kelp holdfasts grip rocky outcrops while sand channels cut between paddies. Dive character is classic PV kelp forest: scenic, fish-rich, and suitable for intermediate shore divers comfortable with cobble entry and moderate surface swims.',
+      'Malaga Cove on the north Palos Verdes Peninsula offers an easier entry than Abalone Cove with a protected cove feel and lush Macrocystis kelp a short swim from shore. Access is the Via Arroyo trail past the private Palos Verdes Beach & Athletic Club; the charted dive target is the reef/kelp west of that beach club, not the trailhead or USGS bay name-point.',
+      'Geology is uplifted sedimentary rock with cobble beach and offshore reef in 15\u201330 ft; kelp holdfasts grip rocky outcrops while sand channels cut between paddies. Dive character is classic PV kelp forest: scenic, fish-rich, and suitable for intermediate shore divers comfortable with cobble entry and a moderate west swim to the main kelp line.',
       'Best conditions follow several days of small swell and light wind; winter west swells can spike despite the cove name. Spring visibility and nudibranch activity peak; summer kelp is thickest. Morning entries before onshore wind are standard local practice.'
     ]},
     { h: 'Navigation, POIs & hazards', body: [

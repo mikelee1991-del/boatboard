@@ -1678,11 +1678,11 @@ function ensureDiveEngine(){
   if(window.BoatDive) return Promise.resolve(window.BoatDive);
   if(_diveEnginePromise) return _diveEnginePromise;
   _diveEnginePromise = loadScript('pin-feature-groups-data.js?v=2').catch(function(){ /* optional */ })
-    .then(()=> loadScript('dive-briefings-data.js?v=2'))
+    .then(()=> loadScript('dive-briefings-data.js?v=3'))
     .then(()=> loadScript('dive-site-intel.js'))
-    .then(()=> loadScript('briefing-synth.js?v=4'))
+    .then(()=> loadScript('briefing-synth.js?v=5'))
     .then(()=> ensureForecastCharts())
-    .then(()=> loadScript('dive-engine.js?v=15'))
+    .then(()=> loadScript('dive-engine.js?v=16'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
       return window.BoatDive;
@@ -8907,10 +8907,10 @@ const FISH_SPOTS = [
     bestTide: 'either', bestTime: 'morning', minSstF: 58 }
 ,
   /* —— Pin-trust yes fish promotes —— */
-  { name: 'Malaga Cove — Palos Verdes (USGS bay) (fish)', lat: 33.8041823, lon: -118.3945183, userTrusted: true,
+  { name: 'Malaga Cove kelp — Palos Verdes (fish)', lat: 33.8042, lon: -118.4015, face: 265, userTrusted: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
-    depth: '30-120 ft', habitat: 'User-trusted water target',
-    tactics: 'Pin-trust review yes — published coords unchanged.',
+    depth: '15-35 ft', habitat: 'Kelp/reef offshore of PV Beach & Athletic Club (W of Via Arroyo trail)',
+    tactics: 'Work kelp edges and reef tops west of the shore entry — not the trail/USGS bay pin.',
     bestTide: 'incoming', bestTime: 'dawn', minSstF: 58 },
   { name: 'Christmas Tree Cove — Palos Verdes (USGS bay) (fish)', lat: 33.7619605, lon: -118.4186847, userTrusted: true,
     species: ['calico bass', 'sand bass', 'bonito', 'rockfish'],
@@ -11198,7 +11198,7 @@ function ensureBriefingSynth(){
     return Promise.resolve(window.__BOAT_BRIEFING_SYNTH__);
   }
   if(_briefingSynthPromise) return _briefingSynthPromise;
-  _briefingSynthPromise = loadScript('briefing-synth.js?v=4')
+  _briefingSynthPromise = loadScript('briefing-synth.js?v=5')
     .then(()=> loadScript('fish-spot-intel.js').catch(()=>{}))
     .then(()=> window.__BOAT_BRIEFING_SYNTH__)
     .catch(e=>{ _briefingSynthPromise = null; throw e; });

@@ -446,7 +446,8 @@
     { id: 'fortyfathomcurve', name: '40 Fathom Curve', lat: 33.7808, lon: -118.4667, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true },
     { id: 'fortysevenfathomridge', name: '47 Fathom Ridge', lat: 33.7878, lon: -118.4903, face: 250, depth: 75, boat: true, kmlImported: true, userTrusted: true },
     /* —— Pin-trust yes dive promotes (coords verbatim) —— */
-    { id: 'pv_malagacove_dive', name: 'Malaga Cove — Palos Verdes (USGS bay)', lat: 33.8041823, lon: -118.3945183, face: 250, depth: 50, boat: true, userTrusted: true },
+    /* Reef/kelp target ~0.35 nm W of Via Arroyo trail / USGS bay centroid — not the beach-club entry pin */
+    { id: 'pv_malagacove_dive', name: 'Malaga Cove kelp — Palos Verdes', lat: 33.8042, lon: -118.4015, face: 265, depth: 30, boat: true, userTrusted: true },
     { id: 'pv_christmastree_dive', name: 'Christmas Tree Cove — Palos Verdes (USGS bay)', lat: 33.7619605, lon: -118.4186847, face: 250, depth: 50, boat: true, userTrusted: true },
     { id: 'pv_flatrock_dive', name: 'Flat Rock — Palos Verdes (USGS bar)', lat: 33.7964044, lon: -118.4103517, face: 250, depth: 50, boat: true, userTrusted: true },
     { id: 'pv_bluffcove_dive', name: 'Bluff Cove — Palos Verdes (USGS bay)', lat: 33.7925156, lon: -118.4089628, face: 250, depth: 50, boat: true, userTrusted: true },

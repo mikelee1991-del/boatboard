@@ -121,6 +121,7 @@
     oc_pinnacles: 'strandsoff',
     danahardbottom: 'strandsoff',
     golfballreef: 'golfball',
+    pv_malagacove_dive: 'malaga',
     merrysreef: 'merrysreef',
     hawthornereef: 'hawthorne',
     thirtysevenfathomspot: 'horseshoe',
