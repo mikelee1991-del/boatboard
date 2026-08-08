@@ -2058,7 +2058,10 @@
     }
   }
 
-  const DIVE_COMPARE_N = 5;
+  function diveCompareCount() {
+    if (typeof window.getPlanCompareCount === 'function') return window.getPlanCompareCount();
+    return 5;
+  }
 
   function renderDiveCompareChart(ranked) {
     const host = $('diveCompareChart');
@@ -2076,7 +2079,12 @@
       if (!userPlanWhen) setDiveWhen(new Date());
       const planWhen = readDiveWhen();
       const highlightMs = planWhen && isFinite(+planWhen) ? +planWhen : null;
-      const top = list.slice(0, DIVE_COMPARE_N);
+      const n = diveCompareCount();
+      const countEl = $('diveCompareCount');
+      const countVal = $('diveCompareCountVal');
+      if (countEl && String(countEl.value) !== String(n)) countEl.value = String(n);
+      if (countVal) countVal.textContent = String(n);
+      const top = list.slice(0, n);
       if (!top.length) {
         host.innerHTML = '<div class="skel">Rank sites to compare scores over time</div>';
         return;
