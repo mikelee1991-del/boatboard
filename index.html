@@ -961,6 +961,13 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <div class="tide-chart-meta" id="biteChartMeta"></div>
           <p id="biteChartNote" class="tide-rate-note"></p>
         </div>
+        <div class="sec">Species likelihood — same window</div>
+        <div class="card tide-chart-card">
+          <h3>Species likelihood over time <span id="fishSpeciesChartNow" class="tide-now-h">—</span></h3>
+          <div id="fishSpeciesChart" class="tide-chart" role="img" aria-label="Species bite likelihood over time"></div>
+          <div class="tide-chart-meta" id="fishSpeciesChartMeta"></div>
+          <p id="fishSpeciesChartNote" class="tide-rate-note"></p>
+        </div>
         <div class="sec">Top spots — scores over time</div>
         <div class="card tide-chart-card">
           <h3>Top spots compared <span id="fishCompareChartNow" class="tide-now-h">—</span></h3>
@@ -9727,6 +9734,141 @@ function renderBiteIndexChart(){
   });
 }
 
+/** Core SoCal targets for the plan-page species likelihood chart (same order as smart defaults). */
+const FISH_SPECIES_CHART_NAMES = [
+  'yellowtail', 'bonito', 'barracuda', 'calico bass', 'sand bass', 'halibut', 'rockfish', 'white seabass'
+];
+
+/**
+ * Multi-series species bite-likelihood over the same −18h/+72h window as biteIndexSeries.
+ * Uses BoatFishSmart.speciesBiteLikelihood; plankton is a regional snapshot (not hourly).
+ */
+function speciesLikelihoodSeries(opts){
+  opts = opts || {};
+  const win = biteIndexSeries({
+    planMs: opts.planMs,
+    nowMs: opts.nowMs,
+    backHr: opts.backHr,
+    fwdHr: opts.fwdHr,
+    stepHr: opts.stepHr
+  });
+  const stepHr = opts.stepHr != null ? opts.stepHr : 1;
+  const { lat, lon } = boatPos();
+  const names = (opts.species && opts.species.length) ? opts.species : FISH_SPECIES_CHART_NAMES;
+  const oceanBase = fishOceanCache
+    ? { ...fishOceanCache }
+    : { sourceNotes: [], chlSamples: [], hasChl: false, hasSst: false };
+  const bags = names.map(name => {
+    const prof = window.BoatFishSmart?.profileForSpecies?.(name);
+    return {
+      id: (prof && prof.id) || String(name).toLowerCase().replace(/\s+/g, ''),
+      name: (prof && prof.label) || name,
+      pts: []
+    };
+  });
+  for(let t = win.tMin; t <= win.tMax + 1; t += stepHr * HR){
+    const at = new Date(t);
+    const solAt = solunarPeriods(lat, lon, at);
+    const solSt = solunarStatus(solAt, at);
+    const tide = tideStateAt(t);
+    const mc = marineSnapshotAt(at);
+    const wc = wxSnapshotAt(at);
+    const sstF = mc?.sea_surface_temperature != null ? mc.sea_surface_temperature * 9/5 + 32 : null;
+    const wind = wc?.wind_speed_10m != null ? wc.wind_speed_10m : null;
+    const seas = mc?.wave_height != null ? mc.wave_height * M2FT : null;
+    const ctx = {
+      lat, lon, hour: at.getHours(),
+      sol: solSt, tide, sstF, wind, seas,
+      moonIllum: solAt.illum,
+      planWhen: t
+    };
+    const ocean = { ...oceanBase, sstF: sstF != null ? sstF : oceanBase.sstF, hasSst: sstF != null || !!oceanBase.hasSst };
+    names.forEach((name, i) => {
+      const row = BoatFishSmart.speciesBiteLikelihood(name, ctx, ocean);
+      bags[i].pts.push({ t, v: row.pct != null ? row.pct : 0 });
+    });
+  }
+  /* Rank series by likelihood at plan time (else now) so legend #1 is the leading species. */
+  const rankAt = (opts.planMs != null && isFinite(+opts.planMs)) ? +opts.planMs
+    : (opts.nowMs != null ? opts.nowMs : Date.now());
+  bags.sort((a, b) => {
+    const va = a.pts.reduce((best, p) => Math.abs(p.t - rankAt) < Math.abs(best.t - rankAt) ? p : best, a.pts[0]);
+    const vb = b.pts.reduce((best, p) => Math.abs(p.t - rankAt) < Math.abs(best.t - rankAt) ? p : best, b.pts[0]);
+    return (vb?.v || 0) - (va?.v || 0);
+  });
+  return { series: bags, tMin: win.tMin, tMax: win.tMax, coverage: win.coverage };
+}
+
+function renderSpeciesLikelihoodChart(){
+  const host = $('fishSpeciesChart');
+  if(!host) return;
+  const paint = (api)=>{
+    if(!api || !api.renderMultiScoreChart){
+      host.innerHTML = '<div class="skel">Chart module failed to load</div>';
+      return;
+    }
+    if(!window.BoatFishSmart){
+      host.innerHTML = '<div class="skel">Loading species model…</div>';
+      ensureFishSmart().then(()=> renderSpeciesLikelihoodChart()).catch(()=>{
+        host.innerHTML = '<div class="skel">Species model unavailable</div>';
+      });
+      return;
+    }
+    if(!fishPlanDateOnly) initFishPlanWhen();
+    const planWhen = getFishPlanWhen();
+    const highlightMs = planWhen && isFinite(+planWhen) ? +planWhen : null;
+    const pack = speciesLikelihoodSeries({ planMs: highlightMs });
+    const colors = api.MULTI_SERIES_COLORS || [];
+    const series = pack.series.map((s, i) => ({
+      id: s.id,
+      name: s.name,
+      color: colors[i] || undefined,
+      pts: s.pts
+    }));
+    const daily = typeof tideSunDailyForRange === 'function'
+      ? tideSunDailyForRange(pack.tMin, pack.tMax)
+      : null;
+    const chlNote = fishOceanCache?.hasChl
+      ? 'Plankton is a regional snapshot (not hourly) — same as the bite chart.'
+      : 'Plankton not loaded yet — curves lean on time of day, tide/solunar, and Open-Meteo SST/wind/seas.';
+    api.renderMultiScoreChart({
+      host,
+      nowEl: $('fishSpeciesChartNow'),
+      metaEl: $('fishSpeciesChartMeta'),
+      noteEl: $('fishSpeciesChartNote'),
+      series,
+      tMin: pack.tMin,
+      tMax: pack.tMax,
+      yLabel: 'Species /100',
+      goodAt: BITE_GOOD_AT,
+      fairAt: BITE_FAIR_AT,
+      daily,
+      dayNightBands: typeof wxChartDayNightBands === 'function' ? wxChartDayNightBands : null,
+      sunMarkers: typeof wxChartSunMarkers === 'function' ? wxChartSunMarkers : null,
+      highlightMs,
+      highlightLabel: 'PLAN',
+      highlightColor: '#56d4e9',
+      onHighlightChange: (ms)=>{
+        if(ms == null || !isFinite(+ms)) return;
+        setFishPlanWhen(new Date(+ms));
+        try{ renderFishing(); }catch(e){ console.error(e); }
+      },
+      note: 'Y-axis: species bite likelihood 0–100 (BoatFishSmart — time of day, SST fit, solunar/tide, wind/seas; '+
+        chlNote + ' Same −'+TIDE_CHART_BACK_HR+' h / +'+TIDE_CHART_FWD_HR+
+        ' h window as the bite index. Legend ordered by likelihood at PLAN. Drag PLAN to retarget.',
+      CHART, WX_C, HR, clamp, f0, f1, esc, fmtDayTime
+    });
+  };
+  if(window.BoatForecastCharts){
+    paint(window.BoatForecastCharts);
+    return;
+  }
+  host.innerHTML = '<div class="skel">Loading species likelihood…</div>';
+  ensureForecastCharts().then(paint).catch(()=>{
+    host.innerHTML = '<div class="skel">Species chart unavailable</div>';
+  });
+}
+
 /** How many top plan picks to overlay on the compare chart (shared Fish/Dive preference). */
 const PLAN_COMPARE_MIN = 2;
 const PLAN_COMPARE_MAX = 10;
@@ -11565,6 +11707,7 @@ function renderFishing(){
     if(activeTab() === 'fishing' && activeSubtab('fishing') === 'plan'){
       setTimeout(()=>{
         try{ renderBiteIndexChart(); }catch(e){ console.error('renderBiteIndexChart', e); }
+        try{ renderSpeciesLikelihoodChart(); }catch(e){ console.error('renderSpeciesLikelihoodChart', e); }
         try{ renderFishCompareChart(ranked); }catch(e){ console.error('renderFishCompareChart', e); }
       }, 40);
     }
