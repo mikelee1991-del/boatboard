@@ -429,7 +429,8 @@
   }
 
   const MULTI_SERIES_COLORS = [
-    '#56d4e9', '#3dff9a', '#ffd966', '#ff8844', '#f0a0c0', '#a8d4ff', '#c4e86a'
+    '#56d4e9', '#3dff9a', '#ffd966', '#ff8844', '#f0a0c0', '#a8d4ff', '#c4e86a',
+    '#ffb070', '#7ec8e3', '#e8d48a'
   ];
 
   /**
