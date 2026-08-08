@@ -1668,8 +1668,8 @@ let _forecastChartsPromise = null;
 function ensureForecastCharts(){
   if(window.BoatForecastCharts) return Promise.resolve(window.BoatForecastCharts);
   if(_forecastChartsPromise) return _forecastChartsPromise;
-  /* ?v=4: multi-location compare charts + draggable PLAN. */
-  _forecastChartsPromise = loadScript('forecast-charts.js?v=4').then(()=> window.BoatForecastCharts)
+  /* ?v=5: compare charts support up to 10 distinct series colors. */
+  _forecastChartsPromise = loadScript('forecast-charts.js?v=5').then(()=> window.BoatForecastCharts)
     .catch(e=>{ _forecastChartsPromise = null; throw e; });
   return _forecastChartsPromise;
 }
