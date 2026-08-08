@@ -30,6 +30,144 @@
     return out;
   }
 
+  function svgEl(name, attrs) {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', name);
+    if (attrs) {
+      Object.keys(attrs).forEach(k => {
+        if (attrs[k] != null) el.setAttribute(k, String(attrs[k]));
+      });
+    }
+    return el;
+  }
+
+  /**
+   * Click / drag the PLAN cursor (or the plot track) to pick a trip time.
+   * Live-previews the marker; commits via onHighlightChange(ms) on pointerup.
+   */
+  function attachHighlightInteraction(host, ctx) {
+    const svg = host.querySelector('svg');
+    if (!svg || typeof ctx.onHighlightChange !== 'function') return;
+
+    const {
+      padL, padR, padT, plotW, plotH, W,
+      tMin, tMax, xS, yS, valueAt,
+      hlColor, hlLabel, nowMs, snapMs
+    } = ctx;
+    const clamp = ctx.clamp || ((v, a, b) => Math.max(a, Math.min(b, v)));
+    const step = snapMs != null ? snapMs : 15 * 60 * 1000;
+
+    function snapT(t) {
+      return Math.round(t / step) * step;
+    }
+    function tFromClientX(clientX) {
+      const rect = svg.getBoundingClientRect();
+      if (!rect.width) return tMin;
+      const x = ((clientX - rect.left) / rect.width) * W;
+      const raw = tMin + (x - padL) / (plotW || 1) * (tMax - tMin);
+      return snapT(clamp(raw, tMin, tMax));
+    }
+
+    let planG = svg.querySelector('g.score-plan-cursor');
+    if (!planG) {
+      planG = svgEl('g', { class: 'score-plan-cursor', 'aria-hidden': 'true' });
+      svg.appendChild(planG);
+    }
+
+    function paintPlanAt(t) {
+      let v = valueAt(t);
+      if (v == null) return;
+      const hx = xS(t);
+      const hy = yS(v);
+      let labelY = padT - 6;
+      if (nowMs != null && nowMs >= tMin && nowMs <= tMax && Math.abs(hx - xS(nowMs)) < 36) {
+        labelY = padT - 20;
+      }
+      while (planG.firstChild) planG.removeChild(planG.firstChild);
+      planG.appendChild(svgEl('line', {
+        x1: hx.toFixed(1), y1: padT, x2: hx.toFixed(1), y2: padT + plotH,
+        stroke: hlColor, 'stroke-width': '2.5', 'stroke-dasharray': '7 4', opacity: '0.95',
+        'pointer-events': 'none'
+      }));
+      planG.appendChild(svgEl('circle', {
+        cx: hx.toFixed(1), cy: hy.toFixed(1), r: '6',
+        fill: hlColor, stroke: 'var(--card)', 'stroke-width': '2',
+        'pointer-events': 'none'
+      }));
+      planG.appendChild(svgEl('text', {
+        x: hx.toFixed(1), y: String(labelY), 'text-anchor': 'middle',
+        'font-size': '11', fill: hlColor, 'font-weight': 'bold',
+        'pointer-events': 'none'
+      })).textContent = hlLabel;
+      /* Wide vertical grab strip so the PLAN marker is easy to drag on touch */
+      planG.appendChild(svgEl('rect', {
+        class: 'score-plan-hit',
+        x: (hx - 18).toFixed(1), y: padT, width: '36', height: String(plotH),
+        fill: hlColor, 'fill-opacity': '0.001', stroke: 'none'
+      }));
+      planG.setAttribute('data-t', String(t));
+    }
+
+    /* Invisible plot track — tap / drag anywhere in the plot to move PLAN */
+    let track = svg.querySelector('rect.score-plan-track');
+    if (!track) {
+      track = svgEl('rect', {
+        class: 'score-plan-track',
+        x: padL, y: padT, width: plotW, height: plotH,
+        fill: 'transparent', stroke: 'none'
+      });
+      /* Under the series stroke but above day/night so clicks hit the track */
+      const firstPath = svg.querySelector('path');
+      if (firstPath && firstPath.parentNode === svg) svg.insertBefore(track, firstPath);
+      else svg.insertBefore(track, planG);
+    }
+
+    host.classList.add('score-plan-interactive');
+    const baseAria = (host.getAttribute('data-aria-base') || host.getAttribute('aria-label') || 'Score over time')
+      .replace(/\s*—\s*drag PLAN.*$/i, '');
+    host.setAttribute('data-aria-base', baseAria);
+    host.setAttribute('aria-label', baseAria + ' — drag PLAN or tap the chart to set trip time');
+
+    let dragging = false;
+    let activeId = null;
+    let lastT = ctx.highlightMs != null && isFinite(+ctx.highlightMs)
+      ? snapT(clamp(+ctx.highlightMs, tMin, tMax))
+      : null;
+
+    function onDown(e) {
+      if (e.button != null && e.button !== 0) return;
+      dragging = true;
+      activeId = e.pointerId;
+      host.classList.add('score-plan-dragging');
+      try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+      lastT = tFromClientX(e.clientX);
+      paintPlanAt(lastT);
+      e.preventDefault();
+    }
+    function onMove(e) {
+      if (!dragging || (activeId != null && e.pointerId !== activeId)) return;
+      lastT = tFromClientX(e.clientX);
+      paintPlanAt(lastT);
+      e.preventDefault();
+    }
+    function onUp(e) {
+      if (!dragging || (activeId != null && e.pointerId !== activeId)) return;
+      dragging = false;
+      host.classList.remove('score-plan-dragging');
+      try { e.currentTarget.releasePointerCapture(e.pointerId); } catch (_) {}
+      const t = lastT != null ? lastT : tFromClientX(e.clientX);
+      activeId = null;
+      if (t != null && isFinite(t)) ctx.onHighlightChange(t);
+      e.preventDefault();
+    }
+
+    [track, planG].forEach(el => {
+      el.addEventListener('pointerdown', onDown);
+      el.addEventListener('pointermove', onMove);
+      el.addEventListener('pointerup', onUp);
+      el.addEventListener('pointercancel', onUp);
+    });
+  }
+
   /**
    * @param {object} opts
    * @param {HTMLElement|string} opts.host
@@ -51,6 +189,8 @@
    * @param {number|null} [opts.highlightMs] plan-time instant to mark (hide when null/out of window)
    * @param {string} [opts.highlightLabel] default "PLAN"
    * @param {string} [opts.highlightColor] default cyan (distinct from NOW)
+   * @param {function(number):void} [opts.onHighlightChange] if set, PLAN is draggable / plot is tappable
+   * @param {number} [opts.snapMs] time snap while dragging (default 15 min)
    */
   function renderScoreChart(opts) {
     opts = opts || {};
@@ -82,6 +222,8 @@
       v >= (opts.goodAt != null ? opts.goodAt : 82) ? CHART.good
         : v >= (opts.fairAt != null ? opts.fairAt : 55) ? CHART.fair
           : CHART.poor);
+
+    host.classList.remove('score-plan-interactive', 'score-plan-dragging');
 
     if (pts.length < 2) {
       host.innerHTML = '<div class="skel">Not enough forecast points for this window</div>';
@@ -137,6 +279,7 @@
     const stroke = opts.stroke || 'var(--accent)';
     const fillId = opts.fillId || ('scoreFill_' + Math.random().toString(36).slice(2, 8));
     const yLabel = opts.yLabel || 'score';
+    const interactive = typeof opts.onHighlightChange === 'function';
 
     let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">';
     svg += '<defs><linearGradient id="' + fillId + '" x1="0" y1="0" x2="0" y2="1">' +
@@ -163,14 +306,14 @@
     [[goodAt, CHART.good], [fairAt, CHART.fair]].forEach(([th, col]) => {
       const y = yS(th);
       svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y +
-        '" stroke="' + col + '" stroke-width="1" stroke-dasharray="4 5" opacity="0.45"/>';
+        '" stroke="' + col + '" stroke-width="1" stroke-dasharray="4 5" opacity="0.45" pointer-events="none"/>';
     });
 
     for (let v = 0; v <= 100; v += 25) {
       const y = yS(v);
       svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y +
-        '" stroke="var(--line2)" stroke-width="1"/>';
-      svg += '<text x="' + (padL - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="var(--ink3)" font-weight="500">' + v + '</text>';
+        '" stroke="var(--line2)" stroke-width="1" pointer-events="none"/>';
+      svg += '<text x="' + (padL - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="var(--ink3)" font-weight="500" pointer-events="none">' + v + '</text>';
     }
 
     const tickMs = 24 * HR;
@@ -178,8 +321,8 @@
     while (tick <= tMax) {
       const x = xS(tick);
       svg += '<line x1="' + x + '" y1="' + padT + '" x2="' + x + '" y2="' + (padT + plotH) +
-        '" stroke="var(--line2)" stroke-width="1" stroke-dasharray="3 4"/>';
-      svg += '<text x="' + x + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="var(--ink3)" font-weight="500">' +
+        '" stroke="var(--line2)" stroke-width="1" stroke-dasharray="3 4" pointer-events="none"/>';
+      svg += '<text x="' + x + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="var(--ink3)" font-weight="500" pointer-events="none">' +
         esc(fmtDayTime(new Date(tick))) + '</text>';
       tick += tickMs;
     }
@@ -187,8 +330,8 @@
     const line = winPts.map((p, i) => (i ? 'L' : 'M') + xS(p.t).toFixed(1) + ',' + yS(p.v).toFixed(1)).join(' ');
     const area = line + ' L' + xS(winPts[winPts.length - 1].t).toFixed(1) + ',' + (padT + plotH) +
       ' L' + xS(winPts[0].t).toFixed(1) + ',' + (padT + plotH) + ' Z';
-    svg += '<path d="' + area + '" fill="url(#' + fillId + ')"/>';
-    svg += '<path d="' + line + '" fill="none" stroke="' + stroke + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+    svg += '<path d="' + area + '" fill="url(#' + fillId + ')" pointer-events="none"/>';
+    svg += '<path d="' + line + '" fill="none" stroke="' + stroke + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" pointer-events="none"/>';
 
     if (opts.markPeaks !== false) {
       const peaks = findPeaks(winPts, goodAt, 5 * HR);
@@ -198,29 +341,29 @@
         let lx = x, anchor = 'middle';
         if (x < padL + 40) { lx = padL + 2; anchor = 'start'; }
         else if (x > W - padR - 40) { lx = W - padR - 2; anchor = 'end'; }
-        svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4.5" fill="var(--card)" stroke="' + col + '" stroke-width="2"/>';
+        svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4.5" fill="var(--card)" stroke="' + col + '" stroke-width="2" pointer-events="none"/>';
         svg += '<text x="' + lx.toFixed(1) + '" y="' + (y - 10) + '" text-anchor="' + anchor +
-          '" font-size="11" fill="' + col + '" font-weight="700">' + f0(pk.v) + '</text>';
+          '" font-size="11" fill="' + col + '" font-weight="700" pointer-events="none">' + f0(pk.v) + '</text>';
       });
     }
 
     if (now >= tMin && now <= tMax && nowV != null) {
       const nx = xS(now), ny = yS(nowV);
       svg += '<line x1="' + nx + '" y1="' + padT + '" x2="' + nx + '" y2="' + (padT + plotH) +
-        '" stroke="' + CHART.now + '" stroke-width="2" opacity="0.95"/>';
-      svg += '<circle cx="' + nx + '" cy="' + ny + '" r="6" fill="' + CHART.now + '" stroke="var(--card)" stroke-width="2"/>';
-      svg += '<text x="' + nx + '" y="' + (padT - 4) + '" text-anchor="middle" font-size="11" fill="' + CHART.now + '" font-weight="bold">NOW</text>';
+        '" stroke="' + CHART.now + '" stroke-width="2" opacity="0.95" pointer-events="none"/>';
+      svg += '<circle cx="' + nx + '" cy="' + ny + '" r="6" fill="' + CHART.now + '" stroke="var(--card)" stroke-width="2" pointer-events="none"/>';
+      svg += '<text x="' + nx + '" y="' + (padT - 4) + '" text-anchor="middle" font-size="11" fill="' + CHART.now + '" font-weight="bold" pointer-events="none">NOW</text>';
     }
 
-    /* Plan-time cursor — same geometry as NOW; cyan dashed so it reads even when near NOW */
+    /* Plan-time cursor — painted into a group so drag handlers can move it live */
     const hlRaw = opts.highlightMs;
     const hl = (hlRaw != null && isFinite(+hlRaw)) ? +hlRaw : null;
     const hlLabel = opts.highlightLabel || 'PLAN';
     const hlColor = opts.highlightColor || CHART.feel || '#56d4e9';
     let hlShown = false;
+    let hlV = null;
     if (hl != null && hl >= tMin && hl <= tMax) {
-      let hlV = valueAt(hl);
-      /* In-window plan must always paint — sparse forecast gaps can miss the 1.5h nearest rule */
+      hlV = valueAt(hl);
       if (hlV == null && pts.length) {
         let best = pts[0], bd = Math.abs(pts[0].t - hl);
         for (let i = 1; i < pts.length; i++) {
@@ -233,24 +376,46 @@
         hlShown = true;
         const hx = xS(hl), hy = yS(hlV);
         let labelY = padT - 6;
-        /* Stack above NOW when cursors collide */
         if (now >= tMin && now <= tMax && Math.abs(hx - xS(now)) < 36) labelY = padT - 20;
+        svg += '<g class="score-plan-cursor" data-t="' + hl + '" aria-hidden="true">';
         svg += '<line x1="' + hx + '" y1="' + padT + '" x2="' + hx + '" y2="' + (padT + plotH) +
-          '" stroke="' + hlColor + '" stroke-width="2.5" stroke-dasharray="7 4" opacity="0.95"/>';
-        svg += '<circle cx="' + hx + '" cy="' + hy + '" r="6" fill="' + hlColor + '" stroke="var(--card)" stroke-width="2"/>';
+          '" stroke="' + hlColor + '" stroke-width="2.5" stroke-dasharray="7 4" opacity="0.95" pointer-events="none"/>';
+        svg += '<circle cx="' + hx + '" cy="' + hy + '" r="6" fill="' + hlColor + '" stroke="var(--card)" stroke-width="2" pointer-events="none"/>';
         svg += '<text x="' + hx + '" y="' + labelY + '" text-anchor="middle" font-size="11" fill="' + hlColor +
-          '" font-weight="bold">' + esc(hlLabel) + '</text>';
+          '" font-weight="bold" pointer-events="none">' + esc(hlLabel) + '</text>';
+        if (interactive) {
+          svg += '<rect class="score-plan-hit" x="' + (hx - 18).toFixed(1) + '" y="' + padT +
+            '" width="36" height="' + plotH + '" fill="' + hlColor + '" fill-opacity="0.001" stroke="none"/>';
+        }
+        svg += '</g>';
       }
+    } else if (interactive) {
+      /* Empty cursor group so first tap can paint a preview before commit */
+      svg += '<g class="score-plan-cursor" aria-hidden="true"></g>';
     }
 
-    svg += '<text x="' + padL + '" y="' + (padT - 18) + '" font-size="10" fill="var(--ink3)" font-weight="600">' + esc(yLabel) + '</text>';
+    svg += '<text x="' + padL + '" y="' + (padT - 18) + '" font-size="10" fill="var(--ink3)" font-weight="600" pointer-events="none">' + esc(yLabel) + '</text>';
     svg += '</svg>';
     host.innerHTML = svg;
+
+    if (interactive) {
+      attachHighlightInteraction(host, {
+        padL, padR, padT, plotW, plotH, W,
+        tMin, tMax, xS, yS, valueAt, clamp,
+        hlColor, hlLabel, nowMs: now,
+        highlightMs: hlShown ? hl : null,
+        snapMs: opts.snapMs,
+        onHighlightChange: opts.onHighlightChange
+      });
+    }
 
     if (metaEl) {
       metaEl.innerHTML =
         '<span><i style="background:' + CHART.now + '"></i> Now</span>' +
-        (hlShown ? '<span><i style="background:' + hlColor + '"></i> ' + esc(hlLabel) + '</span>' : '') +
+        (hlShown || interactive
+          ? '<span><i style="background:' + hlColor + '"></i> ' + esc(hlLabel) +
+            (interactive ? ' · drag / tap chart' : '') + '</span>'
+          : '') +
         '<span><i style="background:' + CHART.good + '"></i> ≥' + goodAt + ' hot</span>' +
         '<span><i style="background:' + CHART.fair + '"></i> ≥' + fairAt + ' fair</span>' +
         '<span><i style="background:' + WX_C.day + '"></i> Day</span>' +

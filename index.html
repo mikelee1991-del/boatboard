@@ -378,6 +378,11 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .tide-chart.tide-rate-chart{min-height:140px;margin-top:6px}
 .tide-chart.tide-rate-chart svg{min-height:120px}
 .tide-chart .tide-hl-hit{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.tide-chart.score-plan-interactive svg{touch-action:none;cursor:ew-resize}
+.tide-chart .score-plan-track{cursor:ew-resize;touch-action:none;-webkit-tap-highlight-color:transparent}
+.tide-chart .score-plan-hit{cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent}
+.tide-chart.score-plan-dragging,.tide-chart.score-plan-dragging .score-plan-hit{cursor:grabbing}
+.tide-chart.score-plan-dragging .score-plan-cursor{filter:drop-shadow(0 0 3px rgba(86,212,233,.55))}
 .tide-chart-tip{font-family:var(--mono);font-size:13px;line-height:1.4;margin-top:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg2);color:var(--ink2);min-height:40px}
 .tide-chart-tip strong{color:var(--ink);font-weight:600}
 .tide-chart-tip.is-hi{border-color:rgba(61,255,154,.4);color:var(--good)}
@@ -1632,8 +1637,8 @@ let _forecastChartsPromise = null;
 function ensureForecastCharts(){
   if(window.BoatForecastCharts) return Promise.resolve(window.BoatForecastCharts);
   if(_forecastChartsPromise) return _forecastChartsPromise;
-  /* ?v=2 busts Pages CDN after PLAN marker landed (hard-refresh alone did not reload this lazy script). */
-  _forecastChartsPromise = loadScript('forecast-charts.js?v=2').then(()=> window.BoatForecastCharts)
+  /* ?v=3: draggable PLAN cursor on bite / dive score charts. */
+  _forecastChartsPromise = loadScript('forecast-charts.js?v=3').then(()=> window.BoatForecastCharts)
     .catch(e=>{ _forecastChartsPromise = null; throw e; });
   return _forecastChartsPromise;
 }
@@ -1646,7 +1651,7 @@ function ensureDiveEngine(){
     .then(()=> loadScript('dive-site-intel.js'))
     .then(()=> loadScript('briefing-synth.js?v=3'))
     .then(()=> ensureForecastCharts())
-    .then(()=> loadScript('dive-engine.js?v=11'))
+    .then(()=> loadScript('dive-engine.js?v=12'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
       return window.BoatDive;
@@ -9672,6 +9677,11 @@ function renderBiteIndexChart(){
       highlightMs,
       highlightLabel: 'PLAN',
       highlightColor: '#56d4e9',
+      onHighlightChange: (ms)=>{
+        if(ms == null || !isFinite(+ms)) return;
+        setFishPlanWhen(new Date(+ms));
+        try{ renderFishing(); }catch(e){ console.error(e); }
+      },
       note: biteIndexHonestyNote(series.coverage),
       CHART, WX_C, HR, clamp, f0, f1, esc, fmtDayTime
     });
