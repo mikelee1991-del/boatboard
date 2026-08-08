@@ -618,17 +618,31 @@
     }
     var depth = depthCalls[band] || depthCalls.mixed;
 
+    var env = {
+      green: green,
+      blue: blue,
+      lowLight: lowLight,
+      midday: midday,
+      chl: chl,
+      period: period,
+      band: band,
+      bloom: chl === 'bloom' || chl === 'very-green'
+    };
     var rigs = pickRigs(band, sid, spot);
-    var iron = pickIronLure(band, sid, { green: green, blue: blue, lowLight: lowLight, midday: midday, chl: chl });
-    var bait = pickBaitNote(band, sid, period, ocean, ctx);
+    var iron = pickIronLure(band, sid, env);
+    var forage = pickForage(band, sid, env, ocean, ctx);
+    var bait = pickBaitNote(band, sid, period, ocean, ctx, forage);
 
     var bullets = [];
     if (rigs.length) bullets.push('Rig: ' + rigs.join(' · '));
     if (iron) {
       var ironLine = 'Iron/lure: ' + iron.type;
       if (iron.color) ironLine += ' · ' + iron.color;
+      if (iron.altColor) ironLine += ' (alt ' + iron.altColor + ')';
+      if (iron.size) ironLine += ' · ' + iron.size;
       bullets.push(ironLine);
     }
+    if (forage && forage.line) bullets.push(forage.line);
     if (bait) bullets.push(bait);
 
     return {
@@ -636,6 +650,7 @@
       depthWhy: depth.why,
       rigs: rigs,
       iron: iron,
+      forage: forage || null,
       bait: bait || null,
       bullets: bullets
     };
@@ -687,80 +702,311 @@
     return out.slice(0, 2);
   }
 
+  /**
+   * Iron / jig / soft-plastic color by species + light + water color.
+   * Returns type, primary color, optional alt, and size hint for SoCal tackle boxes.
+   */
   function pickIronLure(band, sid, env) {
     var green = env.green;
     var blue = env.blue;
     var lowLight = env.lowLight;
+    var midday = env.midday;
+    var bloom = !!env.bloom || env.chl === 'bloom';
     var type = null;
     var color = null;
+    var altColor = null;
+    var size = null;
 
     if (sid === 'yellowtail') {
-      type = band === 'bottom' || band === 'mid' ? 'Yo-yo / surface iron' : 'Surface iron / fly-line iron';
-      if (lowLight || green) color = 'Green sardine or mackerel';
-      else if (blue) color = 'Chrome or blue/white';
-      else color = 'Blue/white or green chrome';
+      type = band === 'bottom' || band === 'mid'
+        ? 'Yo-yo iron (Tady / Salas style) on the high spot'
+        : 'Surface iron / fly-line iron';
+      size = band === 'bottom' || band === 'mid' ? '4–6 oz class' : 'light–medium surface iron';
+      if (lowLight || green) {
+        color = 'Green sardine or green mackerel';
+        altColor = 'Dark back / purple chrome';
+      } else if (blue && midday) {
+        color = 'Chrome or pure blue/white';
+        altColor = 'Light green chrome';
+      } else if (blue) {
+        color = 'Blue/white or chrome';
+        altColor = 'Green sardine';
+      } else {
+        color = 'Blue/white or green chrome';
+        altColor = 'Mackerel';
+      }
     } else if (sid === 'bonito') {
-      type = 'Small iron / feathers';
-      color = lowLight || green ? 'Green/chrome or dark back' : 'Chrome or blue/white';
+      type = 'Small iron / trolling feathers / candy-bar';
+      size = '2–4 oz iron or #2–#4 feathers';
+      if (lowLight || green) {
+        color = 'Green/chrome or dark-back sardine';
+        altColor = 'Purple chrome';
+      } else {
+        color = 'Chrome or blue/white';
+        altColor = 'Light green chrome';
+      }
     } else if (sid === 'barracuda') {
-      type = 'Feathers / slim iron';
-      color = 'Chrome or blue/white';
+      type = 'Feathers / slim surface iron';
+      size = 'slim profile — match anchovy/sardine length';
+      color = blue || midday ? 'Chrome or blue/white' : 'Green chrome or dark back';
+      altColor = 'White feather with flash';
     } else if (sid === 'calico') {
-      type = 'Swimbait / soft plastic';
-      color = green || lowLight ? 'Dark baitfish / green' : 'Sardine or blue/silver';
+      type = 'Weedless 4–6" swimbait / soft plastic';
+      size = '4–6" paddle-tail; ½–1 oz weight';
+      if (green || lowLight || bloom) {
+        color = 'Dark baitfish, green pumpkin, or black/blue flake';
+        altColor = 'Motor oil or junebug';
+      } else if (blue) {
+        color = 'Sardine, blue/silver, or ghost minnow';
+        altColor = 'White/chartreuse trailer';
+      } else {
+        color = 'Sardine or blue/silver';
+        altColor = 'Green baitfish';
+      }
     } else if (sid === 'sandbass') {
-      type = 'Grub / soft plastic';
-      color = green || lowLight ? 'Dark or motor oil' : 'White / chartreuse';
+      type = 'Grub / curly-tail / drop-shot soft plastic';
+      size = '3–5" grub on ⅜–¾ oz';
+      if (green || lowLight || bloom) {
+        color = 'Motor oil, root beer, or dark purple';
+        altColor = 'Black/chartreuse';
+      } else {
+        color = 'White, pearl, or chartreuse';
+        altColor = 'Smoke / salt-and-pepper';
+      }
     } else if (sid === 'halibut') {
-      type = 'Big swimbait / scampi';
-      color = 'White, silver, or sardine';
+      type = 'Big swimbait / scampi / leadhead';
+      size = '5–8" swimbait or 1–3 oz scampi';
+      if (green || lowLight) {
+        color = 'White, bone, or dark sardine';
+        altColor = 'Glow white / chartreuse';
+      } else {
+        color = 'White, silver, or sardine';
+        altColor = 'Blue/silver or pink';
+      }
     } else if (sid === 'rockfish') {
-      type = env.chl === 'bloom' ? 'Shrimp fly / dark jig' : 'Shrimp fly / metal jig';
-      color = lowLight || green ? 'Dark red / purple' : 'Pink shrimp or chrome';
+      type = bloom
+        ? 'Shrimp fly / dark metal jig (big silhouette)'
+        : 'Shrimp fly / slow-pitch / butterfly jig';
+      size = 'match depth — heavier on deep drops';
+      if (lowLight || green || bloom) {
+        color = 'Dark red, purple, or black shrimp';
+        altColor = 'Glow pink / orange shrimp';
+      } else if (blue) {
+        color = 'Pink or orange shrimp; chrome metal as backup';
+        altColor = 'White/glow shrimp fly';
+      } else {
+        color = 'Pink shrimp or red/white';
+        altColor = 'Chrome / blue metal';
+      }
     } else if (sid === 'white seabass') {
-      type = 'Live squid first';
-      color = null;
+      type = 'Live squid first — soft squid imitation only as backup';
+      color = 'Natural translucent / white squid plastic';
+      altColor = 'Light green glow squid (murk)';
+      size = 'match local squid size';
     } else if (band === 'surface' || band === 'mixed') {
       type = 'Surface iron / feathers';
-      if (lowLight || green) color = 'Green sardine or dark';
-      else if (blue) color = 'Chrome or blue/white';
-      else color = 'Blue/white';
+      size = 'light–medium';
+      if (lowLight || green) {
+        color = 'Green sardine or dark-back chrome';
+        altColor = 'Purple / mackerel';
+      } else if (blue) {
+        color = 'Chrome or blue/white';
+        altColor = 'Green chrome';
+      } else {
+        color = 'Blue/white';
+        altColor = 'Green sardine';
+      }
     } else if (band === 'bottom') {
-      type = 'Yo-yo iron or soft plastic';
-      color = green || lowLight ? 'Dark profile' : 'Chrome / white';
+      type = 'Yo-yo iron or soft plastic on the relief';
+      if (green || lowLight) {
+        color = 'Dark profile — purple, green pumpkin, or black';
+        altColor = 'Glow white';
+      } else {
+        color = 'Chrome, white, or sardine';
+        altColor = 'Pink shrimp tone';
+      }
     } else {
-      type = 'Swimbait or live bait';
-      color = green || lowLight ? 'Darker baitfish' : 'Sardine tone';
+      type = 'Swimbait or live-bait presentation';
+      color = green || lowLight ? 'Darker baitfish / green pumpkin' : 'Sardine / blue-silver';
+      altColor = green || lowLight ? 'White/chartreuse' : 'Green baitfish';
     }
 
-    if (env.chl === 'bloom' && color && sid !== 'white seabass') {
-      color = color + ' (bigger silhouette in murk)';
+    if (bloom && color && sid !== 'white seabass') {
+      color = color + ' — bigger / darker silhouette in murk';
     }
     if (!type) return null;
-    return { type: type, color: color };
+    return { type: type, color: color, altColor: altColor, size: size };
   }
 
-  function pickBaitNote(band, sid, period, ocean, ctx) {
-    if (sid === 'white seabass') return 'Bait: live squid — dawn/dusk priority.';
-    if (sid === 'yellowtail' && (band === 'surface' || band === 'mixed')) {
-      return period === 'midday'
-        ? 'Bait: live sardine yo-yo if irons quiet.'
-        : 'Bait: fly-line sardine when birds/bait show.';
+  /**
+   * Shrimp vs squid vs fish (sardine/anchovy/mackerel) forage pick for the mark.
+   * Primary is what to pin first; secondary is the swap if the bite is soft.
+   */
+  function pickForage(band, sid, env, ocean, ctx) {
+    var period = (env && env.period) || 'morning';
+    var lowLight = !!(env && env.lowLight);
+    var green = !!(env && env.green);
+    var bloom = !!(env && env.bloom);
+    var outgoing = ctx && ctx.tide && ctx.tide.rising === false;
+    var warm = ocean && ocean.sstF != null && ocean.sstF >= 64;
+    var primary = 'fish';
+    var secondary = 'squid';
+    var skip = null;
+    var why = '';
+    var detail = '';
+
+    if (sid === 'white seabass') {
+      primary = 'squid';
+      secondary = 'fish';
+      skip = 'shrimp';
+      why = 'WSB key on live squid — fish bait is a distant backup; shrimp almost never.';
+      detail = 'Pin live squid (fly-line or slow mid-column). Keep a sardine ready only if squid dies off.';
+    } else if (sid === 'rockfish') {
+      primary = 'squid';
+      secondary = 'shrimp';
+      skip = null;
+      why = 'Bottom fish crush squid strips; shrimp-mimic jigs/flies match local forage.';
+      detail = bloom || lowLight || green
+        ? 'Squid strip on the dropper first; dark red/purple shrimp fly if they ignore strips. Cut fish (mackerel) for lingcod.'
+        : 'Squid strip or pink shrimp fly; chrome jig as a search bait. Fish strip only if you want lingcod/big bottom.';
+    } else if (sid === 'halibut') {
+      primary = outgoing || green ? 'squid' : 'fish';
+      secondary = primary === 'squid' ? 'fish' : 'squid';
+      skip = 'shrimp';
+      why = outgoing
+        ? 'Outgoing tide on sand edges — squid and slow swimbaits out-fish shrimp.'
+        : 'Halibut want a big protein profile — live squid or sardine/mackerel, not shrimp.';
+      detail = primary === 'squid'
+        ? 'Live or fresh squid on a sliding sinker; swap to sardine/anchovy if squid is scarce. Skip shrimp.'
+        : 'Live sardine or mackerel first; squid strip/whole on the sand edge as backup. Skip shrimp.';
+    } else if (sid === 'calico') {
+      primary = lowLight ? 'fish' : (green || bloom ? 'squid' : 'fish');
+      secondary = primary === 'fish' ? 'squid' : 'fish';
+      skip = 'shrimp';
+      why = 'Calicos eat baitfish on the edge; squid shines when water greens or light drops.';
+      detail = period === 'dawn' || period === 'dusk'
+        ? 'Live sardine on a short flat-line at light change; squid if they pin to kelp mid-column. Skip shrimp.'
+        : primary === 'squid'
+          ? 'Live squid or squid strip tight to kelp; keep sardines for a surface/edge bite. Skip shrimp.'
+          : 'Live sardine/anchovy first; squid when they bury in the kelp. Skip shrimp.';
+    } else if (sid === 'sandbass') {
+      primary = green || bloom || band === 'bottom' ? 'squid' : 'fish';
+      secondary = primary === 'squid' ? 'fish' : 'squid';
+      skip = null;
+      why = 'Sand bass sit on soft bottom — squid and small fish baits; shrimp plastics work as a third option.';
+      detail = primary === 'squid'
+        ? 'Live squid or squid strip on Carolina/drop-shot; sardine as backup; shrimp-mimic grub if both fail.'
+        : 'Live sardine first on the sand edge; squid strip if they want a slower meal; shrimp grub as a last plastic.';
+    } else if (sid === 'yellowtail') {
+      primary = 'fish';
+      secondary = 'squid';
+      skip = 'shrimp';
+      why = 'YT are a sardine/anchovy game; squid only when they pin to structure; never shrimp.';
+      detail = period === 'midday' || band === 'bottom' || band === 'mid'
+        ? 'Yo-yo or fly-line live sardine if irons quiet; squid on the high spot when they pin. Skip shrimp.'
+        : 'Fly-line live sardine/anchovy when birds/bait show; keep squid only as a structure backup. Skip shrimp.';
+    } else if (sid === 'bonito' || sid === 'barracuda') {
+      primary = 'fish';
+      secondary = null;
+      skip = 'shrimp';
+      why = warm
+        ? 'Warm water — feathers/iron usually enough; fish bait only if they won’t commit.'
+        : 'Pelagics key on baitfish; squid/shrimp rarely help on a boil.';
+      detail = warm && sid === 'bonito'
+        ? 'Bait optional — chrome/feathers first. If needed: small live sardine or anchovy. Skip squid/shrimp.'
+        : 'Small live sardine or anchovy on a flat-line; irons/feathers do most of the work. Skip squid/shrimp.';
+    } else if (band === 'bottom') {
+      primary = 'squid';
+      secondary = 'shrimp';
+      why = 'Default bottom forage — squid strip, then shrimp-mimic jig.';
+      detail = 'Squid strip on a dropper first; pink/dark shrimp fly next; cut fish if you want lingcod.';
+    } else if (band === 'surface') {
+      primary = 'fish';
+      secondary = 'squid';
+      skip = 'shrimp';
+      why = 'Surface window = match the baitfish school.';
+      detail = 'Live sardine/anchovy or match with iron/feathers; squid only if they drop to structure. Skip shrimp.';
+    } else {
+      primary = green || bloom ? 'squid' : 'fish';
+      secondary = primary === 'squid' ? 'fish' : 'squid';
+      why = 'Mixed mark — start with the forage the sounder shows.';
+      detail = primary === 'squid'
+        ? 'Start squid (strip or live) on structure; swap to sardine if bait marks are up. Shrimp jig as a third bottom option.'
+        : 'Start live sardine/anchovy; squid if they pin to kelp/reef. Shrimp only as a bottom plastic.';
     }
-    if (sid === 'calico' && (period === 'dawn' || period === 'dusk')) {
-      return 'Bait: live sardine on the edge — short bites at light change.';
-    }
+
+    var forageLabel = {
+      fish: 'fish (sardine / anchovy / mackerel)',
+      squid: 'squid',
+      shrimp: 'shrimp'
+    };
+    var line = 'Forage: ' + forageLabel[primary] + ' first';
+    if (secondary && secondary !== primary) line += ' · ' + forageLabel[secondary] + ' backup';
+    if (skip) line += ' · skip ' + skip;
+    if (why) line += ' — ' + why;
+
+    return {
+      primary: primary,
+      secondary: secondary,
+      skip: skip,
+      why: why,
+      detail: detail,
+      line: line
+    };
+  }
+
+  function pickBaitNote(band, sid, period, ocean, ctx, forage) {
+    var f = forage || pickForage(band, sid, {
+      period: period,
+      band: band,
+      lowLight: period === 'dawn' || period === 'dusk' || period === 'night',
+      green: ocean && (ocean.chlBand === 'green' || ocean.chlBand === 'very-green' || ocean.chlBand === 'bloom'),
+      bloom: ocean && (ocean.chlBand === 'bloom' || ocean.chlBand === 'very-green')
+    }, ocean, ctx);
+
+    var tip = f.detail || '';
     if (sid === 'halibut' && ctx && ctx.tide && ctx.tide.rising === false) {
-      return 'Bait: drag sand edges on the outgoing.';
+      tip = 'Drag sand edges on the outgoing with ' +
+        (f.primary === 'squid' ? 'squid' : 'sardine/mackerel') +
+        '; keep the bait just ticking the bottom.';
+    } else if (sid === 'calico' && (period === 'dawn' || period === 'dusk')) {
+      tip = 'Short bites at light change — live sardine on the kelp edge; have squid ready if they bury.';
+    } else if (band === 'bottom' && period === 'midday' && sid !== 'rockfish' && sid !== 'white seabass') {
+      tip = (tip ? tip + ' ' : '') + 'Sun high — skip a long top hunt; bait the relief.';
     }
-    if (sid === 'rockfish') return 'Bait: squid strip on dropper — stay vertical.';
-    if (sid === 'bonito' && ocean && ocean.sstF != null && ocean.sstF >= 64) {
-      return 'Bait optional — feathers/iron usually enough.';
+
+    if (!tip) {
+      tip = 'Match hook size to the forage — ' +
+        (f.primary === 'shrimp' ? 'shrimp flies/jigs' :
+          f.primary === 'squid' ? 'live or strip squid' :
+            'live sardine, anchovy, or mackerel') + '.';
     }
-    if (band === 'bottom' && period === 'midday') {
-      return 'Skip a long top hunt — bait the relief.';
+    return 'Bait: ' + tip;
+  }
+
+  /** Compact bait + forage string for Plan/On site cards and map popups. */
+  function baitSummaryLine(tech) {
+    if (!tech || !tech.intel) return '';
+    var intel = tech.intel;
+    var parts = [];
+    if (intel.forage) {
+      var fl = {
+        fish: 'fish bait (sardine/anchovy)',
+        squid: 'squid',
+        shrimp: 'shrimp'
+      };
+      var s = fl[intel.forage.primary] || intel.forage.primary;
+      if (intel.forage.secondary && intel.forage.secondary !== intel.forage.primary) {
+        s += ' · ' + (fl[intel.forage.secondary] || intel.forage.secondary) + ' backup';
+      }
+      if (intel.forage.skip) s += ' · skip ' + intel.forage.skip;
+      parts.push(s);
     }
-    return null;
+    if (intel.iron && intel.iron.color) {
+      parts.push('jig/iron: ' + intel.iron.color +
+        (intel.iron.altColor ? ' (alt ' + intel.iron.altColor + ')' : ''));
+    }
+    return parts.join(' — ');
   }
 
   function techniqueBadgeHtml(tech, escFn) {
@@ -820,15 +1066,24 @@
     return html;
   }
 
-  /** One-liner for top-pick cards — depth + rig + iron, no essay. */
+  /** One-liner for top-pick cards — depth + iron color + forage, no essay. */
   function intelOneLiner(tech) {
     if (!tech || !tech.intel) return '';
     var intel = tech.intel;
     var parts = [];
     if (intel.depthCall) parts.push(intel.depthCall);
-    if (intel.rigs && intel.rigs[0]) parts.push(intel.rigs[0]);
     if (intel.iron) {
-      parts.push(intel.iron.type + (intel.iron.color ? ' · ' + intel.iron.color : ''));
+      var ironBit = intel.iron.color || intel.iron.type;
+      if (intel.iron.color && intel.iron.altColor) ironBit += ' / alt ' + intel.iron.altColor;
+      parts.push(ironBit);
+    } else if (intel.rigs && intel.rigs[0]) {
+      parts.push(intel.rigs[0]);
+    }
+    if (intel.forage && intel.forage.primary) {
+      var fl = { fish: 'fish bait', squid: 'squid', shrimp: 'shrimp' };
+      var forageBit = fl[intel.forage.primary] || intel.forage.primary;
+      if (intel.forage.skip) forageBit += ', skip ' + intel.forage.skip;
+      parts.push(forageBit);
     }
     return parts.slice(0, 3).join(' — ');
   }
@@ -998,6 +1253,10 @@
     speciesLikelihoodPanel: speciesLikelihoodPanel,
     recommendTechnique: recommendTechnique,
     buildFishingIntel: buildFishingIntel,
+    pickIronLure: pickIronLure,
+    pickForage: pickForage,
+    pickBaitNote: pickBaitNote,
+    baitSummaryLine: baitSummaryLine,
     techniqueBadgeHtml: techniqueBadgeHtml,
     likelihoodBarHtml: likelihoodBarHtml,
     techniquePanelHtml: techniquePanelHtml,

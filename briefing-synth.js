@@ -398,6 +398,43 @@
     return synthesizeFishBriefing(spot, distNm, intel);
   }
 
+  /** Species-aware bait / jig color paragraph for fishing briefings. */
+  function baitPresentationParagraph(spot, species, surface) {
+    var sp = (species || []).join(' ').toLowerCase();
+    var habitat = String((spot && spot.habitat) || '').toLowerCase();
+    var deep = /180|200|fathom|deep/i.test(String((spot && spot.depth) || '')) ||
+      (parseInt(String((spot && spot.depth) || ''), 10) >= 120);
+
+    if (/\bwhite seabass\b|\bseabass\b/.test(sp) && !/sand bass|kelp bass|calico/.test(sp)) {
+      return 'Bait & presentation: live squid first — fly-line or a slow mid-column drift at dawn/dusk. ' +
+        'Fish bait (sardine) is a distant backup; skip shrimp. Soft squid imitations in natural translucent or light glow only if live squid is gone. ' +
+        'Keep leader light enough for a natural fall; retie after any kelp nick.';
+    }
+    if (/rockfish|lingcod|sculpin|sheephead/.test(sp) || deep) {
+      return 'Bait & presentation: squid strip on a dropper first; pink, orange, or dark-red/purple shrimp flies and metal jigs as the search bait. ' +
+        'In green or low light, go darker shrimp profiles or bigger silhouettes; in clear blue, pink shrimp or chrome metal. ' +
+        'Cut mackerel or fish strip only when you want lingcod. Stay vertical; retie after snags.';
+    }
+    if (/halibut/.test(sp)) {
+      return 'Bait & presentation: fish or squid — live squid or sardine/mackerel on a sliding sinker, dragged along sand-to-structure edges. ' +
+        'Skip shrimp. Soft plastics: white, silver, bone, or sardine-tone 5–8" swimbaits / scampi; add glow white when the water greens. ' +
+        'Slow the retrieve so the bait ticks bottom without burying.';
+    }
+    if (/calico|kelp bass|sand bass/.test(sp) || /kelp/.test(habitat)) {
+      return 'Bait & presentation: fish bait (live sardine/anchovy) first on the kelp edge; squid when they bury mid-column or water greens. ' +
+        'Skip shrimp for calicos. Weedless 4–6" swimbaits in sardine/blue-silver for clear water, or dark baitfish / green pumpkin / motor oil in green or low light. ' +
+        'Keep a short flat-line ready at dawn/dusk; abrasion-resistant leader around fronds.';
+    }
+    if (/yellowtail|bonito|barracuda/.test(sp) || surface) {
+      return 'Bait & presentation: fish bait (sardine/anchovy) and iron/feathers — skip shrimp. ' +
+        'Iron colors: chrome or blue/white in clear midday water; green sardine, green mackerel, or dark-back chrome at dawn/dusk or in green water; bigger/darker silhouettes in murk. ' +
+        'Fly-line live sardine when birds/bait show; yo-yo the high spot if yellowtail pin to structure. Keep a squid rod only as a structure backup.';
+    }
+    return 'Bait & presentation: choose forage deliberately — fish (sardine/anchovy/mackerel) for pelagics and kelp edges, squid for structure and white seabass, shrimp flies/jigs for rockfish. ' +
+      'Match jig color to water: chrome/blue-white in clear blue; green sardine or darker profiles in green or low light; pink/dark shrimp tones on the bottom. ' +
+      'Keep leader abrasion-resistant around reef; retie after snags.';
+  }
+
   function synthesizeFishBriefing(spot, distNm, intel) {
     if (!spot) return null;
     if (intel == null && arguments.length < 3) {
@@ -465,11 +502,7 @@
         : ('Primary approach: ' + tactics +
           ' Sounder first — idle across the high spot, mark fish and relief, then set a controlled drift or short-soak anchor up-current of the bite.'));
 
-    var tech2 = surface
-      ? ('Bait & presentation: feathers, yo-yos, and surface irons when bait is up; live sardine on a short flat-line or kite when YT/bonito show. ' +
-        'Keep a structure rod ready if the school stacks on nearby kelp or a high spot.')
-      : ('Bait & presentation: match the forage — live sardine/squid for bass and sheephead, dropper-loop squid for rockfish, iron or feathers when pelagics show. ' +
-        'Keep leader abrasion-resistant around reef; retie after snags. Vertical jigs excel on steep module faces; swimbaits shine on kelp edges.');
+    var tech2 = baitPresentationParagraph(spot, species, surface);
 
     var tech3 = 'Boat craft from King Harbor: clear the breakwater, then run ' +
       (run ? run.label : 'to the mark') +

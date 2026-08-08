@@ -1680,7 +1680,7 @@ function ensureDiveEngine(){
   _diveEnginePromise = loadScript('pin-feature-groups-data.js?v=2').catch(function(){ /* optional */ })
     .then(()=> loadScript('dive-briefings-data.js?v=2'))
     .then(()=> loadScript('dive-site-intel.js'))
-    .then(()=> loadScript('briefing-synth.js?v=3'))
+    .then(()=> loadScript('briefing-synth.js?v=4'))
     .then(()=> ensureForecastCharts())
     .then(()=> loadScript('dive-engine.js?v=15'))
     .then(()=>{
@@ -9321,7 +9321,7 @@ let _fishOceanPromise = null;
 function ensureFishSmart(){
   if(window.BoatFishSmart) return Promise.resolve(window.BoatFishSmart);
   if(_fishSmartPromise) return _fishSmartPromise;
-  _fishSmartPromise = loadScript('fish-smart.js?v=4').then(()=>{
+  _fishSmartPromise = loadScript('fish-smart.js?v=5').then(()=>{
     if(!window.BoatFishSmart) throw new Error('BoatFishSmart missing');
     return window.BoatFishSmart;
   }).catch(e=>{ _fishSmartPromise = null; throw e; });
@@ -10315,26 +10315,103 @@ function spotMiniBarHtml(slots){
   }).join('')+'</div>';
 }
 
-function spotBaitLine(spot){
-  if(spot.bait) return spot.bait;
-  const sp = spot.species.join(' ').toLowerCase();
-  if(sp.includes('halibut')) return 'Big white/silver swimbaits, live squid, or scampi-style lures';
-  if(sp.includes('calico') || sp.includes('sand bass') || sp.includes('bass'))
-    return 'Live sardine/squid or weedless 4–6" swimbaits at kelp edges';
-  if(sp.includes('bonito') || sp.includes('yellowtail') || sp.includes('barracuda'))
-    return 'Troll feathers or cast yo-yo/surface iron when bait marks show';
-  if(sp.includes('rockfish') || sp.includes('lingcod') || sp.includes('sculpin'))
-    return 'Dropper loops with squid strips or shrimp-mimic jigs';
-  return 'Match hook size to local forage — sardine, squid, or anchovy';
+/** Rich On site tackle block — forage + jig color + rigs when smart layer is loaded. */
+function fishTackleDetailHtml(spot, ctx){
+  if(window.BoatFishSmart && typeof BoatFishSmart.recommendTechnique === 'function'){
+    try{
+      const ocean = typeof fishOceanForSpot === 'function' && ctx
+        ? fishOceanForSpot(spot, ctx)
+        : null;
+      const tech = BoatFishSmart.recommendTechnique(spot, ctx || {}, ocean);
+      const intel = tech && tech.intel;
+      if(intel){
+        const lines = [];
+        if(intel.forage && intel.forage.line){
+          lines.push('<strong>Forage:</strong> '+esc(intel.forage.line.replace(/^Forage:\s*/i, '')));
+        }else{
+          lines.push('<strong>Bait:</strong> '+esc(spotBaitLine(spot, ctx)));
+        }
+        if(intel.bait){
+          const baitTxt = String(intel.bait).replace(/^Bait:\s*/i, '');
+          if(baitTxt) lines.push('<strong>Bait:</strong> '+esc(baitTxt));
+        }
+        if(intel.iron){
+          let jig = intel.iron.type || 'Iron/lure';
+          if(intel.iron.color) jig += ' · '+intel.iron.color;
+          if(intel.iron.altColor) jig += ' (alt '+intel.iron.altColor+')';
+          if(intel.iron.size) jig += ' · '+intel.iron.size;
+          lines.push('<strong>Jig / iron:</strong> '+esc(jig));
+        }
+        if(intel.rigs && intel.rigs.length){
+          lines.push('<strong>Rig:</strong> '+esc(intel.rigs.join(' · ')));
+        }
+        lines.push('<strong>Gear:</strong> '+esc(spotGearLine(spot, ctx)));
+        return lines.join('<br>');
+      }
+    }catch(_e){ /* fall through */ }
+  }
+  return '<strong>Bait:</strong> '+esc(spotBaitLine(spot, ctx))+'<br><strong>Gear:</strong> '+esc(spotGearLine(spot, ctx));
 }
 
-function spotGearLine(spot){
+function spotBaitLine(spot, ctx){
+  if(spot.bait) return spot.bait;
+  if(window.BoatFishSmart && typeof BoatFishSmart.recommendTechnique === 'function'){
+    try{
+      const ocean = typeof fishOceanForSpot === 'function' && ctx
+        ? fishOceanForSpot(spot, ctx)
+        : (typeof fishOceanForCtx === 'function' && ctx ? fishOceanForCtx(ctx) : null);
+      const tech = BoatFishSmart.recommendTechnique(spot, ctx || {}, ocean);
+      const smart = BoatFishSmart.baitSummaryLine ? BoatFishSmart.baitSummaryLine(tech) : '';
+      if(smart) return smart;
+      if(tech && tech.intel && tech.intel.bait){
+        return String(tech.intel.bait).replace(/^Bait:\s*/i, '');
+      }
+    }catch(_e){ /* fall through to species heuristic */ }
+  }
+  const sp = spot.species.join(' ').toLowerCase();
+  if(sp.includes('halibut'))
+    return 'Fish or squid first (live squid / sardine-mackerel) · white/silver swimbait · skip shrimp';
+  if(sp.includes('calico') || sp.includes('sand bass') || sp.includes('bass'))
+    return 'Fish bait (live sardine) first · squid backup on kelp · sardine-tone or dark swimbait · skip shrimp';
+  if(sp.includes('white seabass') || sp.includes('seabass'))
+    return 'Squid first (live) · fish bait distant backup · skip shrimp';
+  if(sp.includes('bonito') || sp.includes('yellowtail') || sp.includes('barracuda'))
+    return 'Fish bait (sardine/anchovy) · chrome or green-sardine iron · skip shrimp';
+  if(sp.includes('rockfish') || sp.includes('lingcod') || sp.includes('sculpin'))
+    return 'Squid strip first · pink/dark shrimp jig backup · dropper loop';
+  return 'Match forage — fish (sardine/anchovy), squid, or shrimp jig by species';
+}
+
+function spotGearLine(spot, ctx){
   if(spot.gear) return spot.gear;
+  if(window.BoatFishSmart && typeof BoatFishSmart.recommendTechnique === 'function' && ctx){
+    try{
+      const ocean = typeof fishOceanForSpot === 'function'
+        ? fishOceanForSpot(spot, ctx)
+        : (typeof fishOceanForCtx === 'function' ? fishOceanForCtx(ctx) : null);
+      const tech = BoatFishSmart.recommendTechnique(spot, ctx, ocean);
+      const intel = tech && tech.intel;
+      if(intel){
+        const bits = [];
+        if(intel.rigs && intel.rigs.length) bits.push(intel.rigs.join(' · '));
+        if(intel.iron){
+          let iron = intel.iron.type || '';
+          if(intel.iron.color) iron += (iron ? ' · ' : '') + intel.iron.color;
+          if(intel.iron.altColor) iron += ' (alt ' + intel.iron.altColor + ')';
+          if(intel.iron.size) iron += ' · ' + intel.iron.size;
+          if(iron) bits.push(iron);
+        }
+        if(bits.length) return bits.join(' — ');
+      }
+    }catch(_e){ /* fall through */ }
+  }
   const sp = spot.species.join(' ').toLowerCase();
   if(sp.includes('rockfish') || spot.depth?.includes('180'))
-    return 'Heavy baitcaster · 40+ lb braid · check depth limits';
-  if(sp.includes('halibut')) return 'Medium spinning · 15–25 lb fluoro · long casts';
-  if(sp.includes('yellowtail')) return 'Medium-heavy conventional · 25–30 lb leader';
+    return 'Heavy baitcaster · 40+ lb braid · pink/dark shrimp jig or squid dropper · check depth limits';
+  if(sp.includes('halibut')) return 'Medium spinning · 15–25 lb fluoro · white/silver swimbait or sliding-sinker squid';
+  if(sp.includes('yellowtail')) return 'Medium-heavy conventional · 25–30 lb leader · green-sardine or chrome iron';
+  if(sp.includes('calico') || sp.includes('sand bass'))
+    return 'Light-medium · 12–20 lb fluoro · weedless 4–6" swimbait (sardine or dark) + live bait rod';
   return 'Light-medium tackle · 12–20 lb fluorocarbon leader';
 }
 
@@ -10386,8 +10463,8 @@ function renderFishTopPicks(ranked, ctx, sol){
         '<div class="meta">Bite '+score+'/100 '+scoreLbl+' · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm · '+esc(fmtFishCoordsDepth(spot))+esc(modNote)+'</div>'+
         '<div class="rec">'+esc(spotConditionRec(spot, score, ctx))+(peakTxt ? ' · '+esc(peakTxt) : '')+'</div>'+
         howTxt+
-        '<div class="rec"><strong>Bait:</strong> '+esc(spotBaitLine(spot))+'</div>'+
-        '<div class="rec"><strong>Gear:</strong> '+esc(spotGearLine(spot))+'</div>'+
+        '<div class="rec"><strong>Bait:</strong> '+esc(spotBaitLine(spot, ctx))+'</div>'+
+        '<div class="rec"><strong>Gear:</strong> '+esc(spotGearLine(spot, ctx))+'</div>'+
       '</div></div>';
   }).join('') +
   '<p class="plan-note" style="margin-top:8px">Tap a pick to select it — species lean &amp; On site detail follow that mark (same as Dive list → site). Bite numbers match the Plan glance. Order uses modest site-fit among nearest <strong>'+FISH_PICKER_POOL+'</strong> groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> spots · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill color = bite · top '+FISH_MAP_MAX_MARKERS+'; same-reef modules count once.</p>';
@@ -10556,7 +10633,7 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
         '<span style="font-family:var(--font-mono);font-size:12px;font-weight:500">'+fmtFishCoordsDepth(spot)+'</span><br>'+
         'Bite: <strong>'+score+'/100</strong> (same as glance) · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm'+modLine+'<br>'+
         'Peak today: '+peakTxt+'<br>'+
-        '<strong>Bait:</strong> '+esc(spotBaitLine(spot))+comfortBlock+'<br>'+
+        '<strong>Bait:</strong> '+esc(spotBaitLine(spot, baseCtx))+comfortBlock+'<br>'+
         esc(spot.species.slice(0,4).join(', ')))
       .addTo(fishSpotLayer);
   });
@@ -10579,7 +10656,7 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
         'Bite '+score+'/100 (same as glance) · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm'+(spot.regional ? ' · regional run' : '')+
         (spot.featureGroupSize > 1 ? '<br><span style="opacity:.85">'+esc(spot.featureGroupName || fishFeatureDisplayName(spot.name))+' · '+spot.featureGroupSize+' modules</span>' : '')+'<br>'+
         (comfort ? 'Comfort '+comfort.bump+' · combined '+comfort.combined+'/100<br>' : '')+
-        '<strong>Bait:</strong> '+esc(spotBaitLine(spot)))
+        '<strong>Bait:</strong> '+esc(spotBaitLine(spot, baseCtx)))
       .addTo(fishSpotLayer);
   });
 
@@ -11121,7 +11198,7 @@ function ensureBriefingSynth(){
     return Promise.resolve(window.__BOAT_BRIEFING_SYNTH__);
   }
   if(_briefingSynthPromise) return _briefingSynthPromise;
-  _briefingSynthPromise = loadScript('briefing-synth.js?v=3')
+  _briefingSynthPromise = loadScript('briefing-synth.js?v=4')
     .then(()=> loadScript('fish-spot-intel.js').catch(()=>{}))
     .then(()=> window.__BOAT_BRIEFING_SYNTH__)
     .catch(e=>{ _briefingSynthPromise = null; throw e; });
@@ -11280,7 +11357,7 @@ function renderFishUtilDetail(row, ctx, sw, sol){
       '<div><span>Habitat</span><b>'+esc(spot.habitat)+'</b></div>'+
     '</div>'+
     '<div class="sec" style="margin-top:12px">Tackle &amp; bait</div>'+
-    '<p class="fish-verdict" style="font-size:13px"><strong>Bait:</strong> '+esc(spotBaitLine(spot))+'<br><strong>Gear:</strong> '+esc(spotGearLine(spot))+'</p>'+
+    '<p class="fish-verdict" style="font-size:13px">'+fishTackleDetailHtml(spot, ctx)+'</p>'+
     '<div class="tags" style="margin-top:8px">'+spot.species.map(s=>'<span class="chip a">'+esc(s)+'</span>').join('')+'</div>'+
     (peak ? '<p class="mono" style="font-size:12px;color:var(--good);margin-top:8px">Best window today (bite + site fit): '+esc(fmtDayTime(new Date(peak.t)))+' ('+peak.score+'/100)</p>' : '')+
     '<div class="sec" style="margin-top:12px">Swell at this mark</div>'+
@@ -11531,7 +11608,7 @@ function renderFishing(){
           '<div class="spot-rec">'+esc(spotConditionRec(spot, score, ctx))+'</div>'+
           (howTech ? '<div class="spot-rec"><strong>How:</strong> '+esc(howTech.label)+
             (howTip ? ' — '+esc(howTip) : ' — '+esc(howTech.presentation))+'</div>' : '')+
-          '<div class="spot-bait"><strong>Bait:</strong> '+esc(spotBaitLine(spot))+' · <strong>Gear:</strong> '+esc(spotGearLine(spot))+'</div>'+
+          '<div class="spot-bait"><strong>Bait:</strong> '+esc(spotBaitLine(spot, ctx))+' · <strong>Gear:</strong> '+esc(spotGearLine(spot, ctx))+'</div>'+
           spotMiniBarHtml(tl)+
           '<div class="note"><strong>'+esc(spot.habitat)+'</strong> · '+esc(spot.depth)+'<br>'+esc(spot.tactics)+'</div></div>';
       }).join('') +
