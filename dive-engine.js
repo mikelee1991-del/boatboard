@@ -1258,8 +1258,10 @@
       const L = 5.12 * T * T;
       const feltDepth = L / 2;
       const surgeAmp = Heff * Math.exp(-2 * Math.PI * depth / L);
-      /* Steeper Heff curve + tighter free zone (~0.35 ft) than the old soft 0.7 ft / 21× curve. */
-      let s = 95 - 32 * Math.pow(Math.max(0, Heff - 0.35), 1.4);
+      /* Surface Heff + depth-felt surge — deeper sites diverge from shallow ones on the same swell. */
+      const sSurf = 95 - 32 * Math.pow(Math.max(0, Heff - 0.35), 1.4);
+      const sFelt = 95 - 38 * Math.pow(Math.max(0, surgeAmp - 0.15), 1.25);
+      let s = 0.7 * sSurf + 0.3 * sFelt;
       if (T >= 14 && Heff >= 2) s -= 10;
       s = clamp(Math.round(s), 4, 98);
       F.push({
