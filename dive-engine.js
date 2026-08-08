@@ -2174,7 +2174,7 @@
       const skipped = Math.max(0, n - series.length);
       const note = 'Lines = ' + series.length + ' sites with distinct score curves among plan picks' +
         (skipped ? ' (asked for ' + n + '; nearby sites often share face/depth so the model score matches)' : '') +
-        '. Dashed lines help when curves run close. Same dive composite as the site rating — drag PLAN to retarget.';
+        '. Dashed lines help when curves run close. Cursor dots are exact scores (nested rings = a tie) — drag PLAN to retarget.';
       charts.renderMultiScoreChart({
         host: host,
         nowEl: $('diveCompareChartNow'),

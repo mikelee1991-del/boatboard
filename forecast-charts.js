@@ -41,8 +41,64 @@
   }
 
   /**
+   * Exact cursor marks for multi-series charts — no Y/X nudge of scores.
+   * Equal scores share one (x,y); concentric rings keep each series color visible.
+   * marks: [{ i, color, v, y }]
+   */
+  function exactSeriesMarkLayouts(marks) {
+    if (!marks || !marks.length) return [];
+    const sorted = marks.slice().sort((a, b) => a.i - b.i);
+    const groups = [];
+    sorted.forEach(m => {
+      let g = null;
+      for (let i = 0; i < groups.length; i++) {
+        if (Math.abs(groups[i].v - m.v) < 0.51) { g = groups[i]; break; }
+      }
+      if (!g) {
+        g = { v: m.v, y: m.y, members: [] };
+        groups.push(g);
+      }
+      g.members.push(m);
+    });
+    const out = [];
+    groups.forEach(g => {
+      const n = g.members.length;
+      /* Largest ring first so smaller rings paint on top at the same true Y */
+      for (let k = n - 1; k >= 0; k--) {
+        const m = g.members[k];
+        const r = n === 1 ? (m.i === 0 ? 5 : 4) : (3.2 + k * 1.7);
+        out.push({ i: m.i, color: m.color, v: m.v, y: g.y, r: r });
+      }
+    });
+    return out;
+  }
+
+  function appendExactSeriesMarksDom(g, marks, x) {
+    exactSeriesMarkLayouts(marks).forEach(m => {
+      g.appendChild(svgEl('circle', {
+        cx: x.toFixed(1),
+        cy: m.y.toFixed(1),
+        r: String(m.r),
+        fill: m.color,
+        stroke: 'var(--card)',
+        'stroke-width': m.r >= 5 ? '1.5' : '1.25',
+        'pointer-events': 'none'
+      }));
+    });
+  }
+
+  function exactSeriesMarksSvg(marks, x) {
+    return exactSeriesMarkLayouts(marks).map(m =>
+      '<circle cx="' + x.toFixed(1) + '" cy="' + m.y.toFixed(1) + '" r="' + m.r +
+      '" fill="' + m.color + '" stroke="var(--card)" stroke-width="' +
+      (m.r >= 5 ? '1.5' : '1.25') + '" pointer-events="none"/>'
+    ).join('');
+  }
+
+  /**
    * Click / drag the PLAN cursor (or the plot track) to pick a trip time.
    * Live-previews the marker; commits via onHighlightChange(ms) on pointerup.
+   * Optional ctx.seriesAt(t) keeps multi-series dots locked to exact scores while dragging.
    */
   function attachHighlightInteraction(host, ctx) {
     const svg = host.querySelector('svg');
@@ -55,6 +111,9 @@
     } = ctx;
     const clamp = ctx.clamp || ((v, a, b) => Math.max(a, Math.min(b, v)));
     const step = snapMs != null ? snapMs : 15 * 60 * 1000;
+    const showValueDot = ctx.showValueDot !== false;
+    const seriesAt = typeof ctx.seriesAt === 'function' ? ctx.seriesAt : null;
+    const onPreview = typeof ctx.onPreview === 'function' ? ctx.onPreview : null;
 
     function snapT(t) {
       return Math.round(t / step) * step;
@@ -72,12 +131,18 @@
       planG = svgEl('g', { class: 'score-plan-cursor', 'aria-hidden': 'true' });
       svg.appendChild(planG);
     }
+    let marksG = svg.querySelector('g.score-plan-series-marks');
+    if (!marksG && seriesAt) {
+      marksG = svgEl('g', { class: 'score-plan-series-marks', 'aria-hidden': 'true' });
+      if (planG.nextSibling) svg.insertBefore(marksG, planG.nextSibling);
+      else svg.appendChild(marksG);
+    }
 
     function paintPlanAt(t) {
       let v = valueAt(t);
-      if (v == null) return;
+      if (v == null && !seriesAt) return;
       const hx = xS(t);
-      const hy = yS(v);
+      const hy = v != null ? yS(v) : padT + plotH / 2;
       let labelY = padT - 6;
       if (nowMs != null && nowMs >= tMin && nowMs <= tMax && Math.abs(hx - xS(nowMs)) < 36) {
         labelY = padT - 20;
@@ -88,11 +153,14 @@
         stroke: hlColor, 'stroke-width': '2.5', 'stroke-dasharray': '7 4', opacity: '0.95',
         'pointer-events': 'none'
       }));
-      planG.appendChild(svgEl('circle', {
-        cx: hx.toFixed(1), cy: hy.toFixed(1), r: '6',
-        fill: hlColor, stroke: 'var(--card)', 'stroke-width': '2',
-        'pointer-events': 'none'
-      }));
+      /* Single-series: cyan value dot. Multi-series: series-colored dots carry the scores. */
+      if (showValueDot && v != null) {
+        planG.appendChild(svgEl('circle', {
+          cx: hx.toFixed(1), cy: hy.toFixed(1), r: '6',
+          fill: hlColor, stroke: 'var(--card)', 'stroke-width': '2',
+          'pointer-events': 'none'
+        }));
+      }
       planG.appendChild(svgEl('text', {
         x: hx.toFixed(1), y: String(labelY), 'text-anchor': 'middle',
         'font-size': '11', fill: hlColor, 'font-weight': 'bold',
@@ -105,6 +173,13 @@
         fill: hlColor, 'fill-opacity': '0.001', stroke: 'none'
       }));
       planG.setAttribute('data-t', String(t));
+
+      if (marksG && seriesAt) {
+        while (marksG.firstChild) marksG.removeChild(marksG.firstChild);
+        const marks = seriesAt(t) || [];
+        appendExactSeriesMarksDom(marksG, marks, hx);
+      }
+      if (onPreview) onPreview(t);
     }
 
     /* Invisible plot track — tap / drag anywhere in the plot to move PLAN */
@@ -520,14 +595,23 @@
     }
 
     const now = opts.nowMs != null ? opts.nowMs : Date.now();
-    const nowV = valueAt(now);
-    if (nowEl) {
-      const bits = seriesIn.slice(0, 3).map((s, i) => {
-        const v = valueAtSeries(s.pts, now);
+    function topScoreBits(atT, n) {
+      const lim = n != null ? n : 3;
+      return seriesIn.slice(0, lim).map((s, i) => {
+        const v = valueAtSeries(s.pts, atT);
         return v != null ? ('#' + (i + 1) + ' ' + f0(v)) : null;
       }).filter(Boolean);
-      nowEl.textContent = bits.length ? ('Now ' + bits.join(' · ')) : '—';
     }
+    function writeNowEl(planT) {
+      if (!nowEl) return;
+      const nowBits = topScoreBits(now, 3);
+      const planBits = planT != null && isFinite(planT) ? topScoreBits(planT, 3) : [];
+      let txt = nowBits.length ? ('Now ' + nowBits.join(' · ')) : '—';
+      if (planBits.length) txt += ' · Plan ' + planBits.join(' · ');
+      nowEl.textContent = txt;
+    }
+    const hlPreview = (opts.highlightMs != null && isFinite(+opts.highlightMs)) ? +opts.highlightMs : null;
+    writeNowEl(hlPreview);
 
     /* padB only needs day labels — series key lives in meta (SVG key clipped after ~4 names). */
     const W = 860, H = 286, padL = 46, padR = 14, padT = 48, padB = 36;
@@ -580,24 +664,26 @@
       tick += tickMs;
     }
 
-    function paintSeriesDots(atT, xBase) {
-      if (atT == null || !(atT >= tMin && atT <= tMax)) return;
-      const marks = seriesIn.map((s, i) => {
+    function marksAt(atT) {
+      return seriesIn.map((s, i) => {
         const v = valueAtSeries(s.pts, atT);
-        return v == null ? null : { i, s, v, y: yS(v) };
+        return v == null ? null : { i: i, color: s.color, v: v, y: yS(v) };
       }).filter(Boolean);
-      /* Nudge overlapping dots so identical scores still read as separate series */
-      marks.sort((a, b) => a.y - b.y || a.i - b.i);
-      for (let k = 1; k < marks.length; k++) {
-        if (marks[k].y - marks[k - 1].y < 7) marks[k].y = marks[k - 1].y + 7;
+    }
+    function paintSeriesDots(atT, xBase) {
+      if (atT == null || !(atT >= tMin && atT <= tMax)) return '';
+      return exactSeriesMarksSvg(marksAt(atT), xBase);
+    }
+    function countTiedScores(atT) {
+      const marks = marksAt(atT);
+      if (marks.length < 2) return 0;
+      let ties = 0;
+      for (let i = 0; i < marks.length; i++) {
+        for (let j = i + 1; j < marks.length; j++) {
+          if (Math.abs(marks[i].v - marks[j].v) < 0.51) { ties++; break; }
+        }
       }
-      marks.forEach(m => {
-        if (m.y > padT + plotH - 2) m.y = padT + plotH - 2;
-        if (m.y < padT + 2) m.y = padT + 2;
-        const dx = (m.i - (seriesIn.length - 1) / 2) * 3.2;
-        svg += '<circle cx="' + (xBase + dx).toFixed(1) + '" cy="' + m.y.toFixed(1) + '" r="' +
-          (m.i === 0 ? 5 : 4) + '" fill="' + m.s.color + '" stroke="var(--card)" stroke-width="1.5" pointer-events="none"/>';
-      });
+      return ties;
     }
 
     /* Draw #1 last so it sits on top; dash secondary lines so overlaps stay distinguishable */
@@ -620,13 +706,13 @@
         '" fill="' + s.color + '" stroke="var(--card)" stroke-width="1.5" pointer-events="none"/>';
     });
 
-    if (now >= tMin && now <= tMax && nowV != null) {
+    if (now >= tMin && now <= tMax) {
       const nx = xS(now);
       svg += '<line x1="' + nx + '" y1="' + padT + '" x2="' + nx + '" y2="' + (padT + plotH) +
         '" stroke="' + CHART.now + '" stroke-width="2" opacity="0.95" pointer-events="none"/>';
       svg += '<text x="' + nx + '" y="' + (padT - 4) + '" text-anchor="middle" font-size="11" fill="' + CHART.now +
         '" font-weight="bold" pointer-events="none">NOW</text>';
-      paintSeriesDots(now, nx);
+      svg += '<g class="score-now-series-marks" aria-hidden="true">' + paintSeriesDots(now, nx) + '</g>';
     }
 
     const hlRaw = opts.highlightMs;
@@ -635,16 +721,14 @@
     const hlColor = opts.highlightColor || CHART.feel || '#56d4e9';
     let hlShown = false;
     if (hl != null && hl >= tMin && hl <= tMax) {
-      let hlV = valueAt(hl);
-      if (hlV == null) hlV = seriesIn[0].pts[0].v;
       hlShown = true;
-      const hx = xS(hl), hy = yS(hlV);
+      const hx = xS(hl);
       let labelY = padT - 6;
       if (now >= tMin && now <= tMax && Math.abs(hx - xS(now)) < 36) labelY = padT - 20;
       svg += '<g class="score-plan-cursor" data-t="' + hl + '" aria-hidden="true">';
       svg += '<line x1="' + hx + '" y1="' + padT + '" x2="' + hx + '" y2="' + (padT + plotH) +
         '" stroke="' + hlColor + '" stroke-width="2.5" stroke-dasharray="7 4" opacity="0.95" pointer-events="none"/>';
-      svg += '<circle cx="' + hx + '" cy="' + hy + '" r="6" fill="' + hlColor + '" stroke="var(--card)" stroke-width="2" pointer-events="none"/>';
+      /* No cyan value dot on multi charts — series colors are the score marks */
       svg += '<text x="' + hx + '" y="' + labelY + '" text-anchor="middle" font-size="11" fill="' + hlColor +
         '" font-weight="bold" pointer-events="none">' + esc(hlLabel) + '</text>';
       if (interactive) {
@@ -652,9 +736,10 @@
           '" width="36" height="' + plotH + '" fill="' + hlColor + '" fill-opacity="0.001" stroke="none"/>';
       }
       svg += '</g>';
-      paintSeriesDots(hl, hx);
+      svg += '<g class="score-plan-series-marks" aria-hidden="true">' + paintSeriesDots(hl, hx) + '</g>';
     } else if (interactive) {
       svg += '<g class="score-plan-cursor" aria-hidden="true"></g>';
+      svg += '<g class="score-plan-series-marks" aria-hidden="true"></g>';
     }
 
     svg += '<text x="' + padL + '" y="' + (padT - 18) + '" font-size="10" fill="var(--ink3)" font-weight="600" pointer-events="none">' + esc(yLabel) + '</text>';
@@ -669,9 +754,16 @@
         hlColor, hlLabel, nowMs: now,
         highlightMs: hlShown ? hl : null,
         snapMs: opts.snapMs,
+        showValueDot: false,
+        seriesAt: marksAt,
+        onPreview: writeNowEl,
         onHighlightChange: opts.onHighlightChange
       });
     }
+
+    const tieNow = countTiedScores(now);
+    const tiePlan = hlShown ? countTiedScores(hl) : 0;
+    const tieN = Math.max(tieNow, tiePlan);
 
     if (metaEl) {
       metaEl.innerHTML =
@@ -683,11 +775,16 @@
         seriesIn.map((s, i) =>
           '<span><i style="background:' + s.color + '"></i> #' + (i + 1) + ' ' + esc(s.name) + '</span>'
         ).join('') +
-        '<span>' + esc(fmtDayTime(new Date(tMin))) + ' → ' + esc(fmtDayTime(new Date(tMax))) + '</span>';
+        '<span>' + esc(fmtDayTime(new Date(tMin))) + ' → ' + esc(fmtDayTime(new Date(tMax))) + '</span>' +
+        (tieN
+          ? '<span>Nested rings = matching scores at cursor (exact values, not spread)</span>'
+          : '<span>Dots sit on exact scores at NOW/PLAN</span>');
     }
     if (noteEl) {
-      noteEl.textContent = opts.note || '';
-      noteEl.hidden = !opts.note;
+      const clarify = ' Cursor dots use exact scores — no nudge. Matching scores share one point (nested color rings).';
+      const base = opts.note || '';
+      noteEl.textContent = base + (base && !/exact scores/i.test(base) ? clarify : (!base ? clarify.trim() : ''));
+      noteEl.hidden = !noteEl.textContent;
     }
   }
 

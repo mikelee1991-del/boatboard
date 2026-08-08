@@ -1669,7 +1669,7 @@ function ensureForecastCharts(){
   if(window.BoatForecastCharts) return Promise.resolve(window.BoatForecastCharts);
   if(_forecastChartsPromise) return _forecastChartsPromise;
   /* ?v=6: multi-series dashes + PLAN dots; legend in meta (no clipped SVG key). */
-  _forecastChartsPromise = loadScript('forecast-charts.js?v=6').then(()=> window.BoatForecastCharts)
+  _forecastChartsPromise = loadScript('forecast-charts.js?v=7').then(()=> window.BoatForecastCharts)
     .catch(e=>{ _forecastChartsPromise = null; throw e; });
   return _forecastChartsPromise;
 }
@@ -9866,7 +9866,7 @@ function renderFishCompareChart(ranked){
         setFishPlanWhen(new Date(+ms));
         try{ renderFishing(); }catch(e){ console.error(e); }
       },
-      note: 'Lines = top '+top.length+' plan picks (site-fit score over time — preferred tide/time/SST + regional bite). Same window as the bite chart; drag PLAN to retarget the trip.',
+      note: 'Lines = top '+top.length+' plan picks (site-fit score over time — preferred tide/time/SST + regional bite). Cursor dots are exact scores at NOW/PLAN — overlapping or nested rings mean matching scores, not unique positions. Drag PLAN to retarget.',
       CHART, WX_C, HR, clamp, f0, f1, esc, fmtDayTime
     });
   };
