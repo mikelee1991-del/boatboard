@@ -814,6 +814,13 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <div class="tide-chart-meta" id="diveScoreChartMeta"></div>
           <p id="diveScoreChartNote" class="tide-rate-note"></p>
         </div>
+        <div class="sec">Top sites — scores over time</div>
+        <div class="card tide-chart-card">
+          <h3>Top sites compared <span id="diveCompareChartNow" class="tide-now-h">—</span></h3>
+          <div id="diveCompareChart" class="tide-chart" role="img" aria-label="Top dive sites scores over time"></div>
+          <div class="tide-chart-meta" id="diveCompareChartMeta"></div>
+          <p id="diveCompareChartNote" class="tide-rate-note"></p>
+        </div>
         <div class="sec">5-day outlook — 7 AM · noon · 5 PM</div>
         <div class="card"><div id="diveOutlook" class="dive-outlook"><div class="skel">Outlook loads with site data…</div></div></div>
         <div class="sec">Rating factors</div>
@@ -942,6 +949,13 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <div id="biteChart" class="tide-chart" role="img" aria-label="Bite index forecast over time"></div>
           <div class="tide-chart-meta" id="biteChartMeta"></div>
           <p id="biteChartNote" class="tide-rate-note"></p>
+        </div>
+        <div class="sec">Top spots — scores over time</div>
+        <div class="card tide-chart-card">
+          <h3>Top spots compared <span id="fishCompareChartNow" class="tide-now-h">—</span></h3>
+          <div id="fishCompareChart" class="tide-chart" role="img" aria-label="Top fishing spots scores over time"></div>
+          <div class="tide-chart-meta" id="fishCompareChartMeta"></div>
+          <p id="fishCompareChartNote" class="tide-rate-note"></p>
         </div>
         <div class="sec">Best windows — when to fish</div>
         <div class="card" id="fishWindows"><div class="skel">—</div></div>
@@ -1637,8 +1651,8 @@ let _forecastChartsPromise = null;
 function ensureForecastCharts(){
   if(window.BoatForecastCharts) return Promise.resolve(window.BoatForecastCharts);
   if(_forecastChartsPromise) return _forecastChartsPromise;
-  /* ?v=3: draggable PLAN cursor on bite / dive score charts. */
-  _forecastChartsPromise = loadScript('forecast-charts.js?v=3').then(()=> window.BoatForecastCharts)
+  /* ?v=4: multi-location compare charts + draggable PLAN. */
+  _forecastChartsPromise = loadScript('forecast-charts.js?v=4').then(()=> window.BoatForecastCharts)
     .catch(e=>{ _forecastChartsPromise = null; throw e; });
   return _forecastChartsPromise;
 }
@@ -1651,7 +1665,7 @@ function ensureDiveEngine(){
     .then(()=> loadScript('dive-site-intel.js'))
     .then(()=> loadScript('briefing-synth.js?v=3'))
     .then(()=> ensureForecastCharts())
-    .then(()=> loadScript('dive-engine.js?v=12'))
+    .then(()=> loadScript('dive-engine.js?v=13'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
       return window.BoatDive;
@@ -9696,6 +9710,114 @@ function renderBiteIndexChart(){
   });
 }
 
+/** How many top plan picks to overlay on the compare chart. */
+const FISH_COMPARE_N = 5;
+
+/** Per-spot fitScore series over the same window as the regional bite chart. */
+function fishSpotScoreSeries(spot, opts){
+  opts = opts || {};
+  const backHr = opts.backHr != null ? opts.backHr : TIDE_CHART_BACK_HR;
+  const fwdHr = opts.fwdHr != null ? opts.fwdHr : TIDE_CHART_FWD_HR;
+  const stepHr = opts.stepHr != null ? opts.stepHr : 1;
+  const now = opts.nowMs != null ? opts.nowMs : Date.now();
+  const { lat, lon } = boatPos();
+  let tMin = opts.tMin != null ? opts.tMin : now - backHr * HR;
+  let tMax = opts.tMax != null ? opts.tMax : now + fwdHr * HR;
+  const planMs = opts.planMs != null && isFinite(+opts.planMs) ? +opts.planMs : null;
+  if(planMs != null){
+    if(planMs < tMin) tMin = planMs - Math.min(backHr, 6) * HR;
+    if(planMs > tMax) tMax = planMs + Math.min(12, fwdHr) * HR;
+  }
+  const pts = [];
+  for(let t = tMin; t <= tMax + 1; t += stepHr * HR){
+    const at = new Date(t);
+    const solAt = solunarPeriods(lat, lon, at);
+    const solSt = solunarStatus(solAt, at);
+    const tide = tideStateAt(t);
+    const mc = marineSnapshotAt(at);
+    const wc = wxSnapshotAt(at);
+    const sstF = mc?.sea_surface_temperature != null ? mc.sea_surface_temperature * 9/5 + 32 : null;
+    const wind = wc?.wind_speed_10m != null ? wc.wind_speed_10m : null;
+    const seas = mc?.wave_height != null ? mc.wave_height * M2FT : null;
+    const ctx = {
+      lat, lon, hour: at.getHours(),
+      sol: solSt, tide, sstF, wind, seas,
+      moonIllum: solAt.illum,
+      planWhen: t
+    };
+    /* fitScore differentiates spots (site tide/time/SST fit); regional bite alone is identical. */
+    pts.push({ t, v: scoreFishSpot(spot, ctx).fitScore });
+  }
+  return { pts, tMin, tMax };
+}
+
+function renderFishCompareChart(ranked){
+  const host = $('fishCompareChart');
+  if(!host) return;
+  const paint = (api)=>{
+    if(!api || !api.renderMultiScoreChart){
+      host.innerHTML = '<div class="skel">Chart module failed to load</div>';
+      return;
+    }
+    if(!fishPlanDateOnly) initFishPlanWhen();
+    const planWhen = getFishPlanWhen();
+    const highlightMs = planWhen && isFinite(+planWhen) ? +planWhen : null;
+    const top = (ranked || lastFishRanked || []).slice(0, FISH_COMPARE_N);
+    if(!top.length){
+      host.innerHTML = '<div class="skel">Rank spots to compare scores over time</div>';
+      return;
+    }
+    const win = biteIndexSeries({ planMs: highlightMs });
+    const colors = (api.MULTI_SERIES_COLORS || []);
+    const series = top.map((row, i) => {
+      const spot = row.spot;
+      const s = fishSpotScoreSeries(spot, { planMs: highlightMs, tMin: win.tMin, tMax: win.tMax });
+      return {
+        id: spotKey(spot),
+        name: spotShortName(spot.name),
+        color: colors[i] || undefined,
+        pts: s.pts
+      };
+    });
+    const daily = typeof tideSunDailyForRange === 'function'
+      ? tideSunDailyForRange(win.tMin, win.tMax)
+      : null;
+    api.renderMultiScoreChart({
+      host,
+      nowEl: $('fishCompareChartNow'),
+      metaEl: $('fishCompareChartMeta'),
+      noteEl: $('fishCompareChartNote'),
+      series,
+      tMin: win.tMin,
+      tMax: win.tMax,
+      yLabel: 'Spot fit /100',
+      goodAt: BITE_GOOD_AT,
+      fairAt: BITE_FAIR_AT,
+      daily,
+      dayNightBands: typeof wxChartDayNightBands === 'function' ? wxChartDayNightBands : null,
+      sunMarkers: typeof wxChartSunMarkers === 'function' ? wxChartSunMarkers : null,
+      highlightMs,
+      highlightLabel: 'PLAN',
+      highlightColor: '#56d4e9',
+      onHighlightChange: (ms)=>{
+        if(ms == null || !isFinite(+ms)) return;
+        setFishPlanWhen(new Date(+ms));
+        try{ renderFishing(); }catch(e){ console.error(e); }
+      },
+      note: 'Lines = top '+top.length+' plan picks (site-fit score over time — preferred tide/time/SST + regional bite). Same window as the bite chart; drag PLAN to retarget the trip.',
+      CHART, WX_C, HR, clamp, f0, f1, esc, fmtDayTime
+    });
+  };
+  if(window.BoatForecastCharts){
+    paint(window.BoatForecastCharts);
+    return;
+  }
+  host.innerHTML = '<div class="skel">Loading spot comparison…</div>';
+  ensureForecastCharts().then(paint).catch(()=>{
+    host.innerHTML = '<div class="skel">Spot comparison unavailable</div>';
+  });
+}
+
 /**
  * Spot bite display = pure fishBiteScore (same as Plan glance / bite chart at plan time).
  * Site-fit (SST match, preferred tide/time, exposure) only drives rank order (fitScore)
@@ -11302,7 +11424,10 @@ function renderFishing(){
     renderFishComfortSynth(synthRanked, sw);
     renderFishTimeline(ranked, sol, ctx);
     if(activeTab() === 'fishing' && activeSubtab('fishing') === 'plan'){
-      setTimeout(()=>{ try{ renderBiteIndexChart(); }catch(e){ console.error('renderBiteIndexChart', e); } }, 40);
+      setTimeout(()=>{
+        try{ renderBiteIndexChart(); }catch(e){ console.error('renderBiteIndexChart', e); }
+        try{ renderFishCompareChart(ranked); }catch(e){ console.error('renderFishCompareChart', e); }
+      }, 40);
     }
     if(activeSubtab('fishing') === 'plan'){
       renderFishMap(synthRanked, allPinRanked, sol, tide, ctx);

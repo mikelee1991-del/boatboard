@@ -2058,6 +2058,100 @@
     }
   }
 
+  const DIVE_COMPARE_N = 5;
+
+  function renderDiveCompareChart(ranked) {
+    const host = $('diveCompareChart');
+    if (!host) return;
+    const list = ranked || lastRanked || [];
+    if (!S) {
+      host.innerHTML = '<div class="skel">Load dive conditions to compare sites…</div>';
+      return;
+    }
+    const paint = function (charts) {
+      if (!charts || !charts.renderMultiScoreChart) {
+        host.innerHTML = '<div class="skel">Chart module failed to load</div>';
+        return;
+      }
+      if (!userPlanWhen) setDiveWhen(new Date());
+      const planWhen = readDiveWhen();
+      const highlightMs = planWhen && isFinite(+planWhen) ? +planWhen : null;
+      const top = list.slice(0, DIVE_COMPARE_N);
+      if (!top.length) {
+        host.innerHTML = '<div class="skel">Rank sites to compare scores over time</div>';
+        return;
+      }
+      /* Shared window from the lead site so lines share the same X axis */
+      const lead = diveScoreSeries(top[0].site, { planMs: highlightMs });
+      if (lead.pts.length < 2) {
+        host.innerHTML = '<div class="skel">Need marine/weather data for site comparison</div>';
+        return;
+      }
+      const colors = charts.MULTI_SERIES_COLORS || [];
+      const series = top.map(function (row, i) {
+        const site = row.site;
+        const full = i === 0 ? lead : diveScoreSeries(site, { planMs: highlightMs });
+        const pts = full.pts.filter(function (p) {
+          return p.t >= lead.tMin && p.t <= lead.tMax;
+        });
+        return {
+          id: site.id,
+          name: groupListName(site),
+          color: colors[i] || undefined,
+          pts: pts.length >= 2 ? pts : full.pts
+        };
+      });
+      const daily = (typeof window.tideSunDailyForRange === 'function')
+        ? window.tideSunDailyForRange(lead.tMin, lead.tMax)
+        : null;
+      charts.renderMultiScoreChart({
+        host: host,
+        nowEl: $('diveCompareChartNow'),
+        metaEl: $('diveCompareChartMeta'),
+        noteEl: $('diveCompareChartNote'),
+        series: series,
+        tMin: lead.tMin,
+        tMax: lead.tMax,
+        yLabel: 'Dive /100',
+        goodAt: DIVE_GOOD_AT,
+        fairAt: DIVE_FAIR_AT,
+        daily: daily,
+        dayNightBands: typeof window.wxChartDayNightBands === 'function' ? window.wxChartDayNightBands : null,
+        sunMarkers: typeof window.wxChartSunMarkers === 'function' ? window.wxChartSunMarkers : null,
+        highlightMs: highlightMs,
+        highlightLabel: 'PLAN',
+        highlightColor: '#56d4e9',
+        onHighlightChange: function (ms) {
+          if (ms == null || !isFinite(+ms)) return;
+          setDiveWhen(new Date(+ms));
+          applyPlanWhenChange();
+        },
+        note: 'Lines = top ' + top.length + ' plan picks (same dive composite as the site rating — surge, vis, wind, runoff, tide). Drag PLAN to retarget the trip.',
+        CHART: window.CHART,
+        WX_C: window.WX_C,
+        HR: HR,
+        clamp: clamp,
+        f0: f0,
+        f1: f1,
+        esc: esc,
+        fmtDayTime: typeof window.fmtDayTime === 'function'
+          ? window.fmtDayTime
+          : function (d) { return fmtDay(d) + ' ' + fmtTime(d); }
+      });
+    };
+    const api = window.BoatForecastCharts;
+    if (api) {
+      paint(api);
+      return;
+    }
+    host.innerHTML = '<div class="skel">Loading site comparison…</div>';
+    if (typeof window.ensureForecastCharts === 'function') {
+      window.ensureForecastCharts().then(paint).catch(function () {
+        host.innerHTML = '<div class="skel">Site comparison unavailable</div>';
+      });
+    }
+  }
+
   function briefingBlockHtml(block) {
     if (typeof block === 'string') return '<p>' + esc(block) + '</p>';
     if (!block || !block.h) return '';
@@ -2281,6 +2375,11 @@
     renderSiteSelect();
     const allRanked = rankSitesAt(whenD, marine, wx, tides, lat, lon, null, { everyPin: true });
     renderDivePlanMap(ranked, allRanked, lat, lon);
+    if (divePlanVisible()) {
+      setTimeout(function () {
+        try { renderDiveCompareChart(ranked); } catch (e) { console.error('renderDiveCompareChart', e); }
+      }, 50);
+    }
   }
 
   async function ensureDivePlanMap() {
@@ -2528,6 +2627,7 @@
     renderTrends(current, when);
     setTimeout(function () {
       try { renderDiveScoreChart(current); } catch (e) { console.error('renderDiveScoreChart', e); }
+      try { renderDiveCompareChart(lastRanked); } catch (e) { console.error('renderDiveCompareChart', e); }
     }, 40);
     renderTideCurve(when);
     renderSiteGuide();
@@ -2739,6 +2839,7 @@
     renderSiteIntel,
     renderTrends,
     renderDiveScoreChart,
+    renderDiveCompareChart,
     renderHabBanner,
     fetchHabAlert,
     recommendHeadings,
