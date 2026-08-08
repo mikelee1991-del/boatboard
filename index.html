@@ -394,6 +394,11 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .tide-chart-meta span{display:inline-flex;align-items:center;gap:5px}
 .tide-chart-meta i{display:inline-block;width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .tide-rate-note{font-size:11px;color:var(--ink3);line-height:1.4;margin-top:6px}
+.compare-count-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 8px;font-size:12px;color:var(--ink2)}
+.compare-count-row label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);font-weight:600;white-space:nowrap}
+.compare-count-row input[type=range]{flex:1;min-width:140px;max-width:280px;accent-color:var(--accent);height:28px;cursor:pointer;touch-action:manipulation}
+.compare-count-row .compare-count-val{font-family:var(--mono);font-weight:700;color:var(--ink);min-width:1.6em;text-align:center}
+.compare-count-row .compare-count-hint{font-size:11px;color:var(--ink3)}
 .tide-chart-card .tide-rate-head{margin-top:14px;padding-top:12px;border-top:1px solid var(--line2)}
 .tide-transit-now{font-family:var(--mono);font-size:13px;color:var(--ink2);margin-bottom:10px;line-height:1.5}
 .tide-transit-now b{color:var(--ink);font-weight:600}
@@ -817,6 +822,12 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         <div class="sec">Top sites — scores over time</div>
         <div class="card tide-chart-card">
           <h3>Top sites compared <span id="diveCompareChartNow" class="tide-now-h">—</span></h3>
+          <div class="compare-count-row">
+            <label for="diveCompareCount">Sites</label>
+            <input type="range" id="diveCompareCount" min="2" max="10" step="1" value="5" aria-label="Number of dive sites to compare">
+            <span class="compare-count-val" id="diveCompareCountVal">5</span>
+            <span class="compare-count-hint">lines on chart</span>
+          </div>
           <div id="diveCompareChart" class="tide-chart" role="img" aria-label="Top dive sites scores over time"></div>
           <div class="tide-chart-meta" id="diveCompareChartMeta"></div>
           <p id="diveCompareChartNote" class="tide-rate-note"></p>
@@ -953,6 +964,12 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         <div class="sec">Top spots — scores over time</div>
         <div class="card tide-chart-card">
           <h3>Top spots compared <span id="fishCompareChartNow" class="tide-now-h">—</span></h3>
+          <div class="compare-count-row">
+            <label for="fishCompareCount">Spots</label>
+            <input type="range" id="fishCompareCount" min="2" max="10" step="1" value="5" aria-label="Number of fishing spots to compare">
+            <span class="compare-count-val" id="fishCompareCountVal">5</span>
+            <span class="compare-count-hint">lines on chart</span>
+          </div>
           <div id="fishCompareChart" class="tide-chart" role="img" aria-label="Top fishing spots scores over time"></div>
           <div class="tide-chart-meta" id="fishCompareChartMeta"></div>
           <p id="fishCompareChartNote" class="tide-rate-note"></p>
@@ -1665,7 +1682,7 @@ function ensureDiveEngine(){
     .then(()=> loadScript('dive-site-intel.js'))
     .then(()=> loadScript('briefing-synth.js?v=3'))
     .then(()=> ensureForecastCharts())
-    .then(()=> loadScript('dive-engine.js?v=13'))
+    .then(()=> loadScript('dive-engine.js?v=14'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
       return window.BoatDive;
@@ -9710,8 +9727,51 @@ function renderBiteIndexChart(){
   });
 }
 
-/** How many top plan picks to overlay on the compare chart. */
-const FISH_COMPARE_N = 5;
+/** How many top plan picks to overlay on the compare chart (shared Fish/Dive preference). */
+const PLAN_COMPARE_MIN = 2;
+const PLAN_COMPARE_MAX = 10;
+const PLAN_COMPARE_DEFAULT = 5;
+function getPlanCompareCount(){
+  const n = parseInt(store.get('planCompareCount'), 10);
+  if(isFinite(n)) return clamp(n, PLAN_COMPARE_MIN, PLAN_COMPARE_MAX);
+  return PLAN_COMPARE_DEFAULT;
+}
+function syncPlanCompareCountUi(n){
+  const v = n != null ? n : getPlanCompareCount();
+  [['fishCompareCount','fishCompareCountVal'],['diveCompareCount','diveCompareCountVal']].forEach(([rid, vid])=>{
+    const r = $(rid), lab = $(vid);
+    if(r && String(r.value) !== String(v)) r.value = String(v);
+    if(lab) lab.textContent = String(v);
+  });
+}
+function setPlanCompareCount(n, opts){
+  const v = clamp(Math.round(+n) || PLAN_COMPARE_DEFAULT, PLAN_COMPARE_MIN, PLAN_COMPARE_MAX);
+  store.set('planCompareCount', String(v));
+  syncPlanCompareCountUi(v);
+  if(opts && opts.silent) return v;
+  try{ renderFishCompareChart(lastFishRanked); }catch(e){ console.error(e); }
+  try{
+    if(window.BoatDive && typeof BoatDive.renderDiveCompareChart === 'function'){
+      BoatDive.renderDiveCompareChart();
+    }
+  }catch(e){ console.error(e); }
+  return v;
+}
+function bindPlanCompareCountSliders(){
+  syncPlanCompareCountUi();
+  ['fishCompareCount','diveCompareCount'].forEach(id=>{
+    const el = $(id);
+    if(!el || el._planCompareBound) return;
+    el._planCompareBound = true;
+    const onInput = ()=>{
+      const lab = $(id === 'fishCompareCount' ? 'fishCompareCountVal' : 'diveCompareCountVal');
+      if(lab) lab.textContent = el.value;
+    };
+    el.addEventListener('input', onInput);
+    el.addEventListener('change', ()=> setPlanCompareCount(el.value));
+  });
+}
+window.getPlanCompareCount = getPlanCompareCount;
 
 /** Per-spot fitScore series over the same window as the regional bite chart. */
 function fishSpotScoreSeries(spot, opts){
@@ -9762,7 +9822,9 @@ function renderFishCompareChart(ranked){
     if(!fishPlanDateOnly) initFishPlanWhen();
     const planWhen = getFishPlanWhen();
     const highlightMs = planWhen && isFinite(+planWhen) ? +planWhen : null;
-    const top = (ranked || lastFishRanked || []).slice(0, FISH_COMPARE_N);
+    const n = typeof getPlanCompareCount === 'function' ? getPlanCompareCount() : 5;
+    syncPlanCompareCountUi(n);
+    const top = (ranked || lastFishRanked || []).slice(0, n);
     if(!top.length){
       host.innerHTML = '<div class="skel">Rank spots to compare scores over time</div>';
       return;
@@ -16074,6 +16136,7 @@ function bindUI(){
   }
   initFishPlanWhen();
   PlanCalendar.bind();
+  bindPlanCompareCountSliders();
   bindPlanWhen(null, 'fishPlanTime', ()=>{ try{ renderFishing(); }catch(e){ console.error(e); } });
   $('fishPlanDateBtn')?.addEventListener('click', openFishDatePicker);
   const fishBtnCal = $('fishBtnCal');
