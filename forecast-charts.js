@@ -529,7 +529,8 @@
       nowEl.textContent = bits.length ? ('Now ' + bits.join(' · ')) : '—';
     }
 
-    const W = 860, H = 300, padL = 46, padR = 14, padT = 48, padB = 52;
+    /* padB only needs day labels — series key lives in meta (SVG key clipped after ~4 names). */
+    const W = 860, H = 286, padL = 46, padR = 14, padT = 48, padB = 36;
     const plotW = W - padL - padR, plotH = H - padT - padB;
     const vMin = 0, vMax = 100;
     const xS = t => padL + (t - tMin) / (tMax - tMin) * plotW;
@@ -538,6 +539,7 @@
     const interactive = typeof opts.onHighlightChange === 'function';
     const goodAt = opts.goodAt != null ? opts.goodAt : 82;
     const fairAt = opts.fairAt != null ? opts.fairAt : 55;
+    const DASH = [null, '9 4', '3 3', '12 3 3 3', '2 2', '8 3 2 3', '14 4', '5 2 2 2', '10 2 2 2 2 2', '4 4'];
 
     let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">';
 
@@ -573,23 +575,44 @@
       const x = xS(tick);
       svg += '<line x1="' + x + '" y1="' + padT + '" x2="' + x + '" y2="' + (padT + plotH) +
         '" stroke="var(--line2)" stroke-width="1" stroke-dasharray="3 4" pointer-events="none"/>';
-      svg += '<text x="' + x + '" y="' + (H - 22) + '" text-anchor="middle" font-size="11" fill="var(--ink3)" font-weight="500" pointer-events="none">' +
+      svg += '<text x="' + x + '" y="' + (H - 10) + '" text-anchor="middle" font-size="11" fill="var(--ink3)" font-weight="500" pointer-events="none">' +
         esc(fmtDayTime(new Date(tick))) + '</text>';
       tick += tickMs;
     }
 
-    /* Draw #1 last so it sits on top */
+    function paintSeriesDots(atT, xBase) {
+      if (atT == null || !(atT >= tMin && atT <= tMax)) return;
+      const marks = seriesIn.map((s, i) => {
+        const v = valueAtSeries(s.pts, atT);
+        return v == null ? null : { i, s, v, y: yS(v) };
+      }).filter(Boolean);
+      /* Nudge overlapping dots so identical scores still read as separate series */
+      marks.sort((a, b) => a.y - b.y || a.i - b.i);
+      for (let k = 1; k < marks.length; k++) {
+        if (marks[k].y - marks[k - 1].y < 7) marks[k].y = marks[k - 1].y + 7;
+      }
+      marks.forEach(m => {
+        if (m.y > padT + plotH - 2) m.y = padT + plotH - 2;
+        if (m.y < padT + 2) m.y = padT + 2;
+        const dx = (m.i - (seriesIn.length - 1) / 2) * 3.2;
+        svg += '<circle cx="' + (xBase + dx).toFixed(1) + '" cy="' + m.y.toFixed(1) + '" r="' +
+          (m.i === 0 ? 5 : 4) + '" fill="' + m.s.color + '" stroke="var(--card)" stroke-width="1.5" pointer-events="none"/>';
+      });
+    }
+
+    /* Draw #1 last so it sits on top; dash secondary lines so overlaps stay distinguishable */
     const drawOrder = seriesIn.map((_, i) => i).reverse();
     drawOrder.forEach(i => {
       const s = seriesIn[i];
       const winPts = s.pts.filter(p => p.t >= tMin && p.t <= tMax);
       if (winPts.length < 2) return;
       const line = winPts.map((p, j) => (j ? 'L' : 'M') + xS(p.t).toFixed(1) + ',' + yS(p.v).toFixed(1)).join(' ');
-      const sw = i === 0 ? 2.8 : 2;
-      const op = i === 0 ? '1' : '0.88';
+      const sw = i === 0 ? 2.8 : 2.1;
+      const op = i === 0 ? '1' : '0.92';
+      const dash = DASH[i % DASH.length];
       svg += '<path d="' + line + '" fill="none" stroke="' + s.color + '" stroke-width="' + sw +
-        '" stroke-linejoin="round" stroke-linecap="round" opacity="' + op + '" pointer-events="none"/>';
-      /* End-cap + rank badge near the right edge */
+        '" stroke-linejoin="round" stroke-linecap="round" opacity="' + op + '"' +
+        (dash ? ' stroke-dasharray="' + dash + '"' : '') + ' pointer-events="none"/>';
       const last = winPts[winPts.length - 1];
       const lx = Math.min(xS(last.t), W - padR - 2);
       const ly = yS(last.v);
@@ -603,6 +626,7 @@
         '" stroke="' + CHART.now + '" stroke-width="2" opacity="0.95" pointer-events="none"/>';
       svg += '<text x="' + nx + '" y="' + (padT - 4) + '" text-anchor="middle" font-size="11" fill="' + CHART.now +
         '" font-weight="bold" pointer-events="none">NOW</text>';
+      paintSeriesDots(now, nx);
     }
 
     const hlRaw = opts.highlightMs;
@@ -628,22 +652,12 @@
           '" width="36" height="' + plotH + '" fill="' + hlColor + '" fill-opacity="0.001" stroke="none"/>';
       }
       svg += '</g>';
+      paintSeriesDots(hl, hx);
     } else if (interactive) {
       svg += '<g class="score-plan-cursor" aria-hidden="true"></g>';
     }
 
     svg += '<text x="' + padL + '" y="' + (padT - 18) + '" font-size="10" fill="var(--ink3)" font-weight="600" pointer-events="none">' + esc(yLabel) + '</text>';
-
-    /* Compact color key along the bottom */
-    let keyX = padL;
-    seriesIn.forEach((s, i) => {
-      const label = '#' + (i + 1) + ' ' + s.name;
-      const short = label.length > 22 ? label.slice(0, 20) + '…' : label;
-      svg += '<rect x="' + keyX + '" y="' + (H - 14) + '" width="10" height="10" rx="2" fill="' + s.color + '" pointer-events="none"/>';
-      svg += '<text x="' + (keyX + 14) + '" y="' + (H - 5) + '" font-size="10" fill="var(--ink2)" font-weight="600" pointer-events="none">' +
-        esc(short) + '</text>';
-      keyX += 12 + short.length * 6.2 + 10;
-    });
 
     svg += '</svg>';
     host.innerHTML = svg;

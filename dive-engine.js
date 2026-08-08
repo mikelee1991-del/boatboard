@@ -2063,6 +2063,63 @@
     return 5;
   }
 
+  function diveExposureBucket(site) {
+    if (!site || site.face == null || site.face === '') return 'open';
+    const f = Number(site.face);
+    if (!isFinite(f)) return 'open';
+    return String(Math.round(((f % 360) + 360) % 360 / 45) * 45);
+  }
+
+  function diveDepthBucket(site) {
+    const d = site && site.depth != null ? Number(site.depth) : 30;
+    if (!isFinite(d) || d < 25) return 'shallow';
+    if (d < 50) return 'mid';
+    return 'deep';
+  }
+
+  function diveSeriesSignature(pts) {
+    if (!pts || !pts.length) return '';
+    const step = Math.max(1, Math.floor(pts.length / 20));
+    let s = '';
+    for (let i = 0; i < pts.length; i += step) s += Math.round(pts[i].v) + ',';
+    return s;
+  }
+
+  /**
+   * Build up to n compare rows with distinct score trajectories.
+   * Nearby top picks often share face/depth → identical composites → stacked lines.
+   * Walk deeper in the ranked list for different exposure/depth profiles first.
+   */
+  function pickDiverseDiveCompare(ranked, n, planMs) {
+    const want = Math.max(2, n | 0);
+    const pool = ranked || [];
+    const chosen = [];
+    const usedIds = new Set();
+    const usedSigs = new Set();
+    const bucketCounts = new Map();
+
+    function tryAdd(row, mode) {
+      if (!row || !row.site || usedIds.has(row.site.id)) return false;
+      const site = row.site;
+      const bucket = diveExposureBucket(site) + '|' + diveDepthBucket(site);
+      if (mode === 'diverse' && (bucketCounts.get(bucket) || 0) >= 1) return false;
+      const full = diveScoreSeries(site, { planMs: planMs });
+      if (!full.pts || full.pts.length < 2) return false;
+      const sig = diveSeriesSignature(full.pts);
+      if (mode !== 'any' && usedSigs.has(sig)) return false;
+      usedIds.add(site.id);
+      usedSigs.add(sig);
+      bucketCounts.set(bucket, (bucketCounts.get(bucket) || 0) + 1);
+      chosen.push({ row: row, series: full, sig: sig, bucket: bucket });
+      return true;
+    }
+
+    for (let i = 0; i < pool.length && chosen.length < want; i++) tryAdd(pool[i], 'diverse');
+    for (let i = 0; i < pool.length && chosen.length < want; i++) tryAdd(pool[i], 'unique');
+    for (let i = 0; i < pool.length && chosen.length < want; i++) tryAdd(pool[i], 'any');
+    return chosen;
+  }
+
   function renderDiveCompareChart(ranked) {
     const host = $('diveCompareChart');
     if (!host) return;
@@ -2084,21 +2141,20 @@
       const countVal = $('diveCompareCountVal');
       if (countEl && String(countEl.value) !== String(n)) countEl.value = String(n);
       if (countVal) countVal.textContent = String(n);
-      const top = list.slice(0, n);
-      if (!top.length) {
+      if (!list.length) {
         host.innerHTML = '<div class="skel">Rank sites to compare scores over time</div>';
         return;
       }
-      /* Shared window from the lead site so lines share the same X axis */
-      const lead = diveScoreSeries(top[0].site, { planMs: highlightMs });
-      if (lead.pts.length < 2) {
+      const picked = pickDiverseDiveCompare(list, n, highlightMs);
+      if (!picked.length) {
         host.innerHTML = '<div class="skel">Need marine/weather data for site comparison</div>';
         return;
       }
+      const lead = picked[0].series;
       const colors = charts.MULTI_SERIES_COLORS || [];
-      const series = top.map(function (row, i) {
-        const site = row.site;
-        const full = i === 0 ? lead : diveScoreSeries(site, { planMs: highlightMs });
+      const series = picked.map(function (item, i) {
+        const site = item.row.site;
+        const full = item.series;
         const pts = full.pts.filter(function (p) {
           return p.t >= lead.tMin && p.t <= lead.tMax;
         });
@@ -2112,6 +2168,10 @@
       const daily = (typeof window.tideSunDailyForRange === 'function')
         ? window.tideSunDailyForRange(lead.tMin, lead.tMax)
         : null;
+      const skipped = Math.max(0, n - series.length);
+      const note = 'Lines = ' + series.length + ' sites with distinct score curves among plan picks' +
+        (skipped ? ' (asked for ' + n + '; nearby sites often share face/depth so the model score matches)' : '') +
+        '. Dashed lines help when curves run close. Same dive composite as the site rating — drag PLAN to retarget.';
       charts.renderMultiScoreChart({
         host: host,
         nowEl: $('diveCompareChartNow'),
@@ -2134,7 +2194,7 @@
           setDiveWhen(new Date(+ms));
           applyPlanWhenChange();
         },
-        note: 'Lines = top ' + top.length + ' plan picks (same dive composite as the site rating — surge, vis, wind, runoff, tide). Drag PLAN to retarget the trip.',
+        note: note,
         CHART: window.CHART,
         WX_C: window.WX_C,
         HR: HR,
