@@ -1169,7 +1169,7 @@
         'ultra-clear': 'Ultra-clear water regionally — bait may sit deeper; fish blue edges if you find a green filament.',
         'clear': 'Mostly clear/blue-green — normal SoCal mixed fishing; watch for subtle color breaks.',
         'green': 'Green productive water — bait more likely on kelp and chlorophyll fronts.',
-        'very-green': 'Very green water — fish the green-to-blue edge; viz drops in the thickest patches.',
+        'very-green': 'Very green water — fish the green-to-blue edge; skip the thickest soup.',
         'bloom': 'Bloom signal — don\'t fish the soup; troll or drift the blue side of the filament.'
       };
       if (map[ocean.chlBand]) parts.push(map[ocean.chlBand]);

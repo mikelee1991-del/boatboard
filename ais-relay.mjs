@@ -5,6 +5,9 @@
  * Preferred for phones without keeping a PC on: deploy ais-relay-worker/
  * (Cloudflare Worker) once — see that folder's README.
  *
+ * Matches the Worker: accept the client first, open AISStream only after the
+ * first subscription arrives, then send it immediately (AISStream 3s rule).
+ *
  * Local LAN / plain HTTP:
  *   node ais-relay.mjs YOUR_AISSTREAM_API_KEY
  *   → Settings → ws://YOUR_LAN_IP:8765
@@ -38,9 +41,8 @@ wss.on('connection', (client, req) => {
   const from = req.socket.remoteAddress || '?';
   console.log('[relay] client connected from', from);
   let upstream = null;
-  let pendingSub = null;
   let closed = false;
-  let upRetry = null;
+  let started = false;
 
   function injectKey(raw){
     const sub = JSON.parse(raw.toString());
@@ -52,47 +54,59 @@ wss.on('connection', (client, req) => {
     return JSON.stringify(sub);
   }
 
-  function connectUpstream(){
+  function closeBoth(code = 1000, reason = '') {
     if (closed) return;
-    if (upstream) {
-      try { upstream.onclose = upstream.onerror = upstream.onmessage = null; upstream.close(); } catch (_) {}
-      upstream = null;
-    }
+    closed = true;
+    try { client.close(code, reason.slice(0, 120)); } catch (_) {}
+    try { upstream?.close(code, reason.slice(0, 120)); } catch (_) {}
+  }
+
+  function openUpstreamAndSend(subText) {
+    if (closed) return;
     upstream = new WebSocket(UPSTREAM);
     upstream.on('open', () => {
-      console.log('[relay] upstream open');
-      if (pendingSub && upstream.readyState === WebSocket.OPEN) upstream.send(pendingSub);
+      console.log('[relay] upstream open — sending subscription');
+      if (!closed && upstream.readyState === WebSocket.OPEN) {
+        try { upstream.send(subText); } catch (e) {
+          console.error('[relay] send failed', e.message);
+          closeBoth(1011, 'forward failed');
+        }
+      }
     });
     upstream.on('message', (data) => {
       if (client.readyState !== WebSocket.OPEN) return;
       const text = typeof data === 'string' ? data : data.toString('utf8');
       try { client.send(text); } catch (_) {}
     });
-    upstream.on('close', (code) => {
-      console.log('[relay] upstream closed', code, '— retry 4s');
-      if (closed) return;
-      clearTimeout(upRetry);
-      upRetry = setTimeout(connectUpstream, 4000);
+    upstream.on('close', (code, reasonBuf) => {
+      const reason = reasonBuf ? reasonBuf.toString() : 'upstream closed';
+      console.log('[relay] upstream closed', code, reason);
+      closeBoth(code || 1000, reason);
     });
-    upstream.on('error', (e) => console.error('[relay] upstream:', e.message));
+    upstream.on('error', (e) => {
+      console.error('[relay] upstream:', e.message);
+      closeBoth(1011, 'upstream error');
+    });
   }
-
-  connectUpstream();
 
   client.on('message', (raw) => {
     try {
-      pendingSub = injectKey(raw);
-      if (upstream?.readyState === WebSocket.OPEN) upstream.send(pendingSub);
+      const subText = injectKey(raw);
+      if (!started) {
+        started = true;
+        openUpstreamAndSend(subText);
+        return;
+      }
+      if (upstream?.readyState === WebSocket.OPEN) upstream.send(subText);
     } catch (e) {
       try { client.send(JSON.stringify({ error: e.message })); } catch (_) {}
+      closeBoth(1008, /missing.*api key|api key/i.test(e.message || '') ? 'missing-key' : 'bad subscription');
     }
   });
 
   client.on('close', () => {
-    closed = true;
-    clearTimeout(upRetry);
     console.log('[relay] client disconnected');
-    try { upstream?.close(); } catch (_) {}
+    closeBoth(1000, 'client closed');
   });
 
   client.on('error', (e) => console.error('[relay] client:', e.message));
