@@ -606,6 +606,8 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .anchor-warn.watch{border-color:rgba(255,217,102,.4);background:rgba(255,217,102,.08)}
 .anchor-warn.swing{border-color:rgba(255,102,68,.45);background:rgba(255,102,68,.1)}
 .anchor-warn strong{color:var(--ink)}
+.anchor-warn.onsite{margin:0 0 10px;padding:10px 12px;font-size:12px}
+.anchor-warn .anchor-tab-link{display:inline;margin:0;padding:0;border:0;background:none;color:var(--accent);font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;touch-action:manipulation}
 .anchor-hdg-now{font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:.02em;line-height:1.1}
 .anchor-hdg-sub{font-size:13px;color:var(--ink2);margin-top:4px}
 .anchor-force-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
@@ -879,6 +881,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         <div class="util-row">
           <select id="diveSiteSel" aria-label="Override dive site"></select>
         </div>
+        <div id="diveOnsiteSwing" class="anchor-warn onsite ok" role="status" hidden>Checking rode swing…</div>
         <div class="sec">Pre-dive briefing</div>
         <div id="diveSiteBriefing" class="card dive-briefing-card"><p class="dive-briefing-placeholder">Select a dive site from the dropdown to load the pre-dive briefing.</p></div>
         <div class="sec">Site intel</div>
@@ -1041,6 +1044,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         <div class="util-row">
           <select id="fishUtilSpot" aria-label="Spot for on-site guide"></select>
         </div>
+        <div id="fishOnsiteSwing" class="anchor-warn onsite ok" role="status" hidden>Checking rode swing…</div>
         <div id="fishUtilHero" class="card"><div class="skel">Pick a spot — loads tackle, conditions at the mark, and charts.</div></div>
         <div class="card" id="fishUtilSmart" style="margin-top:10px"><div class="skel">Technique &amp; species lean load with the spot…</div></div>
         <div class="sec">Fishing briefing</div>
@@ -3134,6 +3138,7 @@ function scheduleGpsUiRefresh(){
     if(activeTab()==='surf') try{ renderSurf(); }catch(e){ console.error(e); }
     if(activeTab()==='cruise') try{ renderCruise(); }catch(e){ console.error(e); }
     if(activeTab()==='anchorage') try{ renderAnchorage(); }catch(e){ console.error(e); }
+    try{ renderOnsiteSwingWarns(); }catch(e){ console.error(e); }
     if(activeTab()==='underway') renderUnderwayTab();
   };
   const elapsed = Date.now() - lastGpsUiAt;
@@ -3214,6 +3219,9 @@ function onGps(posObj){
   }
   if(moved && activeTab()==='anchorage'){
     try{ renderAnchorage(); }catch(e){ console.error(e); }
+  }
+  if(moved){
+    try{ renderOnsiteSwingWarns(); }catch(e){ console.error(e); }
   }
   if(moved && window.BoatDive && BoatDive.invalidatePlanMap) BoatDive.invalidatePlanMap();
   if(moved && (activeTab()==='dive' || activeTab()==='fishing')) scheduleSeafloorRefresh();
@@ -3659,6 +3667,7 @@ async function refreshForecasts(force){
       if(activeTab()==='surf') try{ renderSurf(); }catch(e){ console.error('renderSurf', e); }
       if(activeTab()==='cruise') try{ renderCruise(); }catch(e){ console.error('renderCruise', e); }
       if(activeTab()==='anchorage') try{ renderAnchorage(); }catch(e){ console.error('renderAnchorage', e); }
+      try{ renderOnsiteSwingWarns(); }catch(e){ console.error(e); }
       if(window.BoatDive && activeTab() === 'dive'){
         ensureDiveEngine().then(BD=>{ if(BD) BD.syncRecommendations(marine, wx, tides); }).catch(()=>{});
       }
@@ -3697,6 +3706,7 @@ async function refreshForecasts(force){
   if(activeTab()==='surf') try{ renderSurf(); }catch(e){ console.error('renderSurf', e); }
   if(activeTab()==='cruise') try{ renderCruise(); }catch(e){ console.error('renderCruise', e); }
   if(activeTab()==='anchorage') try{ renderAnchorage(); }catch(e){ console.error('renderAnchorage', e); }
+  try{ renderOnsiteSwingWarns(); }catch(e){ console.error(e); }
   if(window.BoatDive && activeTab() === 'dive'){
     ensureDiveEngine().then(BD=>{ if(BD) BD.syncRecommendations(marine, wx, tides); }).catch(()=>{});
   }
@@ -3972,6 +3982,7 @@ async function refreshOcean(){
   if(activeTab() === 'surf') try{ renderSurf(); }catch(e){ console.error(e); }
   if(activeTab() === 'cruise') try{ renderCruise(); }catch(e){ console.error(e); }
   if(activeTab() === 'anchorage') try{ renderAnchorage(); }catch(e){ console.error(e); }
+  try{ renderOnsiteSwingWarns(); }catch(e){ console.error(e); }
 }
 
 function buoyMarkerColor(hs){
@@ -11844,6 +11855,9 @@ function renderFishing(){
       lastFishPlanAllRanked = allPinRanked;
     }
     renderFishUtil(synthRanked, ctx, sw, sol);
+    if(activeSubtab('fishing') === 'onsite'){
+      try{ renderOnsiteSwingWarns(); }catch(e){ console.error(e); }
+    }
 
     const spotBox = $('fishSpots');
     if(spotBox){
@@ -13459,6 +13473,68 @@ function renderAnchorage(){
   renderAnchorageGlance(pack);
   renderAnchorageTimeline(pack);
   renderAnchorageCharts(pack);
+}
+
+/** Compact rode-swing line for Fish / Dive On site (same model as Anchorage tab). */
+function onsiteSwingWarnPayload(pack){
+  if(!pack){
+    return {
+      cls: 'watch',
+      html: '<strong>Swing check pending.</strong> Waiting for marine / weather to estimate rode swing. '+
+        '<button type="button" class="anchor-tab-link" data-goto-tab="anchorage">Anchorage</button> for the full plot.'
+    };
+  }
+  const risk = anchorSwingRiskLabel(pack.maxSwing6h);
+  const ref = pack.ref || {};
+  const link = ' <button type="button" class="anchor-tab-link" data-goto-tab="anchorage">Anchorage</button> for the plot.';
+  let body;
+  if(risk.cls === 'swing' || risk.cls === 'watch'){
+    body = risk.text;
+    if(pack.swingAt && pack.swingAt.heading != null){
+      body += ' Peaks near '+fmtDayTime(new Date(pack.swingAt.t))+' → '+fmtDir(pack.swingAt.heading)+'.';
+    }
+    if(ref.heading != null) body += ' Lay-to now '+fmtDir(ref.heading)+'.';
+  }else if(ref.heading != null){
+    body = 'Lay-to '+fmtDir(ref.heading)+
+      (pack.maxSwing6h != null ? ' · max swing ~'+f0(pack.maxSwing6h)+'° next 6h' : '')+
+      ' — limited rode hunt expected from model wind/swell.';
+  }else{
+    body = risk.text;
+  }
+  return { cls: risk.cls, html: '<strong>'+esc(risk.title)+'.</strong> '+esc(body)+link };
+}
+
+function paintOnsiteSwingHost(el, payload){
+  if(!el || !payload) return;
+  el.hidden = false;
+  el.className = 'anchor-warn onsite '+payload.cls;
+  el.innerHTML = payload.html;
+}
+
+function renderOnsiteSwingWarns(force){
+  const fishEl = $('fishOnsiteSwing');
+  const diveEl = $('diveOnsiteSwing');
+  const wantFish = force === true || (activeTab()==='fishing' && activeSubtab('fishing')==='onsite');
+  const wantDive = force === true || (activeTab()==='dive' && activeSubtab('dive')==='onsite');
+  if(!wantFish && !wantDive) return;
+  if(!fishEl && !diveEl) return;
+  let payload;
+  if(!marine && !wx){
+    payload = onsiteSwingWarnPayload(null);
+  }else{
+    try{
+      payload = onsiteSwingWarnPayload(anchorageSeries({ backHr: 0, fwdHr: 6, stepHr: 1 }));
+    }catch(e){
+      console.error('renderOnsiteSwingWarns', e);
+      payload = {
+        cls: 'watch',
+        html: '<strong>Swing check unavailable.</strong> '+esc(String(e && e.message || e))+
+          ' <button type="button" class="anchor-tab-link" data-goto-tab="anchorage">Anchorage</button>.'
+      };
+    }
+  }
+  if(wantFish) paintOnsiteSwingHost(fishEl, payload);
+  if(wantDive) paintOnsiteSwingHost(diveEl, payload);
 }
 
 function analyzeCruiseSectors(sw, windSpd, windDir, lat, lon){
@@ -16844,6 +16920,7 @@ function switchSubtab(section, name){
     }).catch(e=>console.error(e));
   }
   if(section === 'dive' && name === 'onsite'){
+    try{ renderOnsiteSwingWarns(); }catch(e){ console.error(e); }
     Promise.all([ensureDiveEngine(), ensureSeafloorRender()]).then(([BD])=>{
       if(!BD) return;
       if(BD.renderDiveBriefing) BD.renderDiveBriefing(BD.currentSite?.());
@@ -16867,6 +16944,7 @@ function switchSubtab(section, name){
     }).catch(e=>console.error(e));
   }
   if(section === 'fishing' && name === 'onsite'){
+    try{ renderOnsiteSwingWarns(); }catch(e){ console.error(e); }
     try{ renderFishing(); }catch(e){ console.error(e); }
     if(lastFishUtilRow && lastFishUtilCtx) refreshFishSeafloor(lastFishUtilRow, lastFishUtilCtx);
   }
@@ -16988,6 +17066,12 @@ function bindUI(){
   $('tabBar').addEventListener('click', e=>{
     const t = e.target.closest('.tab');
     if(t && t.dataset.tab) switchTab(t.dataset.tab);
+  });
+  document.addEventListener('click', e=>{
+    const go = e.target.closest('[data-goto-tab]');
+    if(!go) return;
+    const tab = go.getAttribute('data-goto-tab');
+    if(tab){ e.preventDefault(); switchTab(tab); }
   });
   $('wildBtnLeaflet')?.addEventListener('click', () => setWildMapMode('leaflet'));
   $('wildBtnEmbed')?.addEventListener('click', () => setWildMapMode('embed'));
@@ -17204,6 +17288,7 @@ function boot(){
   if(activeTab()==='anchorage'){
     try{ renderAnchorage(); }catch(e){ console.error(e); }
   }
+  try{ renderOnsiteSwingWarns(); }catch(e){ console.error(e); }
 
   /* Coast overlay ~0.9MB — idle after first paint; inland heuristic covers GPS until then */
   scheduleCoastOverlayForGps();
@@ -17228,6 +17313,7 @@ function boot(){
     if(activeTab()==='surf') try{ renderSurf(); }catch(e){ console.error(e); }
     if(activeTab()==='cruise') try{ renderCruise(); }catch(e){ console.error(e); }
     if(activeTab()==='anchorage') try{ renderAnchorage(); }catch(e){ console.error(e); }
+    try{ renderOnsiteSwingWarns(); }catch(e){ console.error(e); }
     if(activeTab()==='underway') renderUnderwayTab();
   }, 30000);
   timers.aisTick = setInterval(()=>{
