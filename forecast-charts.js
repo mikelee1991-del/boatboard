@@ -347,9 +347,11 @@
     /* Extra top pad so NOW + PLAN labels can stack without clipping (.tide-chart overflow:hidden). */
     const W = 860, H = 280, padL = 46, padR = 14, padT = 48, padB = 40;
     const plotW = W - padL - padR, plotH = H - padT - padB;
-    let vMin = 0, vMax = 100;
+    let vMin = opts.vMin != null ? +opts.vMin : 0;
+    let vMax = opts.vMax != null ? +opts.vMax : 100;
+    if(!(vMax > vMin)) { vMin = 0; vMax = 100; }
     const xS = t => padL + (t - tMin) / (tMax - tMin) * plotW;
-    const yS = v => padT + plotH - (v - vMin) / (vMax - vMin) * plotH;
+    const yS = v => padT + plotH - (clamp(v, vMin, vMax) - vMin) / (vMax - vMin) * plotH;
 
     const stroke = opts.stroke || 'var(--accent)';
     const fillId = opts.fillId || ('scoreFill_' + Math.random().toString(36).slice(2, 8));
@@ -384,11 +386,13 @@
         '" stroke="' + col + '" stroke-width="1" stroke-dasharray="4 5" opacity="0.45" pointer-events="none"/>';
     });
 
-    for (let v = 0; v <= 100; v += 25) {
+    const yStep = opts.yStep != null ? opts.yStep
+      : ((vMax - vMin) <= 100 ? 25 : ((vMax - vMin) <= 200 ? 45 : 50));
+    for (let v = vMin; v <= vMax + 1e-6; v += yStep) {
       const y = yS(v);
       svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y +
         '" stroke="var(--line2)" stroke-width="1" pointer-events="none"/>';
-      svg += '<text x="' + (padL - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="var(--ink3)" font-weight="500" pointer-events="none">' + v + '</text>';
+      svg += '<text x="' + (padL - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="var(--ink3)" font-weight="500" pointer-events="none">' + f0(v) + '</text>';
     }
 
     const tickMs = 24 * HR;

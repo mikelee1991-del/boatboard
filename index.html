@@ -601,6 +601,25 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .cruise-windy-wrap{position:relative;width:100%;aspect-ratio:1/1;min-height:240px;max-height:min(48vh,440px);background:var(--bg);border:1px solid var(--line2);border-radius:10px;overflow:hidden}
 .cruise-windy-wrap iframe,.cruise-windy-wrap #windy,.cruise-windy-wrap .windy-host{position:absolute;inset:0;width:100%;height:100%;border:0}
 .cruise-windy-caption{font-size:11px;color:var(--ink3);font-family:var(--mono);margin-top:6px;line-height:1.45}
+.anchor-warn{margin:0 0 12px;padding:12px 14px;border-radius:10px;border:1px solid var(--line2);background:var(--bg2);line-height:1.45;font-size:13px}
+.anchor-warn.ok{border-color:rgba(61,255,154,.35);background:rgba(61,255,154,.08)}
+.anchor-warn.watch{border-color:rgba(255,217,102,.4);background:rgba(255,217,102,.08)}
+.anchor-warn.swing{border-color:rgba(255,102,68,.45);background:rgba(255,102,68,.1)}
+.anchor-warn strong{color:var(--ink)}
+.anchor-hdg-now{font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:.02em;line-height:1.1}
+.anchor-hdg-sub{font-size:13px;color:var(--ink2);margin-top:4px}
+.anchor-force-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.anchor-force-pill{font-family:var(--mono);font-size:11px;padding:4px 8px;border-radius:6px;background:var(--bg);border:1px solid var(--line2);color:var(--ink2)}
+.anchor-timeline{margin:0;padding:0;list-style:none}
+.anchor-timeline li{display:grid;grid-template-columns:88px auto 1fr;gap:8px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line2);font-size:12px}
+.anchor-timeline li:last-child{border-bottom:none}
+.anchor-timeline .t{font-family:var(--mono);color:var(--ink3)}
+.anchor-timeline .h{font-family:var(--mono);font-weight:700;color:var(--accent)}
+.anchor-timeline .d{color:var(--ink2);line-height:1.4}
+.anchor-timeline li.now{background:rgba(86,212,233,.08);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:6px}
+.anchor-timeline li.swing .h{color:var(--poor)}
+@media(max-width:520px){.anchor-timeline li{grid-template-columns:72px 1fr;grid-template-rows:auto auto}.anchor-timeline .d{grid-column:1/-1}}
+
 
 .chl-mapbox,.sst-mapbox{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:8px}
 .chl-mapbox h3,.sst-mapbox h3{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding:10px 12px 0;font-weight:600}
@@ -1223,6 +1242,37 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
       </div>
     </section>
 
+    <section class="tabpanel" id="tab-anchorage" data-tab="anchorage">
+      <p class="prose" style="margin-bottom:10px"><strong>Anchorage</strong> — estimate the lay-to heading while at anchor (bow into wind / swell), and whether that heading will swing over the next hours as wind, swell, or tide phase shifts. Model is advisory — rode scope, bottom, and local current still rule.</p>
+      <div id="anchorWarn" class="anchor-warn ok" role="status">Loading anchorage forecast…</div>
+      <div class="grid3" id="anchorGlance"><div class="skel">Sampling wind &amp; swell…</div></div>
+      <div class="sec">Lay-to heading — next hours</div>
+      <div class="card tide-chart-card">
+        <h3>Swing from now <span id="anchorSwingChartNow" class="tide-now-h">—</span></h3>
+        <p class="prose" style="font-size:12px;margin:0 0 8px;color:var(--ink2)">Degrees the recommended lay-to will rotate away from the current recommendation. Spikes mean the boat is likely to swing on the rode.</p>
+        <div id="anchorSwingChart" class="tide-chart" role="img" aria-label="Anchor swing angle over time"></div>
+        <div class="tide-chart-meta" id="anchorSwingChartMeta"></div>
+        <p id="anchorSwingChartNote" class="tide-rate-note"></p>
+      </div>
+      <div class="sec">Comfort if you hold today’s heading</div>
+      <div class="card tide-chart-card">
+        <h3>Hold vs best lay-to <span id="anchorComfortChartNow" class="tide-now-h">—</span></h3>
+        <p class="prose" style="font-size:12px;margin:0 0 8px;color:var(--ink2)">If the rode keeps you on the <em>current</em> lay-to while forces rotate, beam seas/wind show up as a comfort drop versus re-aligning to the best heading each hour.</p>
+        <div id="anchorComfortChart" class="tide-chart" role="img" aria-label="Anchor comfort holding current heading versus best"></div>
+        <div class="tide-chart-meta" id="anchorComfortChartMeta"></div>
+        <p id="anchorComfortChartNote" class="tide-rate-note"></p>
+      </div>
+      <div class="sec">Hourly lay-to timeline</div>
+      <div class="card">
+        <ul class="anchor-timeline" id="anchorTimeline"><li class="skel">—</li></ul>
+      </div>
+      <div class="sec">How this works</div>
+      <div class="card prose" style="font-size:13px;line-height:1.5;color:var(--ink2)">
+        <p style="margin:0 0 8px">Lay-to ≈ bow into the strongest forcing — usually <strong>wind from</strong>, blended toward <strong>primary swell from</strong> when swell energy competes. Tide phase is shown as context (local current isn’t modeled yet).</p>
+        <p style="margin:0">Swing warning fires when the recommended heading rotates ~45°+ within the next 6 hours. Not a substitute for watching the rode or a proper swing-circle plot on the chartplotter.</p>
+      </div>
+    </section>
+
     <section class="tabpanel" id="tab-chlorophyll" data-tab="chlorophyll">
       <p class="prose" style="margin-bottom:10px"><strong>Chlorophyll-a</strong> satellite overlay — green water = plankton &amp; bait; blue = clear pelagic water. Choose <strong>NOAA</strong> (VIIRS NRT <strong>4 km</strong> via PFEG — also feeds Fish point samples), <strong>NASA OBPG</strong> (<strong>1 km</strong> map detail), or <strong>Blended</strong> (both). Fish smart-read samples the mark’s 4 km cell + denser SoCal zones with multi-day cloud lookback. Centered on LA offshore from King Harbor to Catalina.</p>
       <div class="chl-mapbox">
@@ -1372,6 +1422,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
     <button class="tab" data-tab="underway"><svg viewBox="0 0 24 24"><path d="M12 2l7 18h-4l-1.5-4h-5L7 20H3L12 2z"/><circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none"/></svg>Underway</button>
     <button class="tab" data-tab="ais"><svg viewBox="0 0 24 24"><path d="M12 2L4 20h16L12 2z"/><circle cx="12" cy="14" r="2"/></svg>AIS</button>
     <button class="tab" data-tab="cruise"><svg viewBox="0 0 24 24"><path d="M4 18c2-3 5-5 8-5s6 2 8 5"/><path d="M6 14l2-4h8l2 4"/><circle cx="12" cy="9" r="2"/><path d="M2 20h20"/></svg>Cruise</button>
+    <button class="tab" data-tab="anchorage"><svg viewBox="0 0 24 24"><path d="M12 2v6"/><circle cx="12" cy="10" r="2"/><path d="M6 14a6 6 0 0012 0"/><path d="M5 20h14"/></svg>Anchorage</button>
     <button class="tab" data-tab="swell"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="M2 15c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg>Swell &amp; Ocean</button>
     <button class="tab" data-tab="weather"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Weather</button>
     <button class="tab" data-tab="tides"><svg viewBox="0 0 24 24"><path d="M4 16c2-4 4-6 8-6s6 2 8 6"/><path d="M4 20h16"/></svg>Tides</button>
@@ -1637,7 +1688,7 @@ function onCoastOverlayReady(){
   applyResolvedPosition(pos.rawLat, pos.rawLon, pos.spd || 0);
   if(changed) scheduleGpsUiRefresh();
 }
-const OVERLAY_TABS = new Set(['swell','cruise','underway','ais','fishing','dive','lobster','surf','wildlife','chlorophyll','temperature']);
+const OVERLAY_TABS = new Set(['swell','cruise','anchorage','underway','ais','fishing','dive','lobster','surf','wildlife','chlorophyll','temperature']);
 function prefetchCoastOverlayForTab(tab){
   if(OVERLAY_TABS.has(tab)) loadCoastOverlayLite().catch(()=>{});
 }
@@ -1721,7 +1772,7 @@ function ensureForecastCharts(){
   if(window.BoatForecastCharts) return Promise.resolve(window.BoatForecastCharts);
   if(_forecastChartsPromise) return _forecastChartsPromise;
   /* ?v=6: multi-series dashes + PLAN dots; legend in meta (no clipped SVG key). */
-  _forecastChartsPromise = loadScript('forecast-charts.js?v=7').then(()=> window.BoatForecastCharts)
+  _forecastChartsPromise = loadScript('forecast-charts.js?v=8').then(()=> window.BoatForecastCharts)
     .catch(e=>{ _forecastChartsPromise = null; throw e; });
   return _forecastChartsPromise;
 }
@@ -3082,6 +3133,7 @@ function scheduleGpsUiRefresh(){
     if(activeTab()==='swell') renderSwellTab();
     if(activeTab()==='surf') try{ renderSurf(); }catch(e){ console.error(e); }
     if(activeTab()==='cruise') try{ renderCruise(); }catch(e){ console.error(e); }
+    if(activeTab()==='anchorage') try{ renderAnchorage(); }catch(e){ console.error(e); }
     if(activeTab()==='underway') renderUnderwayTab();
   };
   const elapsed = Date.now() - lastGpsUiAt;
@@ -3159,6 +3211,9 @@ function onGps(posObj){
   if(moved && wildMapMode === 'embed') updateWildPointBlueEmbed(false);
   if(moved && activeTab()==='cruise'){
     try{ renderCruise(); }catch(e){ console.error(e); }
+  }
+  if(moved && activeTab()==='anchorage'){
+    try{ renderAnchorage(); }catch(e){ console.error(e); }
   }
   if(moved && window.BoatDive && BoatDive.invalidatePlanMap) BoatDive.invalidatePlanMap();
   if(moved && (activeTab()==='dive' || activeTab()==='fishing')) scheduleSeafloorRefresh();
@@ -3603,6 +3658,7 @@ async function refreshForecasts(force){
       if(activeTab()==='fishing') try{ renderFishing(); }catch(e){ console.error('renderFishing', e); }
       if(activeTab()==='surf') try{ renderSurf(); }catch(e){ console.error('renderSurf', e); }
       if(activeTab()==='cruise') try{ renderCruise(); }catch(e){ console.error('renderCruise', e); }
+      if(activeTab()==='anchorage') try{ renderAnchorage(); }catch(e){ console.error('renderAnchorage', e); }
       if(window.BoatDive && activeTab() === 'dive'){
         ensureDiveEngine().then(BD=>{ if(BD) BD.syncRecommendations(marine, wx, tides); }).catch(()=>{});
       }
@@ -3640,6 +3696,7 @@ async function refreshForecasts(force){
   if(activeTab()==='fishing') try{ renderFishing(); }catch(e){ console.error('renderFishing', e); }
   if(activeTab()==='surf') try{ renderSurf(); }catch(e){ console.error('renderSurf', e); }
   if(activeTab()==='cruise') try{ renderCruise(); }catch(e){ console.error('renderCruise', e); }
+  if(activeTab()==='anchorage') try{ renderAnchorage(); }catch(e){ console.error('renderAnchorage', e); }
   if(window.BoatDive && activeTab() === 'dive'){
     ensureDiveEngine().then(BD=>{ if(BD) BD.syncRecommendations(marine, wx, tides); }).catch(()=>{});
   }
@@ -3914,6 +3971,7 @@ async function refreshOcean(){
   }
   if(activeTab() === 'surf') try{ renderSurf(); }catch(e){ console.error(e); }
   if(activeTab() === 'cruise') try{ renderCruise(); }catch(e){ console.error(e); }
+  if(activeTab() === 'anchorage') try{ renderAnchorage(); }catch(e){ console.error(e); }
 }
 
 function buoyMarkerColor(hs){
@@ -13022,6 +13080,387 @@ function segmentCrossesLand(lat1, lon1, lat2, lon2, steps){
   return false;
 }
 
+/** Blend two true bearings along the shortest arc. t=0 → a, t=1 → b. */
+function circularBlend(a, b, t){
+  if(a == null || !isFinite(+a)) return b != null ? normDeg(b) : null;
+  if(b == null || !isFinite(+b)) return normDeg(a);
+  const w = clamp(t, 0, 1);
+  const d = ((+b - +a + 540) % 360) - 180;
+  return normDeg(+a + d * w);
+}
+
+/**
+ * At anchor, beam seas/wind are the roll problem — prefer bow into the force.
+ * (Travel scoring prefers following seas; this inverts that preference.)
+ */
+function anchorSeasDiscomfort(relDeg, effFt){
+  if(relDeg == null || !isFinite(effFt) || effFt <= 0) return 0;
+  const r = normDeg(relDeg);
+  let m;
+  if(r <= 35 || r >= 325) m = 0.22;          /* head — preferred */
+  else if((r >= 55 && r <= 125) || (r >= 235 && r <= 305)) m = 1.25; /* beam — worst */
+  else if(r >= 145 && r <= 215) m = 0.55;     /* following */
+  else m = 0.7;
+  return effFt * m;
+}
+
+function scoreAnchorHeadingAt(lat, lon, courseHdg, sw, windSpd, windDir){
+  if(courseHdg == null || !isFinite(+courseHdg)) return null;
+  let discomfort = 0;
+  (sw || []).forEach(s => {
+    if(s.dir == null) return;
+    const sh = shadowFactor(lat, lon, s.dir, s.per, s.h);
+    const eff = sh.effHeight || s.h || 0;
+    discomfort += anchorSeasDiscomfort(relToBow(s.dir, courseHdg), eff);
+  });
+  if(isFinite(windSpd) && windSpd > 0 && windDir != null){
+    discomfort += anchorSeasDiscomfort(relToBow(windDir, courseHdg), windSpd * 0.4);
+  }
+  return clamp(Math.round(100 - discomfort * 5.2), 5, 98);
+}
+
+/**
+ * Recommended lay-to heading at a time — bow into wind, blended toward swell when swell energy competes.
+ * Directions are meteorological "from" (same as Open-Meteo / BoatBoard swell rays).
+ */
+function anchorLayToAt(lat, lon, when){
+  const at = when instanceof Date ? when : new Date(when);
+  const sw = typeof currentSwellsAt === 'function' ? currentSwellsAt(at) : currentSwells();
+  const wc = wxSnapshotAt(at);
+  const windKt = wc?.wind_speed_10m;
+  const windFrom = wc?.wind_direction_10m != null ? normDeg(wc.wind_direction_10m) : null;
+  const windGust = wc?.wind_gusts_10m;
+  const prim = primarySwellComponent(sw || []);
+  const swellFt = prim?.h != null ? prim.h : 0;
+  const swellFrom = prim?.dir != null ? normDeg(prim.dir) : null;
+  const swellPer = prim?.per;
+  const tide = typeof tideStateAt === 'function' ? tideStateAt(+at) : null;
+
+  const wF = (isFinite(windKt) && windKt > 0) ? windKt * windKt : 0;
+  const sF = (swellFt > 0.25 && swellFrom != null) ? swellFt * swellFt * 28 : 0;
+
+  let heading = null;
+  let force = 'unknown';
+  let why = '';
+
+  /* Wind sets the rode whenever it has authority (~8 kn+). Swell mostly tunes comfort / mild blend. */
+  if(isFinite(windKt) && windKt >= 8 && windFrom != null){
+    heading = windFrom;
+    force = 'wind';
+    why = 'Wind-rode · into '+fmtDir(windFrom)+' · '+f0(windKt)+' kn'+
+      (isFinite(windGust) && windGust > windKt + 3 ? ' (gusts '+f0(windGust)+')' : '');
+    if(swellFt >= 2.2 && swellFrom != null){
+      const blend = clamp((swellFt - 1.5) / 10, 0, 0.32);
+      heading = circularBlend(windFrom, swellFrom, blend);
+      if(blend >= 0.12){
+        force = 'mixed';
+        why = 'Wind-rode with swell bias · '+fmtDir(heading)+
+          ' (wind '+fmtDir(windFrom)+', swell '+fmtDir(swellFrom)+' '+f1(swellFt)+' ft)';
+      }
+    }
+  }else if(swellFrom != null && swellFt >= 0.8){
+    heading = swellFrom;
+    force = 'swell';
+    why = 'Light wind — bow into swell '+fmtDir(swellFrom)+' · '+f1(swellFt)+' ft'+
+      (swellPer != null ? ' @ '+f0(swellPer)+'s' : '');
+    if(isFinite(windKt) && windKt >= 4 && windFrom != null){
+      const blend = clamp(windKt / 16, 0, 0.4);
+      heading = circularBlend(swellFrom, windFrom, blend);
+      if(blend >= 0.15){
+        force = 'mixed';
+        why = 'Swell + light wind · '+fmtDir(heading)+
+          ' (swell '+fmtDir(swellFrom)+', wind '+fmtDir(windFrom)+' '+f0(windKt)+' kn)';
+      }
+    }
+  }else if(windFrom != null){
+    heading = windFrom;
+    force = 'light';
+    why = 'Light air — if anything sets, into '+fmtDir(windFrom)+
+      (isFinite(windKt) ? ' · '+f0(windKt)+' kn' : '');
+  }else if(swellFrom != null){
+    heading = swellFrom;
+    force = 'light';
+    why = 'Light air — bow into swell '+fmtDir(swellFrom);
+  }else{
+    why = 'Forces too light / incomplete forecast to call a rode heading';
+  }
+
+  if(heading != null) heading = normDeg(heading);
+  const comfort = scoreAnchorHeadingAt(lat, lon, heading, sw || [], windKt, windFrom);
+  return {
+    t: +at,
+    heading,
+    force,
+    why,
+    windFrom,
+    windKt: isFinite(windKt) ? windKt : null,
+    windGust: isFinite(windGust) ? windGust : null,
+    swellFrom,
+    swellFt,
+    swellPer: swellPer != null ? swellPer : null,
+    comfort,
+    tide,
+    sw: sw || [],
+    _wF: wF,
+    _sF: sF
+  };
+}
+
+function bestAnchorHeadingNear(lat, lon, sw, windKt, windFrom, seedHdg){
+  let best = seedHdg != null ? normDeg(seedHdg) : (windFrom != null ? windFrom : 0);
+  let bestScore = scoreAnchorHeadingAt(lat, lon, best, sw, windKt, windFrom) || 0;
+  const start = seedHdg != null ? normDeg(seedHdg) : best;
+  for(let d = -60; d <= 60; d += 15){
+    const h = normDeg(start + d);
+    const sc = scoreAnchorHeadingAt(lat, lon, h, sw, windKt, windFrom);
+    if(sc != null && sc > bestScore){ bestScore = sc; best = h; }
+  }
+  return { heading: best, comfort: bestScore };
+}
+
+/** Hourly anchorage series: recommended lay-to, swing from a reference heading, hold-vs-best comfort. */
+function anchorageSeries(opts){
+  opts = opts || {};
+  const backHr = opts.backHr != null ? opts.backHr : 3;
+  const fwdHr = opts.fwdHr != null ? opts.fwdHr : 18;
+  const stepHr = opts.stepHr != null ? opts.stepHr : 1;
+  const now = opts.nowMs != null ? opts.nowMs : Date.now();
+  const bp = boatPos();
+  const tMin = now - backHr * HR;
+  const tMax = now + fwdHr * HR;
+  const rows = [];
+  for(let t = tMin; t <= tMax + 1; t += stepHr * HR){
+    rows.push(anchorLayToAt(bp.lat, bp.lon, t));
+  }
+  /* Reference = nearest sample to now (lay-to you'd set if anchoring now). */
+  let ref = rows[0];
+  let refBd = Math.abs(rows[0].t - now);
+  rows.forEach(r => {
+    const d = Math.abs(r.t - now);
+    if(d < refBd){ ref = r; refBd = d; }
+  });
+  const refHdg = ref.heading;
+  rows.forEach(r => {
+    r.swingFromNow = (refHdg != null && r.heading != null) ? angDist(refHdg, r.heading) : null;
+    const best = bestAnchorHeadingNear(bp.lat, bp.lon, r.sw, r.windKt, r.windFrom, r.heading);
+    r.bestHeading = best.heading;
+    r.bestComfort = best.comfort;
+    r.holdComfort = (refHdg != null)
+      ? scoreAnchorHeadingAt(bp.lat, bp.lon, refHdg, r.sw, r.windKt, r.windFrom)
+      : null;
+  });
+  const ahead = rows.filter(r => r.t >= now - 0.1 * HR && r.t <= now + 6 * HR);
+  let maxSwing6h = 0;
+  let swingAt = null;
+  ahead.forEach(r => {
+    if(r.swingFromNow != null && r.swingFromNow > maxSwing6h){
+      maxSwing6h = r.swingFromNow;
+      swingAt = r;
+    }
+  });
+  return {
+    rows, tMin, tMax, now, ref, refHdg, maxSwing6h, swingAt,
+    lat: bp.lat, lon: bp.lon
+  };
+}
+
+function anchorSwingRiskLabel(maxSwing){
+  if(maxSwing == null || !isFinite(maxSwing)) return { cls: 'ok', title: 'Swing risk unknown', text: 'Need wind/swell forecast to estimate rode swing.' };
+  if(maxSwing >= 90) return {
+    cls: 'swing',
+    title: 'Large swing likely',
+    text: 'Recommended lay-to rotates ~'+f0(maxSwing)+'° within 6 hours — expect a meaningful swing on the rode as wind/swell shift. Check scope and neighbors.'
+  };
+  if(maxSwing >= 45) return {
+    cls: 'watch',
+    title: 'Swing watch',
+    text: 'Lay-to may rotate ~'+f0(maxSwing)+'° in the next 6 hours. Not a crisis if you have room, but plan for the boat to hunt.'
+  };
+  return {
+    cls: 'ok',
+    title: 'Stable lay-to window',
+    text: 'Recommended heading stays within ~'+f0(maxSwing)+'° over the next 6 hours — limited swing expected from model wind/swell.'
+  };
+}
+
+function renderAnchorageGlance(pack){
+  const box = $('anchorGlance');
+  if(!box) return;
+  const ref = pack.ref || {};
+  const risk = anchorSwingRiskLabel(pack.maxSwing6h);
+  const tide = ref.tide;
+  const tideTxt = tide
+    ? ((tide.rising == null ? '—' : (tide.rising ? 'Incoming' : 'Outgoing')) +
+      (tide.h != null ? ' · '+f1(tide.h)+' ft' : '') +
+      (tide.next ? ' · next '+(tide.next.type==='H'?'high':'low')+' '+fmtDayTime(new Date(tide.next.t)) : ''))
+    : 'Tide —';
+  const forceLbl = ref.force === 'wind' ? 'Wind-rode'
+    : ref.force === 'swell' ? 'Swell-rode'
+    : ref.force === 'mixed' ? 'Wind + swell'
+    : ref.force === 'light' ? 'Light air'
+    : '—';
+  box.innerHTML =
+    '<div class="card"><h3>Lay-to now</h3>'+
+      '<div class="anchor-hdg-now">'+(ref.heading != null ? f0(ref.heading)+'°' : '—')+'</div>'+
+      '<div class="anchor-hdg-sub">'+(ref.heading != null ? compass(ref.heading)+' true · bow into the force' : 'No clear heading')+'</div>'+
+      '<div class="anchor-force-row">'+
+        '<span class="anchor-force-pill">'+esc(forceLbl)+'</span>'+
+        (ref.comfort != null ? '<span class="anchor-force-pill">Comfort '+ref.comfort+'/100</span>' : '')+
+      '</div></div>'+
+    '<div class="card"><h3>Swing · next 6 h</h3>'+
+      '<div class="big" style="font-size:22px;color:'+(risk.cls==='swing'?'var(--poor)':risk.cls==='watch'?'var(--fair)':'var(--good)')+'">'+
+        (pack.maxSwing6h != null ? '~'+f0(pack.maxSwing6h)+'°' : '—')+'</div>'+
+      '<div class="sub">'+esc(risk.title)+
+        (pack.swingAt && pack.swingAt.heading != null
+          ? ' · peaks near '+esc(fmtDayTime(new Date(pack.swingAt.t)))+' → '+fmtDir(pack.swingAt.heading)
+          : '')+
+      '</div></div>'+
+    '<div class="card"><h3>Forces &amp; tide</h3>'+
+      '<div class="sub" style="line-height:1.55">'+
+        'Wind '+(ref.windFrom != null ? fmtDir(ref.windFrom) : '—')+
+        (ref.windKt != null ? ' · '+f0(ref.windKt)+' kn' : '')+'<br>'+
+        'Swell '+(ref.swellFrom != null ? fmtDir(ref.swellFrom) : '—')+
+        (ref.swellFt != null && ref.swellFt > 0 ? ' · '+f1(ref.swellFt)+' ft' : '')+'<br>'+
+        esc(tideTxt)+
+      '</div></div>';
+}
+
+function renderAnchorageWarn(pack){
+  const box = $('anchorWarn');
+  if(!box) return;
+  const risk = anchorSwingRiskLabel(pack.maxSwing6h);
+  const ref = pack.ref || {};
+  box.className = 'anchor-warn '+risk.cls;
+  box.innerHTML = '<strong>'+esc(risk.title)+'.</strong> '+esc(risk.text)+
+    (ref.why ? ' <span style="color:var(--ink3)">Now: '+esc(ref.why)+'.</span>' : '');
+}
+
+function renderAnchorageTimeline(pack){
+  const box = $('anchorTimeline');
+  if(!box) return;
+  const now = pack.now;
+  const rows = (pack.rows || []).filter(r => r.t >= now - 0.5 * HR && r.t <= now + 12 * HR);
+  if(!rows.length){
+    box.innerHTML = '<li class="skel">Need marine / weather hourly data</li>';
+    return;
+  }
+  box.innerHTML = rows.map(r => {
+    const isNow = Math.abs(r.t - now) < 0.6 * HR;
+    const swing = r.swingFromNow != null && r.swingFromNow >= 45;
+    const tideBit = r.tide
+      ? (r.tide.rising == null ? '' : (r.tide.rising ? ' · flood' : ' · ebb'))
+      : '';
+    return '<li class="'+(isNow?'now ':'')+(swing?'swing':'')+'">'+
+      '<span class="t">'+(isNow?'Now · ':'')+esc(fmtDayTime(new Date(r.t)))+'</span>'+
+      '<span class="h">'+(r.heading != null ? fmtDir(r.heading) : '—')+
+        (r.swingFromNow != null && r.swingFromNow >= 15 ? ' · Δ'+f0(r.swingFromNow)+'°' : '')+'</span>'+
+      '<span class="d">'+esc(r.force)+
+        (r.windKt != null ? ' · wind '+f0(r.windKt)+' kn' : '')+
+        (r.swellFt > 0.2 ? ' · swell '+f1(r.swellFt)+' ft' : '')+
+        tideBit+
+        (r.comfort != null ? ' · comfort '+r.comfort : '')+
+      '</span></li>';
+  }).join('');
+}
+
+function renderAnchorageCharts(pack){
+  const paint = (api)=>{
+    if(!api){
+      const s = $('anchorSwingChart');
+      if(s) s.innerHTML = '<div class="skel">Chart module unavailable</div>';
+      return;
+    }
+    const daily = typeof tideSunDailyForRange === 'function'
+      ? tideSunDailyForRange(pack.tMin, pack.tMax)
+      : null;
+    const swingPts = pack.rows
+      .filter(r => r.swingFromNow != null)
+      .map(r => ({ t: r.t, v: r.swingFromNow }));
+    if(api.renderScoreChart && $('anchorSwingChart')){
+      api.renderScoreChart({
+        host: $('anchorSwingChart'),
+        nowEl: $('anchorSwingChartNow'),
+        metaEl: $('anchorSwingChartMeta'),
+        noteEl: $('anchorSwingChartNote'),
+        pts: swingPts.length >= 2 ? swingPts : [{ t: pack.tMin, v: 0 }, { t: pack.tMax, v: 0 }],
+        tMin: pack.tMin,
+        tMax: pack.tMax,
+        yLabel: 'Swing ° from now',
+        stroke: '#ff9f6b',
+        fillId: 'anchorSwingFill',
+        vMin: 0,
+        vMax: 180,
+        yStep: 45,
+        goodAt: 90,
+        fairAt: 45,
+        markPeaks: false,
+        /* Low swing is good — color inverted vs bite charts */
+        scoreColor: (v)=> v >= 90 ? 'var(--poor)' : v >= 45 ? 'var(--fair)' : 'var(--good)',
+        daily,
+        dayNightBands: typeof wxChartDayNightBands === 'function' ? wxChartDayNightBands : null,
+        sunMarkers: typeof wxChartSunMarkers === 'function' ? wxChartSunMarkers : null,
+        note: 'Y-axis: angular change of recommended lay-to vs the heading at NOW (0° = same). Amber ~45° / red ~90°. Hourly Open-Meteo wind + swell; tide phase is context only (no current model).',
+        CHART, WX_C, HR, clamp, f0, f1, esc, fmtDayTime
+      });
+      const nowEl = $('anchorSwingChartNow');
+      if(nowEl && pack.ref){
+        nowEl.textContent = pack.ref.heading != null
+          ? ('Now lay-to '+fmtDir(pack.ref.heading)+' · 6h max swing ~'+f0(pack.maxSwing6h)+'°')
+          : '—';
+      }
+    }
+    if(api.renderMultiScoreChart && $('anchorComfortChart')){
+      const hold = pack.rows.filter(r => r.holdComfort != null).map(r => ({ t: r.t, v: r.holdComfort }));
+      const best = pack.rows.filter(r => r.bestComfort != null).map(r => ({ t: r.t, v: r.bestComfort }));
+      const colors = api.MULTI_SERIES_COLORS || ['#56d4e9', '#3dff9a'];
+      api.renderMultiScoreChart({
+        host: $('anchorComfortChart'),
+        nowEl: $('anchorComfortChartNow'),
+        metaEl: $('anchorComfortChartMeta'),
+        noteEl: $('anchorComfortChartNote'),
+        series: [
+          { id: 'hold', name: 'Hold now heading', color: colors[0] || '#56d4e9', pts: hold },
+          { id: 'best', name: 'Best lay-to each hour', color: colors[1] || '#3dff9a', pts: best }
+        ],
+        tMin: pack.tMin,
+        tMax: pack.tMax,
+        yLabel: 'Anchor comfort /100',
+        goodAt: 72,
+        fairAt: 55,
+        daily,
+        dayNightBands: typeof wxChartDayNightBands === 'function' ? wxChartDayNightBands : null,
+        sunMarkers: typeof wxChartSunMarkers === 'function' ? wxChartSunMarkers : null,
+        note: 'Higher = less beam wind/swell on the boat. Gap between lines = cost of not realigning as forces rotate.',
+        CHART, WX_C, HR, clamp, f0, f1, esc, fmtDayTime
+      });
+    }
+  };
+  if(window.BoatForecastCharts){
+    paint(window.BoatForecastCharts);
+    return;
+  }
+  const host = $('anchorSwingChart');
+  if(host) host.innerHTML = '<div class="skel">Loading charts…</div>';
+  ensureForecastCharts().then(paint).catch(()=>{
+    if(host) host.innerHTML = '<div class="skel">Charts unavailable</div>';
+  });
+}
+
+function renderAnchorage(){
+  if(!marine && !wx){
+    const g = $('anchorGlance');
+    if(g) g.innerHTML = '<div class="skel">Waiting for marine / weather…</div>';
+    const w = $('anchorWarn');
+    if(w){ w.className = 'anchor-warn watch'; w.textContent = 'Load marine and weather forecasts to estimate lay-to and swing.'; }
+    return;
+  }
+  const pack = anchorageSeries({ backHr: 3, fwdHr: 18, stepHr: 1 });
+  renderAnchorageWarn(pack);
+  renderAnchorageGlance(pack);
+  renderAnchorageTimeline(pack);
+  renderAnchorageCharts(pack);
+}
+
 function analyzeCruiseSectors(sw, windSpd, windDir, lat, lon){
   const distNm = CRUISE_SECTOR_SAMPLE_NM;
   return CRUISE_SECTOR_LABELS.map(sec => {
@@ -16498,6 +16937,9 @@ function switchTab(name){
     setTimeout(() => { if(bactMap) bactMap.invalidateSize(true); }, 120);
     setTimeout(() => { if(bactMap) bactMap.invalidateSize(true); }, 350);
   }
+  if(name==='anchorage'){
+    try{ renderAnchorage(); }catch(e){ console.error('renderAnchorage', e); }
+  }
   if(name==='surf'){
     try{ renderSurf(); }catch(e){ console.error('renderSurf', e); }
     initSurfMapWithRetry(0);
@@ -16759,6 +17201,9 @@ function boot(){
   if(activeTab()==='cruise'){
     try{ renderCruise(); }catch(e){ console.error(e); }
   }
+  if(activeTab()==='anchorage'){
+    try{ renderAnchorage(); }catch(e){ console.error(e); }
+  }
 
   /* Coast overlay ~0.9MB — idle after first paint; inland heuristic covers GPS until then */
   scheduleCoastOverlayForGps();
@@ -16782,6 +17227,7 @@ function boot(){
     if(activeTab()==='swell') renderSwellTab();
     if(activeTab()==='surf') try{ renderSurf(); }catch(e){ console.error(e); }
     if(activeTab()==='cruise') try{ renderCruise(); }catch(e){ console.error(e); }
+    if(activeTab()==='anchorage') try{ renderAnchorage(); }catch(e){ console.error(e); }
     if(activeTab()==='underway') renderUnderwayTab();
   }, 30000);
   timers.aisTick = setInterval(()=>{
