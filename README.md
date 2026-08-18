@@ -64,11 +64,12 @@ Notes:
 
 ## Tabs (nav order)
 
-Overview · Underway · AIS · Cruise · Swell & Ocean · Weather · Tides · SST · Plankton · Fish · Dive · Surf · Wildlife
+Overview · **Emergency** · Underway · AIS · Cruise · Anchorage · Swell & Ocean · Weather · Tides · SST · Plankton · Fish · Dive · Surf · Wildlife
 
 Highlights:
 
 - **Overview** — glance cards + **Use device GPS** toggle (slip / manual when off)
+- **Emergency** — tap-to-call King Harbor / SoCal water numbers (911, USCG, Harbor Patrol, towing, DAN, marinas)
 - **Fish / Dive Plan maps** — BlueTopo+DEM (same On site stack); fit **`FISH_MAP_FIT_NM` / `DIVE_MAP_FIT_NM` = 10 nmi**
 - **Cruise** — Windy waves overlay; sector comfort table (shadow model, 5 nm ahead); shoreline bacteria default-on
 - **SST** — CoastWatch SST WMS (1-day / 3-day / MUR / Blended)

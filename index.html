@@ -116,6 +116,22 @@ svg text{font-family:var(--font-mono)}
 .linkcard b{display:block;font-size:14px;margin-bottom:2px}
 .linkcard span{font-size:12px;color:var(--ink2)}
 
+.em-banner{background:#1a0c0c;border-color:#4a2020;margin-bottom:10px}
+.em-banner .big{color:var(--poor);font-size:18px}
+.em-pos{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.em-pos .mono{font-size:15px;color:var(--ink);font-weight:600}
+.em-call{display:flex;align-items:stretch;gap:8px;margin-bottom:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.em-call .em-body{flex:1;min-width:0;padding:12px 12px 12px 14px}
+.em-call .em-name{font-size:15px;font-weight:700;color:var(--ink);line-height:1.25}
+.em-call .em-note{font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.4}
+.em-call .em-vhf{font-family:var(--mono);font-size:11px;color:var(--fair);margin-top:4px}
+.em-call a.em-tel{flex:0 0 auto;min-width:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 12px;background:rgba(255,92,92,.14);color:var(--poor);text-decoration:none;font-weight:700;font-family:var(--mono);font-size:13px;border-left:1px solid var(--line);touch-action:manipulation}
+.em-call a.em-tel small{display:block;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:2px;font-family:var(--font-ui)}
+.em-call.em-ok a.em-tel{background:rgba(61,255,154,.1);color:var(--good)}
+.em-call.em-info a.em-tel{background:rgba(61,214,245,.1);color:var(--accent)}
+.em-novhf{padding:12px 14px;margin-bottom:8px}
+.em-copy{min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font-weight:600;cursor:pointer;touch-action:manipulation}
+
 .prose{font-size:14px;color:var(--ink2);line-height:1.6}
 .prose p{margin-bottom:8px}
 .skel{color:var(--ink3);font-family:var(--mono);font-size:13px;padding:12px 0}
@@ -846,6 +862,23 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
       <div class="card" id="ovStatus"><ul id="ovBrief" class="ov-brief skel"><li>—</li></ul></div>
       <div class="sec">Quick links</div>
       <div id="ovLinks"></div>
+    </section>
+
+    <section class="tabpanel" id="tab-emergency" data-tab="emergency">
+      <div class="card em-banner">
+        <h3>On the water</h3>
+        <div class="big">Mayday on VHF 16 · then 911</div>
+        <div class="sub">Give vessel name, nature of distress, number of people, and lat/lon. Coast Guard listens on 16; cell 911 reaches local fire/harbor/lifeguard. This list is a King Harbor / SoCal day-trip aid — numbers can change; it is not a substitute for a working VHF.</div>
+      </div>
+      <div class="card" id="emPosCard">
+        <h3>Your position</h3>
+        <div class="em-pos">
+          <span class="mono" id="emPosCoords">—</span>
+          <button type="button" class="em-copy" id="emCopyPos">Copy for radio</button>
+        </div>
+        <div class="sub" id="emPosNote">Use this when you call.</div>
+      </div>
+      <div id="emList"><div class="skel">Loading contacts…</div></div>
     </section>
 
     <section class="tabpanel" id="tab-dive" data-tab="dive">
@@ -1579,6 +1612,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 
   <nav class="tabs" id="tabBar">
     <button class="tab active" data-tab="overview"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>Overview</button>
+    <button class="tab" data-tab="emergency"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16.2" r="1" fill="currentColor" stroke="none"/></svg>Emergency</button>
     <button class="tab" data-tab="underway"><svg viewBox="0 0 24 24"><path d="M12 2l7 18h-4l-1.5-4h-5L7 20H3L12 2z"/><circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none"/></svg>Underway</button>
     <button class="tab" data-tab="ais"><svg viewBox="0 0 24 24"><path d="M12 2L4 20h16L12 2z"/><circle cx="12" cy="14" r="2"/></svg>AIS</button>
     <button class="tab" data-tab="cruise"><svg viewBox="0 0 24 24"><path d="M4 18c2-3 5-5 8-5s6 2 8 5"/><path d="M6 14l2-4h8l2 4"/><circle cx="12" cy="9" r="2"/><path d="M2 20h20"/></svg>Cruise</button>
@@ -3326,6 +3360,7 @@ function scheduleGpsUiRefresh(){
   const run = ()=>{
     gpsUiTimer = null;
     lastGpsUiAt = Date.now();
+    if(activeTab()==='emergency') try{ renderEmergency(); }catch(e){ console.error(e); }
     if(activeTab()==='overview') try{ renderOverview(); }catch(e){ console.error(e); }
     if(activeTab()==='swell') renderSwellTab();
     if(activeTab()==='surf') try{ renderSurf(); }catch(e){ console.error(e); }
@@ -4397,6 +4432,164 @@ async function refreshCdip(){ if(activeTab()==='swell') refreshOcean(); }
 
 function linkHtml(href, title, desc){
   return '<a class="linkcard" href="'+href+'" target="_blank" rel="noopener"><b>'+esc(title)+' ↗</b><span>'+esc(desc)+'</span></a>';
+}
+
+function telHref(phone){
+  const d = String(phone || '').replace(/[^\d+]/g, '');
+  return d ? 'tel:'+d : '';
+}
+
+/** King Harbor / SoCal water contacts. Distress first; phones from agency pages (verify if a number fails). */
+const EMERGENCY_GROUPS = [
+  {
+    title: 'Distress & Coast Guard',
+    note: 'Life-threatening: VHF 16 Mayday, then 911. USCG Sector Los Angeles–Long Beach covers this coast.',
+    items: [
+      { name: '911 — police / fire / medical', phone: '911', tone: '', note: 'Cell emergency. Say you are on a vessel, people on board, and lat/lon. Use the 10-digit dispatch if 911 routes to the wrong city.', call: 'Call 911' },
+      { name: 'U.S. Coast Guard', vhf: 'VHF 16 Mayday · 22A after they answer', note: 'Primary distress on the water. No phone — use the radio, then the SAR line if you only have a cell.', call: '' },
+      { name: 'USCG Sector LA/LB — Search & Rescue', phone: '310-521-3815', tone: '', vhf: 'VHF 16', note: '24h SAR telephone (Sector Los Angeles–Long Beach). Prefer radio when you can.', call: 'Call SAR' },
+      { name: 'USCG Sector LA/LB — Command Center', phone: '310-521-3801', tone: 'info', vhf: 'VHF 16', note: '24h Sector Command Center / after-hours COTP.', call: 'Call CC' },
+      { name: 'National Response Center', phone: '800-424-8802', tone: 'info', note: 'Oil, chemical, or maritime pollution / security reports (federal 24h).', call: 'Call NRC' }
+    ]
+  },
+  {
+    title: 'Harbor patrol & lifeguard',
+    note: 'King Harbor rescue boat is Redondo Beach Fire Station 3. LA County Baywatch Redondo also works this water.',
+    items: [
+      { name: 'Redondo Beach Harbor Patrol', phone: '310-318-0632', tone: '', vhf: 'VHF 16 (mayday) · harbor office 310-318-0632', note: 'King Harbor marine rescue / fireboat. Life-threatening: 911 first.', call: 'Call HP' },
+      { name: 'Redondo Beach dispatch', phone: '310-379-5411', tone: '', note: 'Police/fire/medical 24h. Emergencies: 911. Direct 10-digit if 911 routes to the wrong city.', call: 'Dispatch' },
+      { name: 'LA County Lifeguard Division', phone: '310-939-7200', tone: '', note: 'County fire lifeguards — beaches, Baywatch boats, Catalina (Avalon & Isthmus).', call: 'Call LG' },
+      { name: 'Santa Monica Harbor Patrol', phone: '310-458-8491', tone: 'info', note: 'Santa Monica Pier / harbor emergency line.', call: 'Call SM' },
+      { name: 'LASD Marina del Rey Harbor Master', phone: '310-482-6000', tone: 'info', note: 'LA County Sheriff marina station / harbor master.', call: 'Call MDR' }
+    ]
+  },
+  {
+    title: 'Towing & breakdown',
+    note: 'Tow is not SAR. If you are taking on water, have a medical emergency, or are in immediate danger, call USCG / 911 first.',
+    items: [
+      { name: 'Sea Tow', phone: '800-473-2869', tone: 'ok', vhf: 'VHF 16 — hail “Sea Tow”', note: '24/7 dispatch (800-4-SEATOW). Membership covers most unground/tow assists.', call: 'Call ST' },
+      { name: 'TowBoatUS / BoatUS', phone: '800-391-4869', tone: 'ok', vhf: 'VHF 16 — hail “TowBoatUS”', note: 'National dispatch; SoCal fleet includes Catalina. Formerly Vessel Assist.', call: 'Call US' }
+    ]
+  },
+  {
+    title: 'Dive & medical',
+    note: 'Stabilize with local EMS first, then DAN. Catalina chamber is 24/7 for DCS / AGE.',
+    items: [
+      { name: 'DAN Emergency Hotline', phone: '919-684-9111', tone: '', note: 'Divers Alert Network 24/7. After 911/USCG. Give location + member number if you have one.', call: 'Call DAN' },
+      { name: 'USC Catalina Hyperbaric Chamber', phone: '310-510-1053', tone: '', note: '24h emergency line — Two Harbors / Wrigley. LA County MAC also (866) 940-4401.', call: 'Call chamber' },
+      { name: 'LA County Medical Alert Center', phone: '866-940-4401', tone: 'info', note: 'County medical coordination for chamber / hospital transport.', call: 'Call MAC' },
+      { name: 'Poison Control', phone: '800-222-1222', tone: 'info', note: 'National poison help (carbon monoxide, fuel, marine stings — they triage).', call: 'Call PC' },
+      { name: 'DAN non-emergency', phone: '919-684-2948', tone: 'info', note: 'Weekdays ET — membership / non-emergency medical questions. Not the 24h emergency line.', call: 'DAN desk' }
+    ]
+  },
+  {
+    title: 'King Harbor marinas',
+    note: 'Home harbor. After hours, Harbor Patrol / 911 is faster than a locked office.',
+    items: [
+      { name: 'Port Royal Marina', phone: '310-376-0431', tone: 'ok', note: '555 N. Harbor Dr — home dock office.', call: 'Call PR' },
+      { name: 'King Harbor Marina', phone: '310-376-6926', tone: 'ok', note: '208 Yacht Club Way.', call: 'Call KH' },
+      { name: 'Redondo Beach Marina', phone: '310-374-3481', tone: 'ok', note: '181 N. Harbor Dr — guest moorings.', call: 'Call RBM' },
+      { name: 'Portofino Marina', phone: '310-798-5869', tone: 'ok', note: '260 Portofino Way.', call: 'Call PF' }
+    ]
+  },
+  {
+    title: 'Catalina & island',
+    note: 'Baywatch Catalina covers Avalon and the Isthmus. Harbor offices are not 911.',
+    items: [
+      { name: 'Avalon Harbor Patrol', phone: '310-510-0535', tone: 'ok', vhf: 'VHF 12 harbor · 16 distress', note: 'City of Avalon Harbor Department.', call: 'Call Avalon' },
+      { name: 'Two Harbors Harbor', phone: '310-510-4254', tone: 'ok', vhf: 'VHF 9 shoreboat / harbor', note: 'Isthmus, Cherry, 4th of July. Night: light/voice for shoreboat.', call: 'Call TH' }
+    ]
+  },
+  {
+    title: 'Wildlife & spill',
+    items: [
+      { name: 'Marine mammal (LA County)', phone: '800-399-4253', tone: 'info', note: '1-800-39-WHALE — Marine Mammal Care Center (not Malibu). Do not approach.', call: 'Call MMCC' },
+      { name: 'California Wildlife Center (Malibu)', phone: '310-924-7256', tone: 'info', note: 'Malibu strandings / wildlife.', call: 'Call CWC' }
+    ]
+  }
+];
+
+function emFmtPhone(phone){
+  const d = String(phone || '').replace(/\D/g, '');
+  if(d === '911') return '911';
+  if(d.length === 11 && d[0] === '1') return d[0]+'-'+d.slice(1,4)+'-'+d.slice(4,7)+'-'+d.slice(7);
+  if(d.length === 10) return d.slice(0,3)+'-'+d.slice(3,6)+'-'+d.slice(6);
+  return phone || '';
+}
+
+function emPosRadioText(){
+  const bp = boatPos();
+  const lat = bp.lat, lon = bp.lon;
+  if(!Number.isFinite(lat) || !Number.isFinite(lon)) return '';
+  const ns = lat >= 0 ? 'N' : 'S';
+  const ew = lon >= 0 ? 'E' : 'W';
+  const aLat = Math.abs(lat), aLon = Math.abs(lon);
+  const dLat = Math.floor(aLat), dLon = Math.floor(aLon);
+  const mLat = ((aLat - dLat) * 60).toFixed(3);
+  const mLon = ((aLon - dLon) * 60).toFixed(3);
+  return dLat+'° '+mLat+'\' '+ns+', '+dLon+'° '+mLon+'\' '+ew+' ('+fmtCoord(lat)+', '+fmtCoord(lon)+')';
+}
+
+function renderEmergency(){
+  const box = $('emList');
+  const posEl = $('emPosCoords');
+  const noteEl = $('emPosNote');
+  const bp = boatPos();
+  if(posEl){
+    posEl.textContent = (Number.isFinite(bp.lat) && Number.isFinite(bp.lon))
+      ? fmtCoord(bp.lat)+', '+fmtCoord(bp.lon)
+      : '—';
+  }
+  if(noteEl){
+    noteEl.textContent = 'Decimal + radio minutes'+(typeof boatPosLabel === 'function' ? boatPosLabel() : '')+' · not for navigation.';
+  }
+  if(!box) return;
+  box.innerHTML = EMERGENCY_GROUPS.map(g => {
+    const rows = (g.items || []).map(it => {
+      const href = telHref(it.phone);
+      const cls = 'em-call'+(it.tone === 'ok' ? ' em-ok' : it.tone === 'info' ? ' em-info' : '');
+      const tel = href
+        ? '<a class="em-tel" href="'+href+'"><small>'+esc(it.call || 'Call')+'</small>'+esc(emFmtPhone(it.phone))+'</a>'
+        : '<span class="em-tel" style="background:transparent;color:var(--fair);border-left:1px solid var(--line)"><small>Radio</small>VHF 16</span>';
+      return '<div class="'+cls+'">'+
+        '<div class="em-body"><div class="em-name">'+esc(it.name)+'</div>'+
+        (it.note ? '<div class="em-note">'+esc(it.note)+'</div>' : '')+
+        (it.vhf ? '<div class="em-vhf">'+esc(it.vhf)+'</div>' : '')+
+        '</div>'+tel+'</div>';
+    }).join('');
+    return '<div class="sec">'+esc(g.title)+'</div>'+
+      (g.note ? '<p class="prose" style="margin:0 0 8px">'+esc(g.note)+'</p>' : '')+
+      rows;
+  }).join('');
+}
+
+function copyEmergencyPos(){
+  const txt = emPosRadioText();
+  if(!txt) return;
+  const done = ()=>{
+    const b = $('emCopyPos');
+    if(!b) return;
+    const old = b.textContent;
+    b.textContent = 'Copied';
+    setTimeout(()=>{ if(b.textContent === 'Copied') b.textContent = old; }, 1600);
+  };
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(fallback);
+  } else fallback();
+  function fallback(){
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = txt;
+      ta.setAttribute('readonly','');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      done();
+    }catch(_){}
+  }
 }
 
 /* ============ swell components ============ */
@@ -18051,6 +18244,9 @@ function switchTab(name){
     try{ renderOverview(); }catch(e){ console.error('renderOverview', e); }
     scheduleOverviewTakeaways(false);
   }
+  if(name==='emergency'){
+    try{ renderEmergency(); }catch(e){ console.error('renderEmergency', e); }
+  }
   if(name==='tides'){
     try{ renderTides(); }catch(e){ console.error('renderTides', e); }
     /* Force network when empty (recovers after prior CORS/timeout failure). */
@@ -18061,6 +18257,7 @@ function switchTab(name){
 
 /* ============ boot ============ */
 function bindUI(){
+  $('emCopyPos')?.addEventListener('click', copyEmergencyPos);
   $('tabBar').addEventListener('click', e=>{
     const t = e.target.closest('.tab');
     if(t && t.dataset.tab) switchTab(t.dataset.tab);
@@ -18399,7 +18596,8 @@ function boot(){
 
   $('ovLinks').innerHTML =
     linkHtml('https://cdip.ucsd.edu/m/forecast/model_grid/?wave_model=socal','CDIP SoCal','Nearshore swell grid')+
-    linkHtml('https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id='+TIDE_STATION,'NOAA tides — King Harbor','Official tide tables');
+    linkHtml('https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id='+TIDE_STATION,'NOAA tides — King Harbor','Official tide tables')+
+    '<a class="linkcard" href="#" data-goto-tab="emergency"><b>Emergency contacts</b><span>911 · USCG · Harbor Patrol · towing · DAN · marinas</span></a>';
 }
 
 try{
