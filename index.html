@@ -247,7 +247,7 @@ svg text{font-family:var(--font-mono)}
 }
 .plan-split-map{min-width:0}
 .plan-split-map .plan-mapbox{margin-bottom:0}
-#divePlanMap,#fishMap,#lobsterMap,#surfMap,#wildMap,#chlMap,#sstMap,#bactMap{aspect-ratio:1/1;width:100%;height:auto;min-height:220px;max-height:min(62vh,460px);background:var(--bg);position:relative;z-index:1}
+#divePlanMap,#fishMap,#lobsterMap,#surfMap,#wildMap,#chlMap,#sstMap,#bactMap,#anchorMap{aspect-ratio:1/1;width:100%;height:auto;min-height:220px;max-height:min(62vh,460px);background:var(--bg);position:relative;z-index:1}
 .lob-banner{padding:10px 12px;border-radius:10px;border:1px solid var(--line);margin:0 0 10px;font-size:13px;line-height:1.45;color:var(--ink)}
 .lob-banner a{color:var(--accent)}
 .lob-banner-closed{background:rgba(255,68,102,.12);border-color:rgba(255,68,102,.45)}
@@ -610,6 +610,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .anchor-warn .anchor-tab-link{display:inline;margin:0;padding:0;border:0;background:none;color:var(--accent);font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;touch-action:manipulation}
 .anchor-loc-row{margin-bottom:10px}
 .anchor-loc-meta{font-size:12px;color:var(--ink2);margin:0 0 10px;line-height:1.45}
+#anchorMap{cursor:crosshair}
 .anchor-hdg-now{font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:.02em;line-height:1.1}
 .anchor-hdg-sub{font-size:13px;color:var(--ink2);margin-top:4px}
 .anchor-force-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
@@ -739,7 +740,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .seafloor-map .leaflet-control-layers label{color:var(--ink2);font-family:var(--font-ui);font-size:12px}
 .leaflet-container .contour-label{background:none!important;border:none!important;color:#ffe566;font:600 11px/1 var(--font-mono,ui-monospace,Consolas,monospace);text-shadow:0 0 4px #000,0 1px 2px #000,0 -1px 2px #000;white-space:nowrap}
 
-.boat-icon{background:transparent;border:none}
+.boat-icon,.anchor-map-pin{background:transparent;border:none}
 .ais-ship-icon{background:transparent;border:none}
 .ais-icon-dot{background:transparent;border:none}
 .ais-mt-popup{margin-top:8px;padding-top:8px;border-top:1px solid var(--line2)}
@@ -1249,7 +1250,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
     </section>
 
     <section class="tabpanel" id="tab-anchorage" data-tab="anchorage">
-      <p class="prose" style="margin-bottom:10px"><strong>Anchorage</strong> — estimate the lay-to heading while at anchor (bow into wind / swell), and whether that heading will swing over the next hours as wind, swell, or tide phase shifts. Toggle <strong>Boat now</strong> vs a <strong>chosen cove</strong> (published pins). Model is advisory — rode scope, bottom, and local current still rule.</p>
+      <p class="prose" style="margin-bottom:10px"><strong>Anchorage</strong> — estimate the lay-to heading while at anchor (bow into wind / swell), and whether that heading will swing over the next hours as wind, swell, or tide phase shifts. Toggle <strong>Boat now</strong> vs a <strong>chosen spot</strong> — tap the map (or the cove list) to pick where. Model is advisory — rode scope, bottom, and local current still rule.</p>
       <div class="util-row anchor-loc-row">
         <div class="chl-source-toggle" id="anchorLocToggle" role="group" aria-label="Anchorage location source">
           <button type="button" class="active" data-anchor-loc="boat">Boat now</button>
@@ -1258,6 +1259,12 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         <select id="anchorSpotSel" aria-label="Anchor spot"></select>
       </div>
       <p id="anchorLocMeta" class="anchor-loc-meta">Using your current position…</p>
+      <div class="plan-mapbox">
+        <h3>Pick a spot</h3>
+        <p>▲ = boat · gold = published cove · coral diamond = your map tap · tap empty water to drop a mark at that exact lat/lon</p>
+        <div id="anchorMap"></div>
+        <div class="plan-map-legend">Gold pins are published coves (same coords as Fish/Dive — not invented). An empty tap uses that GPS; it is not snapped to a named cove unless you hit a pin. Boat vs chosen spot is still the toggle above. Fish/Dive On site swing stays at the boat.</div>
+      </div>
       <div id="anchorWarn" class="anchor-warn ok" role="status">Loading anchorage forecast…</div>
       <div class="grid3" id="anchorGlance"><div class="skel">Sampling wind &amp; swell…</div></div>
       <div class="sec">Lay-to heading — next hours</div>
@@ -1283,7 +1290,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
       <div class="sec">How this works</div>
       <div class="card prose" style="font-size:13px;line-height:1.5;color:var(--ink2)">
         <p style="margin:0 0 8px">Lay-to ≈ bow into the strongest forcing — usually <strong>wind from</strong>, blended toward <strong>primary swell from</strong> when swell energy competes. Tide phase is shown as context (local current isn’t modeled yet).</p>
-        <p style="margin:0 0 8px"><strong>Boat now</strong> uses GPS/slip. <strong>Chosen spot</strong> uses a published cove pin (Catalina, Channel Islands, etc.) with that cell’s Open-Meteo wind/swell and the nearest NOAA tide — not the harbor you left from.</p>
+        <p style="margin:0 0 8px"><strong>Boat now</strong> uses GPS/slip. <strong>Chosen spot</strong> uses a published cove pin or a map tap, with that cell’s Open-Meteo wind/swell and the nearest NOAA tide — not the harbor you left from.</p>
         <p style="margin:0">Swing warning fires when the recommended heading rotates ~45°+ within the next 6 hours. Not a substitute for watching the rode or a proper swing-circle plot on the chartplotter.</p>
       </div>
     </section>
@@ -2679,6 +2686,11 @@ let swellMap = null, swellMapInited = false, swellRayLayer = null, swellObstLaye
 const SWELL_MAP_DEFAULT_ZOOM = 11; // fallback before fitBounds
 const SWELL_MAP_FIT_NM = 25; // default auto-fit radius around boat (nmi)
 let fishMap = null, fishMapInited = false, fishSpotLayer = null, fishBoatMarker = null;
+let anchorMap = null, anchorMapInited = false, anchorSpotLayer = null, anchorBoatMarker = null;
+let _anchorMapWantPan = false;
+let _anchorMapClickAt = 0;
+const ANCHOR_MAP_DEFAULT_ZOOM = 12;
+const ANCHOR_MAP_HIT_NM = 0.12;
 let lastFishPlanAllRanked = null;
 let chlMap = null, chlMapInited = false, chlOverlayLayers = [], chlBoatMarker = null, chlZoneLayer = null;
 let chlSelectedTime = null, chlMeta = null, chlSelectedSource = null;
@@ -3025,6 +3037,10 @@ function refreshBoatMarkers(){
     bactBoatMarker.setLatLng([bp.lat, bp.lon]);
     bactBoatMarker.setPopupContent(you);
   }
+  if(anchorMap && anchorBoatMarker){
+    anchorBoatMarker.setLatLng([bp.lat, bp.lon]);
+    anchorBoatMarker.setPopupContent(you+'<br>Tap to forecast at the boat');
+  }
   if(window.BoatDive?.invalidatePlanMap) BoatDive.invalidatePlanMap();
 }
 
@@ -3223,6 +3239,10 @@ function onGps(posObj){
   if(moved && bactMap && bactBoatMarker){
     bactBoatMarker.setLatLng([bp.lat, bp.lon]);
     bactBoatMarker.setPopupContent('<b>You'+boatPosLabel()+'</b><br>'+fmtCoord(bp.lat)+', '+fmtCoord(bp.lon));
+  }
+  if(moved && anchorMap && anchorBoatMarker){
+    anchorBoatMarker.setLatLng([bp.lat, bp.lon]);
+    anchorBoatMarker.setPopupContent('<b>You'+boatPosLabel()+'</b><br>'+fmtCoord(bp.lat)+', '+fmtCoord(bp.lon)+'<br>Tap to forecast at the boat');
   }
   if(moved && wildMapMode === 'embed') updateWildPointBlueEmbed(false);
   if(moved && activeTab()==='cruise'){
@@ -13429,19 +13449,52 @@ const ANCHORAGES = [
 ];
 let anchorLocMode = 'boat';
 let anchorSpotId = 'isthmus';
+let anchorCustomLat = null;
+let anchorCustomLon = null;
 
+function customAnchorSpot(){
+  if(!isFinite(anchorCustomLat) || !isFinite(anchorCustomLon)) return null;
+  if(Math.abs(anchorCustomLat) > 90 || Math.abs(anchorCustomLon) > 180) return null;
+  return {
+    id: 'custom',
+    name: 'Map pin · '+anchorCustomLat.toFixed(4)+', '+anchorCustomLon.toFixed(4),
+    lat: anchorCustomLat,
+    lon: anchorCustomLon,
+    region: 'Map pin'
+  };
+}
 function loadAnchorLocPrefs(){
   const mode = store.get('anchorLocMode');
   if(mode === 'spot' || mode === 'boat') anchorLocMode = mode;
+  const clat = parseFloat(store.get('anchorCustomLat'));
+  const clon = parseFloat(store.get('anchorCustomLon'));
+  if(isFinite(clat) && isFinite(clon) && Math.abs(clat) <= 90 && Math.abs(clon) <= 180){
+    anchorCustomLat = clat;
+    anchorCustomLon = clon;
+  }
   const id = store.get('anchorSpotId');
-  if(id && ANCHORAGES.some(a => a.id === id)) anchorSpotId = id;
+  if(id === 'custom' && customAnchorSpot()) anchorSpotId = 'custom';
+  else if(id && ANCHORAGES.some(a => a.id === id)) anchorSpotId = id;
 }
 function saveAnchorLocPrefs(){
   store.set('anchorLocMode', anchorLocMode);
   store.set('anchorSpotId', anchorSpotId);
+  if(isFinite(anchorCustomLat) && isFinite(anchorCustomLon)){
+    store.set('anchorCustomLat', String(anchorCustomLat));
+    store.set('anchorCustomLon', String(anchorCustomLon));
+  }
 }
 function findAnchorage(id){
+  if(id === 'custom') return customAnchorSpot() || ANCHORAGES[0];
   return ANCHORAGES.find(a => a.id === id) || ANCHORAGES[0];
+}
+function nearestNamedAnchorage(lat, lon){
+  let best = null, bestNm = Infinity;
+  ANCHORAGES.forEach(a => {
+    const d = haversineM(lat, lon, a.lat, a.lon) / NM;
+    if(d < bestNm){ bestNm = d; best = a; }
+  });
+  return { spot: best, nm: bestNm };
 }
 function anchorPos(opts){
   if(opts && opts.lat != null && opts.lon != null && isFinite(+opts.lat) && isFinite(+opts.lon)){
@@ -13456,17 +13509,172 @@ function anchorPos(opts){
 }
 function setAnchorLocMode(mode){
   anchorLocMode = mode === 'spot' ? 'spot' : 'boat';
+  _anchorMapWantPan = true;
   saveAnchorLocPrefs();
   syncAnchorLocUi();
   try{ renderAnchorage(); }catch(e){ console.error(e); }
 }
 function setAnchorSpotId(id){
-  if(!id || !ANCHORAGES.some(a => a.id === id)) return;
+  if(id === 'custom'){
+    if(!customAnchorSpot()) return;
+  }else if(!id || !ANCHORAGES.some(a => a.id === id)){
+    return;
+  }
   anchorSpotId = id;
   anchorLocMode = 'spot';
+  _anchorMapWantPan = true;
   saveAnchorLocPrefs();
   syncAnchorLocUi();
   try{ renderAnchorage(); }catch(e){ console.error(e); }
+}
+function setCustomAnchor(lat, lon){
+  lat = +lat; lon = +lon;
+  if(!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return;
+  anchorCustomLat = lat;
+  anchorCustomLon = lon;
+  anchorSpotId = 'custom';
+  anchorLocMode = 'spot';
+  _anchorMapWantPan = false;
+  saveAnchorLocPrefs();
+  syncAnchorLocUi();
+  try{ renderAnchorage(); }catch(e){ console.error(e); }
+}
+function onAnchorMapClick(e){
+  if(!e || !e.latlng) return;
+  const t = e.originalEvent && e.originalEvent.target;
+  if(t && t.closest && t.closest('.leaflet-marker-icon, .leaflet-control, .leaflet-popup')) return;
+  const now = Date.now();
+  if(now - _anchorMapClickAt < 350) return;
+  _anchorMapClickAt = now;
+  const lat = e.latlng.lat, lon = e.latlng.lng;
+  const near = nearestNamedAnchorage(lat, lon);
+  if(near.spot && near.nm <= ANCHOR_MAP_HIT_NM){
+    setAnchorSpotId(near.spot.id);
+    return;
+  }
+  setCustomAnchor(lat, lon);
+}
+function anchorNamedPinHtml(selected){
+  const sz = selected ? 16 : 12;
+  const ring = selected ? '3px solid #fff' : '2px solid #1a1408';
+  return '<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:#f0c040;border:'+ring+';box-shadow:0 0 8px rgba(0,0,0,.8)"></div>';
+}
+function anchorCustomPinHtml(selected){
+  const sz = selected ? 16 : 13;
+  const ring = selected ? '3px solid #fff' : '2px solid #fff';
+  return '<div style="width:'+sz+'px;height:'+sz+'px;transform:rotate(45deg);background:#ff6b4a;border:'+ring+';box-shadow:0 0 8px rgba(0,0,0,.85)"></div>';
+}
+function paintAnchorMap(){
+  if(!anchorMap || !anchorSpotLayer) return;
+  const bp = boatPos();
+  const you = '<b>You'+boatPosLabel()+'</b><br>'+fmtCoord(bp.lat)+', '+fmtCoord(bp.lon)+'<br>Tap to forecast at the boat';
+  if(anchorBoatMarker){
+    anchorBoatMarker.setLatLng([bp.lat, bp.lon]);
+    anchorBoatMarker.setPopupContent(you);
+  }
+  anchorSpotLayer.clearLayers();
+  const selId = (anchorLocMode === 'spot') ? anchorSpotId : null;
+  ANCHORAGES.forEach(a => {
+    const selected = selId === a.id;
+    const sz = selected ? 18 : 14;
+    const m = L.marker([a.lat, a.lon], {
+      icon: L.divIcon({
+        className: 'anchor-map-pin',
+        html: anchorNamedPinHtml(selected),
+        iconSize: [sz, sz],
+        iconAnchor: [sz / 2, sz / 2]
+      }),
+      zIndexOffset: selected ? 600 : 200
+    });
+    m.bindPopup('<b>'+esc(a.name)+'</b><br>'+esc(a.region)+'<br>'+fmtCoord(a.lat)+', '+fmtCoord(a.lon));
+    m.on('click', () => setAnchorSpotId(a.id));
+    m.addTo(anchorSpotLayer);
+  });
+  const custom = customAnchorSpot();
+  if(custom){
+    const selected = selId === 'custom';
+    const sz = selected ? 18 : 14;
+    const m = L.marker([custom.lat, custom.lon], {
+      icon: L.divIcon({
+        className: 'anchor-map-pin',
+        html: anchorCustomPinHtml(selected),
+        iconSize: [sz, sz],
+        iconAnchor: [sz / 2, sz / 2]
+      }),
+      zIndexOffset: selected ? 700 : 400
+    });
+    m.bindPopup('<b>'+esc(custom.name)+'</b><br>Your map tap<br>'+fmtCoord(custom.lat)+', '+fmtCoord(custom.lon));
+    m.on('click', () => setAnchorSpotId('custom'));
+    m.addTo(anchorSpotLayer);
+  }
+  if(_anchorMapWantPan){
+    _anchorMapWantPan = false;
+    const ap = anchorPos();
+    try{
+      const b = anchorMap.getBounds();
+      if(!b || !b.pad(-0.2).contains([ap.lat, ap.lon])){
+        anchorMap.panTo([ap.lat, ap.lon], { animate:false });
+      }
+    }catch(_){
+      anchorMap.setView([ap.lat, ap.lon], anchorMap.getZoom() || ANCHOR_MAP_DEFAULT_ZOOM, { animate:false });
+    }
+  }
+}
+async function ensureAnchorMap(){
+  if(activeTab() !== 'anchorage') return false;
+  try{
+    await loadLeaflet();
+    await loadCoastOverlayLite();
+  }catch(e){ return false; }
+  if(!window.L) return false;
+  const host = $('anchorMap');
+  if(!host) return false;
+  if(anchorMap){
+    anchorMap.invalidateSize(true);
+    paintAnchorMap();
+    return true;
+  }
+  if(!host.offsetWidth || !host.offsetHeight) return false;
+  host.innerHTML = '';
+  const ap = anchorPos();
+  try{
+    anchorMap = L.map(host, { zoomControl:true, attributionControl:false, minZoom:7, maxZoom:16 })
+      .setView([ap.lat, ap.lon], ANCHOR_MAP_DEFAULT_ZOOM);
+    try{ await attachSeafloorPlanBasemap(anchorMap); }
+    catch(e){
+      console.warn('Anchorage seafloor basemap', e);
+      planMapBaseLayer(anchorMap, {});
+    }
+    addCoastOverlay(L.layerGroup().addTo(anchorMap));
+    anchorSpotLayer = L.layerGroup().addTo(anchorMap);
+    const bp = boatPos();
+    anchorBoatMarker = L.marker([bp.lat, bp.lon], {
+      icon: L.divIcon({
+        className:'boat-icon',
+        html:'<div style="font-size:24px;line-height:1;filter:drop-shadow(0 0 5px #3dd6f5)">▲</div>',
+        iconSize:[24,24], iconAnchor:[12,12]
+      }),
+      zIndexOffset:1000
+    }).addTo(anchorMap);
+    anchorBoatMarker.bindPopup('<b>You'+boatPosLabel()+'</b><br>'+fmtCoord(bp.lat)+', '+fmtCoord(bp.lon)+'<br>Tap to forecast at the boat');
+    anchorBoatMarker.on('click', () => setAnchorLocMode('boat'));
+    anchorMap.on('click', onAnchorMapClick);
+    anchorMapInited = true;
+    paintAnchorMap();
+    return true;
+  }catch(e){
+    console.error('anchor map init', e);
+    anchorMap = null; anchorSpotLayer = null; anchorBoatMarker = null; anchorMapInited = false;
+    return false;
+  }
+}
+function initAnchorMapWithRetry(attempt){
+  if(activeTab() !== 'anchorage') return;
+  ensureAnchorMap().then(ok => {
+    if(activeTab() !== 'anchorage') return;
+    if(!ok && attempt < 8) setTimeout(() => initAnchorMapWithRetry(attempt + 1), 180);
+    else if(ok && anchorMap) setTimeout(() => { try{ anchorMap.invalidateSize(true); paintAnchorMap(); }catch(_){ } }, 80);
+  });
 }
 function syncAnchorLocUi(){
   const tog = $('anchorLocToggle');
@@ -13482,9 +13690,16 @@ function syncAnchorLocUi(){
       const d = haversineM(bp.lat, bp.lon, a.lat, a.lon) / NM;
       return { a, d };
     }).sort((x, y) => x.d - y.d);
-    sel.innerHTML = rows.map(({ a, d }) =>
+    const custom = customAnchorSpot();
+    let html = '';
+    if(custom){
+      const d = haversineM(bp.lat, bp.lon, custom.lat, custom.lon) / NM;
+      html += '<option value="custom">'+esc(custom.region)+' · '+esc(custom.name)+' · '+f1(d)+' nm</option>';
+    }
+    html += rows.map(({ a, d }) =>
       '<option value="'+esc(a.id)+'">'+esc(a.region)+' · '+esc(a.name)+' · '+f1(d)+' nm</option>'
     ).join('');
+    sel.innerHTML = html;
     sel.value = anchorSpotId;
     sel.disabled = false;
   }
@@ -13494,7 +13709,8 @@ function syncAnchorLocUi(){
     if(ap.mode === 'spot' && ap.spot){
       const d = haversineM(bp.lat, bp.lon, ap.lat, ap.lon) / NM;
       const st = (typeof nearestTideStation === 'function') ? nearestTideStation(ap.lat, ap.lon) : null;
-      meta.textContent = 'Forecast at '+ap.name+' · '+fmtCoord(ap.lat)+', '+fmtCoord(ap.lon)+
+      const kind = ap.spot.id === 'custom' ? 'map tap' : 'published cove';
+      meta.textContent = 'Forecast at '+ap.name+' ('+kind+') · '+fmtCoord(ap.lat)+', '+fmtCoord(ap.lon)+
         ' · '+f1(d)+' nm from the boat'+(st ? ' · tide '+st.name : '');
     }else{
       meta.textContent = 'Forecast at your current position · '+fmtCoord(bp.lat)+', '+fmtCoord(bp.lon);
@@ -13880,6 +14096,10 @@ function renderAnchorage(){
     if(g) g.innerHTML = '<div class="skel">Waiting for marine / weather…</div>';
     const w = $('anchorWarn');
     if(w){ w.className = 'anchor-warn watch'; w.textContent = 'Load marine and weather forecasts to estimate lay-to and swing.'; }
+    if(activeTab() === 'anchorage'){
+      if(anchorMap) paintAnchorMap();
+      else initAnchorMapWithRetry(0);
+    }
     return;
   }
   const pack = anchorageSeries({ backHr: 3, fwdHr: 18, stepHr: 1 });
@@ -13896,8 +14116,13 @@ function renderAnchorage(){
         renderAnchorageTimeline(next);
         renderAnchorageCharts(next);
         syncAnchorLocUi();
+        if(anchorMap) paintAnchorMap();
       }
     }).catch(()=>{});
+  }
+  if(activeTab() === 'anchorage'){
+    if(anchorMap) paintAnchorMap();
+    else initAnchorMapWithRetry(0);
   }
 }
 
@@ -17446,6 +17671,7 @@ function switchTab(name){
   }
   if(name==='anchorage'){
     try{ renderAnchorage(); }catch(e){ console.error('renderAnchorage', e); }
+    initAnchorMapWithRetry(0);
   }
   if(name==='surf'){
     try{ renderSurf(); }catch(e){ console.error('renderSurf', e); }
