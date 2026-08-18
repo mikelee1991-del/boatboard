@@ -633,6 +633,8 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .anchor-timeline .d{color:var(--ink2);line-height:1.4}
 .anchor-timeline li.now{background:rgba(86,212,233,.08);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:6px}
 .anchor-timeline li.swing .h{color:var(--poor)}
+.anchor-timeline li.swing-stb .h{color:var(--good)}
+.anchor-timeline li.swing-port .h{color:var(--poor)}
 @media(max-width:520px){.anchor-timeline li{grid-template-columns:72px 1fr;grid-template-rows:auto auto}.anchor-timeline .d{grid-column:1/-1}}
 
 
@@ -1854,7 +1856,7 @@ function ensureForecastCharts(){
   if(window.BoatForecastCharts) return Promise.resolve(window.BoatForecastCharts);
   if(_forecastChartsPromise) return _forecastChartsPromise;
   /* ?v=6: multi-series dashes + PLAN dots; legend in meta (no clipped SVG key). */
-  _forecastChartsPromise = loadScript('forecast-charts.js?v=8').then(()=> window.BoatForecastCharts)
+  _forecastChartsPromise = loadScript('forecast-charts.js?v=9').then(()=> window.BoatForecastCharts)
     .catch(e=>{ _forecastChartsPromise = null; throw e; });
   return _forecastChartsPromise;
 }
@@ -1957,6 +1959,24 @@ function bearing(lat1,lon1,lat2,lon2){
   return ((Math.atan2(y,x)*R2D)+360)%360;
 }
 function angDist(a,b){ let d=Math.abs(a-b)%360; return d>180?360-d:d; }
+/** Signed turn from heading a → b, (−180,180]: + = clockwise = starboard, − = port (looking along lay-to). */
+function signedAngDelta(from, to){
+  if(from == null || to == null || !isFinite(from) || !isFinite(to)) return null;
+  let d = ((to - from) % 360 + 540) % 360 - 180;
+  if(d === -180) d = 180;
+  return d;
+}
+function swingSideLabel(signed){
+  if(signed == null || !isFinite(signed) || Math.abs(signed) < 0.5) return '';
+  return signed > 0 ? 'starboard' : 'port';
+}
+function fmtSwingDelta(signed, absOnly){
+  if(signed == null || !isFinite(signed)) return '—';
+  const deg = absOnly ? Math.abs(signed) : signed;
+  const side = swingSideLabel(signed);
+  const s = (deg >= 0 ? '' : '−') + f0(Math.abs(deg)) + '°';
+  return side ? s + ' ' + side : s;
+}
 function segIntersect(p1,p2,p3,p4){
   const d=(a,b,c)=> (b.lon-a.lon)*(c.lat-a.lat)-(b.lat-a.lat)*(c.lon-a.lon);
   const a1=d(p1,p2,p3), a2=d(p1,p2,p4), a3=d(p3,p4,p1), a4=d(p3,p4,p2);
@@ -14408,7 +14428,8 @@ function anchorageSeries(opts){
   });
   const refHdg = ref.heading;
   rows.forEach(r => {
-    r.swingFromNow = (refHdg != null && r.heading != null) ? angDist(refHdg, r.heading) : null;
+    r.swingSigned = (refHdg != null && r.heading != null) ? signedAngDelta(refHdg, r.heading) : null;
+    r.swingFromNow = r.swingSigned != null ? Math.abs(r.swingSigned) : null;
     const best = bestAnchorHeadingNear(ap.lat, ap.lon, r.sw, r.windKt, r.windFrom, r.heading);
     r.bestHeading = best.heading;
     r.bestComfort = best.comfort;
@@ -14431,17 +14452,19 @@ function anchorageSeries(opts){
   };
 }
 
-function anchorSwingRiskLabel(maxSwing){
+function anchorSwingRiskLabel(maxSwing, swingSigned){
+  const side = swingSideLabel(swingSigned);
+  const sideTxt = side ? ' to '+side : '';
   if(maxSwing == null || !isFinite(maxSwing)) return { cls: 'ok', title: 'Swing risk unknown', text: 'Need wind/swell forecast to estimate rode swing.' };
   if(maxSwing >= 90) return {
     cls: 'swing',
     title: 'Large swing likely',
-    text: 'Recommended lay-to rotates ~'+f0(maxSwing)+'° within 6 hours — expect a meaningful swing on the rode as wind/swell shift. Check scope and neighbors.'
+    text: 'Recommended lay-to rotates ~'+f0(maxSwing)+'°'+sideTxt+' within 6 hours — expect a meaningful swing on the rode as wind/swell shift. Check scope and neighbors.'
   };
   if(maxSwing >= 45) return {
     cls: 'watch',
     title: 'Swing watch',
-    text: 'Lay-to may rotate ~'+f0(maxSwing)+'° in the next 6 hours. Not a crisis if you have room, but plan for the boat to hunt.'
+    text: 'Lay-to may rotate ~'+f0(maxSwing)+'°'+sideTxt+' in the next 6 hours. Not a crisis if you have room, but plan for the boat to hunt.'
   };
   return {
     cls: 'ok',
@@ -14454,7 +14477,8 @@ function renderAnchorageGlance(pack){
   const box = $('anchorGlance');
   if(!box) return;
   const ref = pack.ref || {};
-  const risk = anchorSwingRiskLabel(pack.maxSwing6h);
+  const peakSigned = pack.swingAt && pack.swingAt.swingSigned != null ? pack.swingAt.swingSigned : null;
+  const risk = anchorSwingRiskLabel(pack.maxSwing6h, peakSigned);
   const tide = ref.tide;
   const tideTxt = tide
     ? ((tide.rising == null ? '—' : (tide.rising ? 'Incoming' : 'Outgoing')) +
@@ -14466,6 +14490,7 @@ function renderAnchorageGlance(pack){
     : ref.force === 'mixed' ? 'Wind + swell'
     : ref.force === 'light' ? 'Light air'
     : '—';
+  const peakSide = swingSideLabel(peakSigned);
   box.innerHTML =
     '<div class="card"><h3>Lay-to now</h3>'+
       '<div class="anchor-hdg-now">'+(ref.heading != null ? f0(ref.heading)+'°' : '—')+'</div>'+
@@ -14477,7 +14502,9 @@ function renderAnchorageGlance(pack){
       '</div></div>'+
     '<div class="card"><h3>Swing · next 6 h</h3>'+
       '<div class="big" style="font-size:22px;color:'+(risk.cls==='swing'?'var(--poor)':risk.cls==='watch'?'var(--fair)':'var(--good)')+'">'+
-        (pack.maxSwing6h != null ? '~'+f0(pack.maxSwing6h)+'°' : '—')+'</div>'+
+        (pack.maxSwing6h != null
+          ? '~'+f0(pack.maxSwing6h)+'°'+(peakSide ? ' to '+peakSide : '')
+          : '—')+'</div>'+
       '<div class="sub">'+esc(risk.title)+
         (pack.swingAt && pack.swingAt.heading != null
           ? ' · peaks near '+esc(fmtDayTime(new Date(pack.swingAt.t)))+' → '+fmtDir(pack.swingAt.heading)
@@ -14496,7 +14523,8 @@ function renderAnchorageGlance(pack){
 function renderAnchorageWarn(pack){
   const box = $('anchorWarn');
   if(!box) return;
-  const risk = anchorSwingRiskLabel(pack.maxSwing6h);
+  const peakSigned = pack.swingAt && pack.swingAt.swingSigned != null ? pack.swingAt.swingSigned : null;
+  const risk = anchorSwingRiskLabel(pack.maxSwing6h, peakSigned);
   const ref = pack.ref || {};
   box.className = 'anchor-warn '+risk.cls;
   box.innerHTML = '<strong>'+esc(risk.title)+'.</strong> '+esc(risk.text)+
@@ -14515,13 +14543,17 @@ function renderAnchorageTimeline(pack){
   box.innerHTML = rows.map(r => {
     const isNow = Math.abs(r.t - now) < 0.6 * HR;
     const swing = r.swingFromNow != null && r.swingFromNow >= 45;
+    const side = swingSideLabel(r.swingSigned);
+    const swingCls = swing ? (side === 'starboard' ? 'swing-stb' : side === 'port' ? 'swing-port' : 'swing') : '';
     const tideBit = r.tide
       ? (r.tide.rising == null ? '' : (r.tide.rising ? ' · flood' : ' · ebb'))
       : '';
-    return '<li class="'+(isNow?'now ':'')+(swing?'swing':'')+'">'+
+    const deltaTxt = (r.swingSigned != null && r.swingFromNow >= 15)
+      ? ' · '+f0(r.swingFromNow)+'°'+(side ? ' '+side.slice(0,3) : '')
+      : '';
+    return '<li class="'+(isNow?'now ':'')+swingCls+'">'+
       '<span class="t">'+(isNow?'Now · ':'')+esc(fmtDayTime(new Date(r.t)))+'</span>'+
-      '<span class="h">'+(r.heading != null ? fmtDir(r.heading) : '—')+
-        (r.swingFromNow != null && r.swingFromNow >= 15 ? ' · Δ'+f0(r.swingFromNow)+'°' : '')+'</span>'+
+      '<span class="h">'+(r.heading != null ? fmtDir(r.heading) : '—')+deltaTxt+'</span>'+
       '<span class="d">'+esc(r.force)+
         (r.windKt != null ? ' · wind '+f0(r.windKt)+' kn' : '')+
         (r.swellFt > 0.2 ? ' · swell '+f1(r.swellFt)+' ft' : '')+
@@ -14542,8 +14574,10 @@ function renderAnchorageCharts(pack){
       ? tideSunDailyForRange(pack.tMin, pack.tMax)
       : null;
     const swingPts = pack.rows
-      .filter(r => r.swingFromNow != null)
-      .map(r => ({ t: r.t, v: r.swingFromNow }));
+      .filter(r => r.swingSigned != null)
+      .map(r => ({ t: r.t, v: r.swingSigned }));
+    const peakSigned = pack.swingAt && pack.swingAt.swingSigned != null ? pack.swingAt.swingSigned : null;
+    const peakSide = swingSideLabel(peakSigned);
     if(api.renderScoreChart && $('anchorSwingChart')){
       api.renderScoreChart({
         host: $('anchorSwingChart'),
@@ -14553,27 +14587,24 @@ function renderAnchorageCharts(pack){
         pts: swingPts.length >= 2 ? swingPts : [{ t: pack.tMin, v: 0 }, { t: pack.tMax, v: 0 }],
         tMin: pack.tMin,
         tMax: pack.tMax,
-        yLabel: 'Swing ° from now',
-        stroke: '#ff9f6b',
+        yLabel: 'Swing ° (stb + / port −)',
+        signed: true,
         fillId: 'anchorSwingFill',
-        vMin: 0,
+        vMin: -180,
         vMax: 180,
-        yStep: 45,
-        goodAt: 90,
-        fairAt: 45,
+        yStep: 90,
+        guideAbs: [45, 90],
         markPeaks: false,
-        /* Low swing is good — color inverted vs bite charts */
-        scoreColor: (v)=> v >= 90 ? 'var(--poor)' : v >= 45 ? 'var(--fair)' : 'var(--good)',
         daily,
         dayNightBands: typeof wxChartDayNightBands === 'function' ? wxChartDayNightBands : null,
         sunMarkers: typeof wxChartSunMarkers === 'function' ? wxChartSunMarkers : null,
-        note: 'Y-axis: angular change of recommended lay-to vs the heading at NOW (0° = same). Amber ~45° / red ~90°. Hourly Open-Meteo wind + swell; tide phase is context only (no current model).',
+        note: 'Signed swing from NOW lay-to: up/green = clockwise to starboard, down/red = counterclockwise to port. Dashed guides at ±45° and ±90°. Hourly Open-Meteo wind + swell; tide is context only.',
         CHART, WX_C, HR, clamp, f0, f1, esc, fmtDayTime
       });
       const nowEl = $('anchorSwingChartNow');
       if(nowEl && pack.ref){
         nowEl.textContent = pack.ref.heading != null
-          ? ('Now lay-to '+fmtDir(pack.ref.heading)+' · 6h max swing ~'+f0(pack.maxSwing6h)+'°')
+          ? ('Now lay-to '+fmtDir(pack.ref.heading)+' · 6h max ~'+f0(pack.maxSwing6h)+'°'+(peakSide ? ' to '+peakSide : ''))
           : '—';
       }
     }
@@ -14661,7 +14692,8 @@ function onsiteSwingWarnPayload(pack){
         '<button type="button" class="anchor-tab-link" data-goto-tab="anchorage">Anchorage</button> for the full plot.'
     };
   }
-  const risk = anchorSwingRiskLabel(pack.maxSwing6h);
+  const peakSigned = pack.swingAt && pack.swingAt.swingSigned != null ? pack.swingAt.swingSigned : null;
+  const risk = anchorSwingRiskLabel(pack.maxSwing6h, peakSigned);
   const ref = pack.ref || {};
   const link = ' <button type="button" class="anchor-tab-link" data-goto-tab="anchorage">Anchorage</button> for the plot.';
   let body;
@@ -14672,8 +14704,9 @@ function onsiteSwingWarnPayload(pack){
     }
     if(ref.heading != null) body += ' Lay-to now '+fmtDir(ref.heading)+'.';
   }else if(ref.heading != null){
+    const peakSide = swingSideLabel(peakSigned);
     body = 'Lay-to '+fmtDir(ref.heading)+
-      (pack.maxSwing6h != null ? ' · max swing ~'+f0(pack.maxSwing6h)+'° next 6h' : '')+
+      (pack.maxSwing6h != null ? ' · max swing ~'+f0(pack.maxSwing6h)+'°'+(peakSide?' to '+peakSide:'')+' next 6h' : '')+
       ' — limited rode hunt expected from model wind/swell.';
   }else{
     body = risk.text;

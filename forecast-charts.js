@@ -267,6 +267,38 @@
    * @param {function(number):void} [opts.onHighlightChange] if set, PLAN is draggable / plot is tappable
    * @param {number} [opts.snapMs] time snap while dragging (default 15 min)
    */
+  function signedChartSegments(pts) {
+    if (!pts || pts.length < 2) return [];
+    const dense = [];
+    for (let i = 0; i < pts.length; i++) {
+      if (i > 0) {
+        const a = pts[i - 1], b = pts[i];
+        if (a.v * b.v < 0) {
+          const r = a.v / (a.v - b.v);
+          dense.push({ t: a.t + r * (b.t - a.t), v: 0 });
+        }
+      }
+      dense.push(pts[i]);
+    }
+    const segs = [];
+    let cur = [dense[0]];
+    let sign = Math.sign(dense[0].v);
+    for (let i = 1; i < dense.length; i++) {
+      const p = dense[i];
+      const s = Math.sign(p.v);
+      if (s !== 0 && sign !== 0 && s !== sign) {
+        segs.push({ sign, pts: cur });
+        cur = [p];
+        sign = s;
+      } else {
+        cur.push(p);
+        if (s !== 0) sign = s;
+      }
+    }
+    if (cur.length >= 2) segs.push({ sign, pts: cur });
+    return segs;
+  }
+
   function renderScoreChart(opts) {
     opts = opts || {};
     const $ = pick(opts, '$', global.$) || (id => (typeof id === 'string' ? document.getElementById(id) : id));
@@ -340,12 +372,22 @@
       return v;
     }
     const nowV = valueAt(now);
+    const signed = !!opts.signed;
+    const stbColor = opts.starboardColor || CHART.good || '#3dff9a';
+    const portColor = opts.portColor || CHART.poor || '#ff6644';
     if (nowEl) {
-      nowEl.textContent = nowV != null ? 'Now ' + f0(nowV) + '/100' : '—';
+      if (signed) {
+        if (nowV != null) {
+          const side = nowV > 0.5 ? 'starboard' : nowV < -0.5 ? 'port' : 'on heading';
+          nowEl.textContent = f0(Math.abs(nowV)) + '° ' + side;
+        } else nowEl.textContent = '—';
+      } else {
+        nowEl.textContent = nowV != null ? 'Now ' + f0(nowV) + '/100' : '—';
+      }
     }
 
     /* Extra top pad so NOW + PLAN labels can stack without clipping (.tide-chart overflow:hidden). */
-    const W = 860, H = 280, padL = 46, padR = 14, padT = 48, padB = 40;
+    const W = 860, H = 280, padL = signed ? 56 : 46, padR = 14, padT = 48, padB = 40;
     const plotW = W - padL - padR, plotH = H - padT - padB;
     let vMin = opts.vMin != null ? +opts.vMin : 0;
     let vMax = opts.vMax != null ? +opts.vMax : 100;
@@ -359,10 +401,22 @@
     const interactive = typeof opts.onHighlightChange === 'function';
 
     let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">';
-    svg += '<defs><linearGradient id="' + fillId + '" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="' + stroke + '" stop-opacity=".22"/>' +
-      '<stop offset="100%" stop-color="' + stroke + '" stop-opacity=".02"/>' +
-      '</linearGradient></defs>';
+    if (!signed) {
+      svg += '<defs><linearGradient id="' + fillId + '" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="' + stroke + '" stop-opacity=".22"/>' +
+        '<stop offset="100%" stop-color="' + stroke + '" stop-opacity=".02"/>' +
+        '</linearGradient></defs>';
+    } else {
+      svg += '<defs>' +
+        '<linearGradient id="' + fillId + 'Stb" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="' + stbColor + '" stop-opacity=".28"/>' +
+        '<stop offset="100%" stop-color="' + stbColor + '" stop-opacity=".04"/>' +
+        '</linearGradient>' +
+        '<linearGradient id="' + fillId + 'Port" x1="0" y1="1" x2="0" y2="0">' +
+        '<stop offset="0%" stop-color="' + portColor + '" stop-opacity=".28"/>' +
+        '<stop offset="100%" stop-color="' + portColor + '" stop-opacity=".04"/>' +
+        '</linearGradient></defs>';
+    }
 
     const daily = opts.daily;
     const dayNight = opts.dayNightBands || pick(opts, 'wxChartDayNightBands', null);
@@ -380,19 +434,39 @@
 
     const goodAt = opts.goodAt != null ? opts.goodAt : 82;
     const fairAt = opts.fairAt != null ? opts.fairAt : 55;
-    [[goodAt, CHART.good], [fairAt, CHART.fair]].forEach(([th, col]) => {
-      const y = yS(th);
-      svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y +
-        '" stroke="' + col + '" stroke-width="1" stroke-dasharray="4 5" opacity="0.45" pointer-events="none"/>';
-    });
+    const zeroY = yS(0);
+
+    if (signed) {
+      svg += '<line x1="' + padL + '" y1="' + zeroY.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + zeroY.toFixed(1) +
+        '" stroke="var(--ink3)" stroke-width="1.5" opacity="0.65" pointer-events="none"/>';
+      (opts.guideAbs || [45, 90]).forEach(abs => {
+        [abs, -abs].forEach(v => {
+          const y = yS(v);
+          svg += '<line x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y.toFixed(1) +
+            '" stroke="var(--fair)" stroke-width="1" stroke-dasharray="4 5" opacity="0.35" pointer-events="none"/>';
+        });
+      });
+    } else {
+      [[goodAt, CHART.good], [fairAt, CHART.fair]].forEach(([th, col]) => {
+        const y = yS(th);
+        svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y +
+          '" stroke="' + col + '" stroke-width="1" stroke-dasharray="4 5" opacity="0.45" pointer-events="none"/>';
+      });
+    }
 
     const yStep = opts.yStep != null ? opts.yStep
-      : ((vMax - vMin) <= 100 ? 25 : ((vMax - vMin) <= 200 ? 45 : 50));
+      : (signed ? 90 : ((vMax - vMin) <= 100 ? 25 : ((vMax - vMin) <= 200 ? 45 : 50)));
     for (let v = vMin; v <= vMax + 1e-6; v += yStep) {
       const y = yS(v);
       svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y +
         '" stroke="var(--line2)" stroke-width="1" pointer-events="none"/>';
-      svg += '<text x="' + (padL - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="var(--ink3)" font-weight="500" pointer-events="none">' + f0(v) + '</text>';
+      let lbl = f0(v);
+      if (signed) {
+        if (v > 0) lbl = 'stb ' + f0(v);
+        else if (v < 0) lbl = 'port ' + f0(Math.abs(v));
+        else lbl = '0';
+      }
+      svg += '<text x="' + (padL - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="var(--ink3)" font-weight="500" pointer-events="none">' + esc(lbl) + '</text>';
     }
 
     const tickMs = 24 * HR;
@@ -406,13 +480,26 @@
       tick += tickMs;
     }
 
-    const line = winPts.map((p, i) => (i ? 'L' : 'M') + xS(p.t).toFixed(1) + ',' + yS(p.v).toFixed(1)).join(' ');
-    const area = line + ' L' + xS(winPts[winPts.length - 1].t).toFixed(1) + ',' + (padT + plotH) +
-      ' L' + xS(winPts[0].t).toFixed(1) + ',' + (padT + plotH) + ' Z';
-    svg += '<path d="' + area + '" fill="url(#' + fillId + ')" pointer-events="none"/>';
-    svg += '<path d="' + line + '" fill="none" stroke="' + stroke + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" pointer-events="none"/>';
+    if (signed) {
+      signedChartSegments(winPts).forEach(seg => {
+        const col = seg.sign > 0 ? stbColor : portColor;
+        const grad = seg.sign > 0 ? fillId + 'Stb' : fillId + 'Port';
+        const line = seg.pts.map((p, i) => (i ? 'L' : 'M') + xS(p.t).toFixed(1) + ',' + yS(p.v).toFixed(1)).join(' ');
+        const x0 = xS(seg.pts[0].t).toFixed(1);
+        const x1 = xS(seg.pts[seg.pts.length - 1].t).toFixed(1);
+        const area = line + ' L' + x1 + ',' + zeroY.toFixed(1) + ' L' + x0 + ',' + zeroY.toFixed(1) + ' Z';
+        svg += '<path d="' + area + '" fill="url(#' + grad + ')" pointer-events="none"/>';
+        svg += '<path d="' + line + '" fill="none" stroke="' + col + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" pointer-events="none"/>';
+      });
+    } else {
+      const line = winPts.map((p, i) => (i ? 'L' : 'M') + xS(p.t).toFixed(1) + ',' + yS(p.v).toFixed(1)).join(' ');
+      const area = line + ' L' + xS(winPts[winPts.length - 1].t).toFixed(1) + ',' + (padT + plotH) +
+        ' L' + xS(winPts[0].t).toFixed(1) + ',' + (padT + plotH) + ' Z';
+      svg += '<path d="' + area + '" fill="url(#' + fillId + ')" pointer-events="none"/>';
+      svg += '<path d="' + line + '" fill="none" stroke="' + stroke + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" pointer-events="none"/>';
+    }
 
-    if (opts.markPeaks !== false) {
+    if (!signed && opts.markPeaks !== false) {
       const peaks = findPeaks(winPts, goodAt, 5 * HR);
       peaks.forEach(pk => {
         const x = xS(pk.t), y = yS(pk.v);
@@ -489,17 +576,31 @@
     }
 
     if (metaEl) {
-      metaEl.innerHTML =
-        '<span><i style="background:' + CHART.now + '"></i> Now</span>' +
-        (hlShown || interactive
-          ? '<span><i style="background:' + hlColor + '"></i> ' + esc(hlLabel) +
-            (interactive ? ' · drag / tap chart' : '') + '</span>'
-          : '') +
-        '<span><i style="background:' + CHART.good + '"></i> ≥' + goodAt + ' hot</span>' +
-        '<span><i style="background:' + CHART.fair + '"></i> ≥' + fairAt + ' fair</span>' +
-        '<span><i style="background:' + WX_C.day + '"></i> Day</span>' +
-        '<span><i style="background:' + WX_C.night + '"></i> Night</span>' +
-        '<span>' + esc(fmtDayTime(new Date(tMin))) + ' → ' + esc(fmtDayTime(new Date(tMax))) + '</span>';
+      if (signed) {
+        metaEl.innerHTML =
+          '<span><i style="background:' + CHART.now + '"></i> Now</span>' +
+          (hlShown || interactive
+            ? '<span><i style="background:' + hlColor + '"></i> ' + esc(hlLabel) +
+              (interactive ? ' · drag / tap chart' : '') + '</span>'
+            : '') +
+          '<span><i style="background:' + stbColor + '"></i> Starboard (+)</span>' +
+          '<span><i style="background:' + portColor + '"></i> Port (−)</span>' +
+          '<span><i style="background:' + WX_C.day + '"></i> Day</span>' +
+          '<span><i style="background:' + WX_C.night + '"></i> Night</span>' +
+          '<span>' + esc(fmtDayTime(new Date(tMin))) + ' → ' + esc(fmtDayTime(new Date(tMax))) + '</span>';
+      } else {
+        metaEl.innerHTML =
+          '<span><i style="background:' + CHART.now + '"></i> Now</span>' +
+          (hlShown || interactive
+            ? '<span><i style="background:' + hlColor + '"></i> ' + esc(hlLabel) +
+              (interactive ? ' · drag / tap chart' : '') + '</span>'
+            : '') +
+          '<span><i style="background:' + CHART.good + '"></i> ≥' + goodAt + ' hot</span>' +
+          '<span><i style="background:' + CHART.fair + '"></i> ≥' + fairAt + ' fair</span>' +
+          '<span><i style="background:' + WX_C.day + '"></i> Day</span>' +
+          '<span><i style="background:' + WX_C.night + '"></i> Night</span>' +
+          '<span>' + esc(fmtDayTime(new Date(tMin))) + ' → ' + esc(fmtDayTime(new Date(tMax))) + '</span>';
+      }
     }
     if (noteEl) {
       noteEl.textContent = opts.note || '';
