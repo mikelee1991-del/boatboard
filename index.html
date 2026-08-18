@@ -3698,8 +3698,8 @@ async function refreshForecasts(force){
       const c=loadCache('marine',7*24*HR); if(c){ marine=c.data; staleNote='Marine model cached '+new Date(c.at).toLocaleTimeString()+'. '; offline=!navigator.onLine; }
     }
     if(wr.status==='fulfilled'){ wx=wr.value; cacheData('wx',wx); }
-    try{ seedBoatSiteWx(); }catch(e){}
     else{ const c=loadCache('wx',7*24*HR); if(c){ wx=c.data; staleNote+='Weather cached. '; } }
+    try{ seedBoatSiteWx(); }catch(e){}
     const tr = await tideP;
     if(!tr.ok && !tides){
       const c=loadCache('tides',7*24*HR); if(c){ applyTidesData(c.data, false); staleNote+='Tides cached. '; }
@@ -10378,22 +10378,31 @@ function renderFishCompareChart(ranked){
 }
 
 /**
- * Spot bite display = pure fishBiteScore (same as Plan glance / bite chart at plan time).
- * Site-fit (SST/tide at the mark’s grid cell + nearest NOAA station, preferred time)
- * only drives rank order (fitScore) — it is NOT folded into the number/color shown.
+ * Spot bite display = fishBiteScore at the mark (cell SST/seas + nearest NOAA tide).
+ * Plan glance / bite-index chart stay the boat/regional snapshot.
+ * Site-fit (pin tags vs those same site conditions) only drives rank order (fitScore).
  * Recalibration unchanged: typical day mid-40s–60s; good ≥82.
  */
-function scoreFishSpot(spot, ctx){
-  const distNm = haversineM(ctx.lat, ctx.lon, spot.lat, spot.lon) / NM;
-  /* Distance selects the nearby pool in rankFishSpots (same as dive); not a score bonus here. */
-  const biteBase = fishBiteScore(ctx).score;
+function fishSpotConditionCtx(spot, ctx){
   const siteWx = (typeof peekSiteWxAt === 'function')
     ? peekSiteWxAt(spot.lat, spot.lon, ctx.planWhen)
     : null;
-  const sstF = siteWx && siteWx.sstF != null ? siteWx.sstF : ctx.sstF;
-  const tide = (siteWx && siteWx.tide) || ctx.tide;
-  const seas = siteWx && siteWx.seas != null ? siteWx.seas : ctx.seas;
-  const siteCtx = { ...ctx, sstF, tide, seas };
+  if(!siteWx) return ctx;
+  return {
+    ...ctx,
+    sstF: siteWx.sstF != null ? siteWx.sstF : ctx.sstF,
+    tide: siteWx.tide || ctx.tide,
+    seas: siteWx.seas != null ? siteWx.seas : ctx.seas
+  };
+}
+function scoreFishSpot(spot, ctx){
+  const distNm = haversineM(ctx.lat, ctx.lon, spot.lat, spot.lon) / NM;
+  /* Distance selects the nearby pool in rankFishSpots (same as dive); not a score bonus here. */
+  const siteCtx = fishSpotConditionCtx(spot, ctx);
+  const biteBase = fishBiteScore(siteCtx).score;
+  const sstF = siteCtx.sstF;
+  const tide = siteCtx.tide;
+  const seas = siteCtx.seas;
   let d = 0;
 
   if(sstF != null && spot.minSstF != null){
@@ -10455,8 +10464,8 @@ function fishNearestGroups(lat, lon, n, maxNm){
 /**
  * Rank feature groups (default) or every pin (opts.everyPin for map sibling dots).
  * Same pipeline as dive: nearest groups within FISH_MAP_FIT_NM (capped at pool),
- * then sort by fitScore (bite + site-fit). Displayed score stays pure bite (= glance).
- * Group rep = best fit among members; nearer pin breaks ties. Lists/picker use groups.
+ * then sort by fitScore (mark bite + site-fit). Displayed score is mark-cell bite
+ * (not the boat glance). Group rep = best fit; nearer pin breaks ties.
  */
 function rankFishSpots(ctx, opts){
   const everyPin = opts && opts.everyPin;
@@ -10984,7 +10993,7 @@ function renderFishTopPicks(ranked, ctx, sol){
         '<div class="rec"><strong>Gear:</strong> '+esc(spotGearLine(spot, ctx))+'</div>'+
       '</div></div>';
   }).join('') +
-  '<p class="plan-note" style="margin-top:8px">Tap a pick to select it — species lean &amp; On site detail follow that mark (same as Dive list → site). Bite numbers match the Plan glance. Order uses site-fit (Open-Meteo SST at the mark’s grid cell + nearest NOAA tide) among nearest <strong>'+FISH_PICKER_POOL+'</strong> groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> spots · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill color = bite · top '+FISH_MAP_MAX_MARKERS+'; same-reef modules count once.</p>';
+  '<p class="plan-note" style="margin-top:8px">Tap a pick to select it — species lean &amp; On site detail follow that mark (same as Dive list → site). Bite is Open-Meteo SST/seas at the mark’s grid cell + nearest NOAA tide (the glance bite index is still the boat/regional snapshot). Order uses site-fit among nearest <strong>'+FISH_PICKER_POOL+'</strong> groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> spots · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill color = bite · top '+FISH_MAP_MAX_MARKERS+'; same-reef modules count once.</p>';
 }
 
 function fishPlanVisible(){
@@ -11148,7 +11157,7 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     L.marker([mpos.lat, mpos.lon], { icon, zIndexOffset: 500 - i })
       .bindPopup('<b>#'+rank+' '+esc(label)+'</b>'+styleLine+'<br>'+
         '<span style="font-family:var(--font-mono);font-size:12px;font-weight:500">'+fmtFishCoordsDepth(spot)+'</span><br>'+
-        'Bite: <strong>'+score+'/100</strong> (same as glance) · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm'+modLine+'<br>'+
+        'Bite: <strong>'+score+'/100</strong> (at mark) · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm'+modLine+'<br>'+
         'Peak today: '+peakTxt+'<br>'+
         '<strong>Bait:</strong> '+esc(spotBaitLine(spot, baseCtx))+comfortBlock+'<br>'+
         esc(spot.species.slice(0,4).join(', ')))
@@ -11170,7 +11179,7 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     L.marker([mpos.lat, mpos.lon], { icon, zIndexOffset: 50 })
       .bindPopup('<b>'+esc(label)+'</b>'+(style === 'surface' ? '<br><span style="opacity:.9">◆ Surface / troll</span>' : '')+'<br>'+
         '<span style="font-family:var(--font-mono);font-size:12px;font-weight:500">'+fmtFishCoordsDepth(spot)+'</span><br>'+
-        'Bite '+score+'/100 (same as glance) · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm'+(spot.regional ? ' · regional run' : '')+
+        'Bite '+score+'/100 (at mark) · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm'+(spot.regional ? ' · regional run' : '')+
         (spot.featureGroupSize > 1 ? '<br><span style="opacity:.85">'+esc(spot.featureGroupName || fishFeatureDisplayName(spot.name))+' · '+spot.featureGroupSize+' modules</span>' : '')+'<br>'+
         (comfort ? 'Comfort '+comfort.bump+' · combined '+comfort.combined+'/100<br>' : '')+
         '<strong>Bait:</strong> '+esc(spotBaitLine(spot, baseCtx)))
@@ -11192,7 +11201,7 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     L.marker([mpos.lat, mpos.lon], { icon, zIndexOffset: 40 })
       .bindPopup('<b>'+esc(spot.name)+'</b>'+(style === 'surface' ? '<br><span style="opacity:.9">◆ Surface / troll</span>' : '')+'<br>'+
         '<span style="font-family:var(--font-mono);font-size:12px;font-weight:500">'+fmtFishCoordsDepth(spot)+'</span><br>'+
-        'Bite '+score+'/100 (same as glance) · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm'+(spot.cdfgAppendix ? '<br>CDFG appendix' : '')+
+        'Bite '+score+'/100 (at mark) · '+esc(fishSiteFitLabel(siteDelta))+' · '+f1(distNm)+' nm'+(spot.cdfgAppendix ? '<br>CDFG appendix' : '')+
         (spot.featureGroupSize > 1 ? '<br><span style="opacity:.85">Part of '+esc(spot.featureGroupName || fishFeatureDisplayName(spot.name))+'</span>' : ''))
       .addTo(fishSpotLayer);
   });
@@ -12134,11 +12143,11 @@ function renderFishing(){
           spotMiniBarHtml(tl)+
           '<div class="note"><strong>'+esc(spot.habitat)+'</strong> · '+esc(spot.depth)+'<br>'+esc(spot.tactics)+'</div></div>';
       }).join('') +
-      '<p class="plan-note" style="margin-top:8px">Tap a row to select the mark (updates tackle, briefing, and species lean above). <strong>'+nearestDetail.length+'</strong> spots — Bite matches the glance at trip time; order uses site-fit (mark-cell SST + nearest NOAA tide) among nearest groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> feature groups · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill = bite · top '+FISH_MAP_MAX_MARKERS+'; other pins are unnumbered dots.</p>';
+      '<p class="plan-note" style="margin-top:8px">Tap a row to select the mark (updates tackle, briefing, and species lean above). <strong>'+nearestDetail.length+'</strong> spots — Bite is at the mark (cell SST/seas + nearest NOAA tide); the glance bite index is the boat snapshot. Order uses site-fit among nearest groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> feature groups · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill = bite · top '+FISH_MAP_MAX_MARKERS+'; other pins are unnumbered dots.</p>';
     }
 
     const cards = [
-      ['Bite index', String(bite.score)+'/100', bite.score >= BITE_GOOD_AT ? 'Go fish' : bite.score >= BITE_FAIR_AT ? 'Worth the run' : 'Pick your window'],
+      ['Bite index', String(bite.score)+'/100', (bite.score >= BITE_GOOD_AT ? 'Go fish' : bite.score >= BITE_FAIR_AT ? 'Worth the run' : 'Pick your window')+' · boat snapshot'],
       ['Moon', sol.illum+'% lit', 'Phase '+Math.round(sol.phase*100)/100],
       ['Solunar', solSt.active ? 'ACTIVE NOW' : 'Peak in '+Math.round(solSt.minutes)+'m', solSub]
     ];
