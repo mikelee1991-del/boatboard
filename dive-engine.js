@@ -925,20 +925,31 @@
    * Group score = best composite among members; representative pin = that best-scoring member
    * (nearest-to-boat breaks ties). List/picker distance is the representative's distance.
    */
+  function seriesForSite(site, marine, wx, tides) {
+    const api = (typeof window !== 'undefined') ? window.BoatSiteWx : null;
+    const pack = (api && api.peekPack && site) ? api.peekPack(site.lat, site.lon) : null;
+    return parseSeries((pack && pack.marine) || marine, wx, (pack && pack.tides) || tides);
+  }
+
+  function scoreSiteAt(raw, when, marine, wx, tides, lat, lon) {
+    const dist = haversineNm(lat, lon, raw.lat, raw.lon);
+    const site = { ...raw, dist };
+    const Ssaved = S;
+    S = seriesForSite(site, marine, wx, tides);
+    const m = snapshotAt(site, when);
+    const R = scoreDive(site, m);
+    S = Ssaved;
+    return { site, m, R, dist };
+  }
+
   function rankSitesAt(when, marine, wx, tides, lat, lon, limit, opts) {
     const everyPin = opts && opts.everyPin;
-    const Ssaved = S;
-    S = parseSeries(marine, wx, tides);
-    if (!S.ok.marine && !S.ok.wx) { S = Ssaved; return []; }
+    const probe = parseSeries(marine, wx, tides);
+    if (!probe.ok.marine && !probe.ok.wx) return [];
 
     if (everyPin) {
-      const sites = DIVE_SITES.map(s => ({ ...s, dist: haversineNm(lat, lon, s.lat, s.lon) }));
-      const ranked = sites.map(site => {
-        const m = snapshotAt(site, when);
-        const R = scoreDive(site, m);
-        return { site, m, R, dist: site.dist };
-      }).sort((a, b) => b.R.composite - a.R.composite);
-      S = Ssaved;
+      const ranked = DIVE_SITES.map(raw => scoreSiteAt(raw, when, marine, wx, tides, lat, lon))
+        .sort((a, b) => b.R.composite - a.R.composite);
       return ranked;
     }
 
@@ -956,19 +967,14 @@
     for (const members of byGroup.values()) {
       let best = null;
       for (const raw of members) {
-        const dist = haversineNm(lat, lon, raw.lat, raw.lon);
-        const site = { ...raw, dist };
-        const m = snapshotAt(site, when);
-        const R = scoreDive(site, m);
-        const row = { site, m, R, dist };
-        if (!best || R.composite > best.R.composite || (R.composite === best.R.composite && dist < best.dist)) {
+        const row = scoreSiteAt(raw, when, marine, wx, tides, lat, lon);
+        if (!best || row.R.composite > best.R.composite || (row.R.composite === best.R.composite && row.dist < best.dist)) {
           best = row;
         }
       }
       ranked.push(best);
     }
     ranked.sort((a, b) => b.R.composite - a.R.composite);
-    S = Ssaved;
     return ranked;
   }
 
@@ -1956,14 +1962,23 @@
     }
     const pts = [];
     let used = 0, n = 0, missingTide = 0;
-    for (let t = tMin; t <= tMax + 1; t += stepHr * HR) {
-      n++;
-      const m = snapshotAt(site, t);
-      if (!m.ok.marine && !m.ok.wx) continue;
-      if (!m.ok.tides) missingTide++;
-      used++;
-      const R = scoreDive(site, m);
-      pts.push({ t, v: R.composite });
+    const Ssaved = S;
+    const fallbackMar = getMarine && getMarine();
+    const fallbackWx = getWx && getWx();
+    const fallbackTi = getTides && getTides();
+    S = seriesForSite(site, fallbackMar, fallbackWx, fallbackTi);
+    try {
+      for (let t = tMin; t <= tMax + 1; t += stepHr * HR) {
+        n++;
+        const m = snapshotAt(site, t);
+        if (!m.ok.marine && !m.ok.wx) continue;
+        if (!m.ok.tides) missingTide++;
+        used++;
+        const R = scoreDive(site, m);
+        pts.push({ t, v: R.composite });
+      }
+    } finally {
+      S = Ssaved;
     }
     return {
       pts, tMin, tMax,
@@ -2440,10 +2455,11 @@
         '<div class="dr-verdict">' + esc(R.verdict) + cap + '</div>' +
         '</div></div>';
     }).join('') +
-    '<p class="plan-note" style="margin-top:8px"><strong>' + ranked.length + '</strong> spots ranked by dive score among nearest groups within ~' + DIVE_MAP_FIT_NM + ' nm (of <strong>' + FEATURE_GROUP_COUNT + '</strong> feature groups · <strong>' + DIVE_SITES.length + '</strong> pins). Map numbers top ' + Math.min(DIVE_MAP_MAX_MARKERS, ranked.length) + '; other pins are unnumbered dots. Same-reef modules count once. Conditions at <strong>' + fmtFull(whenD) + '</strong>.</p>';
+    '<p class="plan-note" style="margin-top:8px"><strong>' + ranked.length + '</strong> spots ranked by dive score among nearest groups within ~' + DIVE_MAP_FIT_NM + ' nm (of <strong>' + FEATURE_GROUP_COUNT + '</strong> feature groups · <strong>' + DIVE_SITES.length + '</strong> pins). SST/swell from the mark’s Open-Meteo cell; tide from the nearest NOAA station. Map numbers top ' + Math.min(DIVE_MAP_MAX_MARKERS, ranked.length) + '; other pins are unnumbered dots. Same-reef modules count once. Conditions at <strong>' + fmtFull(whenD) + '</strong>.</p>';
 
     lastRanked = ranked;
     renderSiteSelect();
+    scheduleDiveSiteWx(whenD, marine, wx, tides, lat, lon, ranked);
     const allRanked = rankSitesAt(whenD, marine, wx, tides, lat, lon, null, { everyPin: true });
     renderDivePlanMap(ranked, allRanked, lat, lon);
     if (divePlanVisible()) {
@@ -2631,6 +2647,17 @@
       renderDiveBriefing(current);
       if (lastM) renderSiteIntel(current, lastM);
     }
+  }
+
+  let _diveSiteWxToken = 0;
+  function scheduleDiveSiteWx(when, marine, wx, tides, lat, lon, ranked) {
+    const api = (typeof window !== 'undefined') ? window.BoatSiteWx : null;
+    if (!api || !api.ensure || !ranked || !ranked.length) return;
+    const token = ++_diveSiteWxToken;
+    api.ensure(ranked.map(r => r.site)).then(changed => {
+      if (!changed || token !== _diveSiteWxToken) return;
+      renderRecommendations(when, marine, wx, tides, lat, lon);
+    }).catch(() => {});
   }
 
   function syncRecommendations(marine, wx, tides) {

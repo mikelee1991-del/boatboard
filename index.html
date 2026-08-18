@@ -1789,7 +1789,7 @@ function ensureDiveEngine(){
     .then(()=> loadScript('dive-site-intel.js'))
     .then(()=> loadScript('briefing-synth.js?v=5'))
     .then(()=> ensureForecastCharts())
-    .then(()=> loadScript('dive-engine.js?v=17'))
+    .then(()=> loadScript('dive-engine.js?v=18'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
       return window.BoatDive;
@@ -3489,11 +3489,11 @@ const PlanCalendar = (function(){
 })();
 window.PlanCalendar = PlanCalendar;
 
-function marineSnapshotAt(when){
-  if(!marine?.hourly?.time?.length) return marine?.current || null;
-  const i = planTimeIndex(marine.hourly.time, +when);
-  if(i < 0) return marine.current || null;
-  const H = marine.hourly;
+function marineSnapshotFromData(data, when){
+  if(!data?.hourly?.time?.length) return data?.current || null;
+  const i = planTimeIndex(data.hourly.time, +when);
+  if(i < 0) return data.current || null;
+  const H = data.hourly;
   const pick = (arr, def) => arr && arr[i] != null ? arr[i] : def;
   return {
     wave_height: pick(H.wave_height, null),
@@ -3508,6 +3508,9 @@ function marineSnapshotAt(when){
     wind_wave_period: pick(H.wind_wave_period, null),
     sea_surface_temperature: pick(H.sea_surface_temperature, null)
   };
+}
+function marineSnapshotAt(when){
+  return marineSnapshotFromData(marine, when);
 }
 
 function wxSnapshotAt(when){
@@ -3566,12 +3569,16 @@ function wxURL(lat,lon){
     '&forecast_days=5&timezone=America/Los_Angeles&temperature_unit=fahrenheit&wind_speed_unit=kn&precipitation_unit=inch';
 }
 function tideURL(interval){
+  return tideStationURL(TIDE_STATION, interval);
+}
+function tideStationURL(stationId, interval){
   /* Cover chart window (now−18h … now+72h) plus day-boundary / hi-lo bracket margin */
   const lookbackMs = Math.max(24, TIDE_CHART_BACK_HR + 6) * HR;
   const d = new Date(Date.now() - lookbackMs);
   const bd = d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
   const rangeHrs = Math.max(168, TIDE_CHART_BACK_HR + TIDE_CHART_FWD_HR + 48);
-  return 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&datum=MLLW&time_zone=lst_ldt&interval='+interval+'&units=english&format=json&application=BoatBoard&station='+TIDE_STATION+'&begin_date='+bd+'&range='+rangeHrs;
+  const id = stationId || TIDE_STATION;
+  return 'https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=predictions&datum=MLLW&time_zone=lst_ldt&interval='+interval+'&units=english&format=json&application=BoatBoard&station='+id+'&begin_date='+bd+'&range='+rangeHrs;
 }
 
 function tidesCacheAgeMs(){
@@ -3691,6 +3698,7 @@ async function refreshForecasts(force){
       const c=loadCache('marine',7*24*HR); if(c){ marine=c.data; staleNote='Marine model cached '+new Date(c.at).toLocaleTimeString()+'. '; offline=!navigator.onLine; }
     }
     if(wr.status==='fulfilled'){ wx=wr.value; cacheData('wx',wx); }
+    try{ seedBoatSiteWx(); }catch(e){}
     else{ const c=loadCache('wx',7*24*HR); if(c){ wx=c.data; staleNote+='Weather cached. '; } }
     const tr = await tideP;
     if(!tr.ok && !tides){
@@ -9380,14 +9388,14 @@ function dayPeriod(h){
   return 'night';
 }
 
-function tideStateAt(timeMs){
+function tideStateFromData(data, timeMs){
   try{
-    if(!tides?.predictions?.length) return null;
-    const ev = tides.predictions.map(p=>({
+    if(!data?.predictions?.length) return null;
+    const ev = data.predictions.map(p=>({
       t: parseTideTime(p.t).getTime(), v: parseFloat(p.v), type: p.type
     })).filter(p=>isFinite(p.v) && isFinite(p.t)).sort((a,b)=>a.t-b.t);
     if(!ev.length) return null;
-    const pts = buildTideSeriesFromHilo(tides.predictions, 10*60*1000);
+    const pts = buildTideSeriesFromHilo(data.predictions, 10*60*1000);
     const h = pts.length ? tideInterp(pts, timeMs) : null;
     let rising = null, next = null;
     for(let i=0; i<ev.length-1; i++){
@@ -9409,10 +9417,218 @@ function tideStateAt(timeMs){
     return null;
   }
 }
+function tideStateAt(timeMs){
+  return tideStateFromData(tides, timeMs);
+}
 
 function tideStateNow(){
   return tideStateAt(Date.now());
 }
+
+/**
+ * Per-mark SST / waves / tide without a fetch per pin.
+ * Nearby pins share an Open-Meteo marine cell (~0.05° / ~3 nmi). Tide uses the nearest
+ * NOAA station (King Harbor when that’s closest). Boat cell + KH table are reused.
+ */
+const SITE_MARINE_CELL_DEG = 0.05;
+const NOAA_TIDE_STATIONS = [
+  { id: '9410738', name: 'King Harbor, Redondo Beach', lat: 33.842, lon: -118.398 },
+  { id: '9410079', name: 'Avalon, Catalina Island', lat: 33.345, lon: -118.325 },
+  { id: '9410660', name: 'Los Angeles, Outer Harbor', lat: 33.720, lon: -118.272 },
+  { id: '9410840', name: 'Santa Monica', lat: 34.008, lon: -118.500 },
+  { id: '9410230', name: 'La Jolla (Scripps Pier)', lat: 32.867, lon: -117.257 },
+  { id: '9410170', name: 'San Diego Bay', lat: 32.714, lon: -117.174 },
+  { id: '9410580', name: 'Newport Bay Entrance', lat: 33.603, lon: -117.883 },
+  { id: '9411340', name: 'Santa Barbara', lat: 34.405, lon: -119.685 }
+];
+const siteMarineMem = new Map();
+const siteTideMem = new Map();
+const siteWxInflight = { marine: new Map(), tide: new Map() };
+let _siteWxEnsure = null;
+let _siteWxEnsureKey = '';
+
+function siteMarineCell(lat, lon){
+  const step = SITE_MARINE_CELL_DEG;
+  const la = Math.round(+lat / step) * step;
+  const lo = Math.round(+lon / step) * step;
+  return { lat: +la.toFixed(4), lon: +lo.toFixed(4), key: la.toFixed(3)+','+lo.toFixed(3) };
+}
+function nearestTideStation(lat, lon){
+  let best = NOAA_TIDE_STATIONS[0], bd = 1e9;
+  for(const s of NOAA_TIDE_STATIONS){
+    const d = haversineM(lat, lon, s.lat, s.lon);
+    if(d < bd){ bd = d; best = s; }
+  }
+  return { ...best, distNm: bd / NM };
+}
+function siteWxFresh(at){
+  return at != null && (Date.now() - at) < REFRESH_MARINE;
+}
+function siteTideFresh(at){
+  return at != null && (Date.now() - at) < REFRESH_TIDES;
+}
+function seedBoatSiteWx(){
+  const bp = typeof boatPos === 'function' ? boatPos() : null;
+  if(bp && marine && isFinite(bp.lat)){
+    const cell = siteMarineCell(bp.lat, bp.lon);
+    const prev = siteMarineMem.get(cell.key);
+    if(!prev || !siteWxFresh(prev.at)){
+      siteMarineMem.set(cell.key, { at: Date.now(), data: marine });
+    }
+  }
+  if(tides?.predictions?.length){
+    const prev = siteTideMem.get(TIDE_STATION);
+    if(!prev || !siteTideFresh(prev.at)){
+      siteTideMem.set(TIDE_STATION, { at: tidesFetchedAt || Date.now(), data: tides });
+    }
+  }
+}
+function hydrateSiteMarine(key){
+  const hit = siteMarineMem.get(key);
+  if(hit && siteWxFresh(hit.at) && hit.data) return hit;
+  const c = loadCache('marineCell:'+key, REFRESH_MARINE);
+  if(c && !c.stale && c.data){
+    const row = { at: c.at || Date.now(), data: c.data };
+    siteMarineMem.set(key, row);
+    return row;
+  }
+  return hit && hit.data ? hit : null;
+}
+function hydrateSiteTide(id){
+  if(id === TIDE_STATION && tides?.predictions?.length){
+    const row = { at: tidesFetchedAt || Date.now(), data: tides };
+    siteTideMem.set(id, row);
+    return row;
+  }
+  const hit = siteTideMem.get(id);
+  if(hit && siteTideFresh(hit.at) && hit.data) return hit;
+  const c = loadCache('tides:'+id, REFRESH_TIDES);
+  if(c && !c.stale && c.data?.predictions){
+    const row = { at: c.at || Date.now(), data: c.data };
+    siteTideMem.set(id, row);
+    return row;
+  }
+  return hit && hit.data ? hit : null;
+}
+function peekSiteWxPack(lat, lon){
+  seedBoatSiteWx();
+  if(lat == null || lon == null || !isFinite(+lat) || !isFinite(+lon)){
+    return { cell: null, station: NOAA_TIDE_STATIONS[0], marine: marine || null, tides: tides || null };
+  }
+  const cell = siteMarineCell(lat, lon);
+  const station = nearestTideStation(lat, lon);
+  const m = hydrateSiteMarine(cell.key);
+  const t = hydrateSiteTide(station.id);
+  return {
+    cell, station,
+    marine: (m && m.data) || null,
+    tides: (t && t.data) || null
+  };
+}
+function peekSiteWxAt(lat, lon, when){
+  const whenMs = when != null ? +when : Date.now();
+  const pack = peekSiteWxPack(lat, lon);
+  const snap = pack.marine ? marineSnapshotFromData(pack.marine, whenMs) : marineSnapshotAt(whenMs);
+  const tide = pack.tides ? tideStateFromData(pack.tides, whenMs) : tideStateAt(whenMs);
+  return {
+    sstF: snap?.sea_surface_temperature != null ? snap.sea_surface_temperature * 9/5 + 32 : null,
+    seas: snap?.wave_height != null ? snap.wave_height * M2FT : null,
+    tide,
+    station: pack.station,
+    cell: pack.cell,
+    marine: pack.marine,
+    tides: pack.tides,
+    fromSiteMarine: !!(pack.marine && pack.cell && pack.marine !== marine),
+    fromSiteTide: !!(pack.tides && pack.station && pack.station.id !== TIDE_STATION)
+  };
+}
+async function mapPoolLimit(items, limit, fn){
+  const list = items || [];
+  if(!list.length) return [];
+  const out = new Array(list.length);
+  let i = 0;
+  const n = Math.min(limit || 3, list.length);
+  async function worker(){
+    while(i < list.length){
+      const idx = i++;
+      out[idx] = await fn(list[idx], idx);
+    }
+  }
+  await Promise.all(Array.from({ length: n }, worker));
+  return out;
+}
+async function fetchSiteMarineCell(cell){
+  const key = cell.key;
+  const inflight = siteWxInflight.marine.get(key);
+  if(inflight) return inflight;
+  const p = fetchJSON(marineURL(cell.lat, cell.lon), 16000).then(data => {
+    if(data && data.hourly){
+      siteMarineMem.set(key, { at: Date.now(), data });
+      cacheData('marineCell:'+key, data);
+      return data;
+    }
+    return null;
+  }).finally(()=> siteWxInflight.marine.delete(key));
+  siteWxInflight.marine.set(key, p);
+  return p;
+}
+async function fetchSiteTideStation(station){
+  const id = station.id;
+  const inflight = siteWxInflight.tide.get(id);
+  if(inflight) return inflight;
+  const p = fetchJSON(tideStationURL(id, 'hilo'), 20000).then(data => {
+    if(data?.error?.message) throw new Error(String(data.error.message));
+    if(data?.predictions?.length){
+      siteTideMem.set(id, { at: Date.now(), data });
+      cacheData('tides:'+id, data);
+      if(id === TIDE_STATION) applyTidesData(data, true);
+      return data;
+    }
+    return null;
+  }).finally(()=> siteWxInflight.tide.delete(id));
+  siteWxInflight.tide.set(id, p);
+  return p;
+}
+async function ensureSiteWx(points){
+  seedBoatSiteWx();
+  const pts = (points || []).filter(p => p && isFinite(+p.lat) && isFinite(+p.lon));
+  const cells = new Map();
+  const stations = new Map();
+  pts.forEach(p => {
+    const cell = siteMarineCell(p.lat, p.lon);
+    if(!hydrateSiteMarine(cell.key)) cells.set(cell.key, cell);
+    const st = nearestTideStation(p.lat, p.lon);
+    if(!hydrateSiteTide(st.id)) stations.set(st.id, st);
+  });
+  const key = [...cells.keys()].sort().join('|')+'::'+[...stations.keys()].sort().join('|');
+  if(!cells.size && !stations.size) return false;
+  if(_siteWxEnsure && _siteWxEnsureKey === key) return _siteWxEnsure;
+  _siteWxEnsureKey = key;
+  _siteWxEnsure = (async ()=>{
+    let fetched = 0;
+    await mapPoolLimit([...cells.values()], 3, async cell => {
+      try{ if(await fetchSiteMarineCell(cell)) fetched++; }
+      catch(e){ console.warn('site marine', cell.key, e); }
+    });
+    await mapPoolLimit([...stations.values()], 2, async st => {
+      try{ if(await fetchSiteTideStation(st)) fetched++; }
+      catch(e){ console.warn('site tide', st.id, e); }
+    });
+    return fetched > 0;
+  })().finally(()=>{
+    _siteWxEnsure = null;
+    _siteWxEnsureKey = '';
+  });
+  return _siteWxEnsure;
+}
+
+window.BoatSiteWx = {
+  cell: siteMarineCell,
+  nearestTideStation,
+  peekPack: peekSiteWxPack,
+  peekAt: peekSiteWxAt,
+  ensure: ensureSiteWx
+};
 
 function minsUntil(date){ return Math.max(0, Math.round((date - Date.now()) / 60000)); }
 function minsFromNow(date){ return Math.round((date - Date.now()) / 60000); }
@@ -9450,7 +9666,7 @@ let _fishOceanPromise = null;
 function ensureFishSmart(){
   if(window.BoatFishSmart) return Promise.resolve(window.BoatFishSmart);
   if(_fishSmartPromise) return _fishSmartPromise;
-  _fishSmartPromise = loadScript('fish-smart.js?v=6').then(()=>{
+  _fishSmartPromise = loadScript('fish-smart.js?v=7').then(()=>{
     if(!window.BoatFishSmart) throw new Error('BoatFishSmart missing');
     return window.BoatFishSmart;
   }).catch(e=>{ _fishSmartPromise = null; throw e; });
@@ -10163,34 +10379,41 @@ function renderFishCompareChart(ranked){
 
 /**
  * Spot bite display = pure fishBiteScore (same as Plan glance / bite chart at plan time).
- * Site-fit (SST match, preferred tide/time, exposure) only drives rank order (fitScore)
- * and secondary copy — it is NOT folded into the number/color shown on map/list.
+ * Site-fit (SST/tide at the mark’s grid cell + nearest NOAA station, preferred time)
+ * only drives rank order (fitScore) — it is NOT folded into the number/color shown.
  * Recalibration unchanged: typical day mid-40s–60s; good ≥82.
  */
 function scoreFishSpot(spot, ctx){
   const distNm = haversineM(ctx.lat, ctx.lon, spot.lat, spot.lon) / NM;
   /* Distance selects the nearby pool in rankFishSpots (same as dive); not a score bonus here. */
   const biteBase = fishBiteScore(ctx).score;
+  const siteWx = (typeof peekSiteWxAt === 'function')
+    ? peekSiteWxAt(spot.lat, spot.lon, ctx.planWhen)
+    : null;
+  const sstF = siteWx && siteWx.sstF != null ? siteWx.sstF : ctx.sstF;
+  const tide = (siteWx && siteWx.tide) || ctx.tide;
+  const seas = siteWx && siteWx.seas != null ? siteWx.seas : ctx.seas;
+  const siteCtx = { ...ctx, sstF, tide, seas };
   let d = 0;
 
-  if(ctx.sstF != null && spot.minSstF != null){
-    if(ctx.sstF < spot.minSstF) d -= 5;
-    else if(ctx.sstF >= spot.minSstF + 3) d += 3;
+  if(sstF != null && spot.minSstF != null){
+    if(sstF < spot.minSstF) d -= 5;
+    else if(sstF >= spot.minSstF + 3) d += 3;
   }
 
   const period = dayPeriod(ctx.hour);
   if(spot.bestTime === period || (spot.bestTime === 'dawn' && period === 'morning') || (spot.bestTime === 'morning' && period === 'dawn')) d += 4;
   if(spot.bestTime === 'dawn' && (period === 'dusk' || period === 'night')) d -= 3;
 
-  if(ctx.tide?.rising != null && spot.bestTide === 'incoming' && ctx.tide.rising) d += 3;
-  else if(ctx.tide?.rising === false && spot.bestTide === 'incoming') d -= 2;
+  if(tide?.rising != null && spot.bestTide === 'incoming' && tide.rising) d += 3;
+  else if(tide?.rising === false && spot.bestTide === 'incoming') d -= 2;
   if(spot.bestTide === 'either') d += 1;
 
-  if(ctx.seas != null && ctx.seas > 3 && distNm > 5) d -= 5;
+  if(seas != null && seas > 3 && distNm > 5) d -= 5;
   if(ctx.wind != null && ctx.wind >= 16 && /Catalina|Basin|Channel/.test(spot.name)) d -= 4;
 
   if(window.BoatFishSmart && typeof BoatFishSmart.oceanSiteDelta === 'function'){
-    const od = BoatFishSmart.oceanSiteDelta(spot, ctx, fishOceanForCtx(ctx));
+    const od = BoatFishSmart.oceanSiteDelta(spot, siteCtx, fishOceanForSpot(spot, siteCtx));
     if(od && od.delta) d += od.delta;
   }
 
@@ -10263,6 +10486,19 @@ function rankFishSpots(ctx, opts){
   }
   ranked.sort(fishSpotRankCmp);
   return ranked;
+}
+
+let _fishSiteWxToken = 0;
+function scheduleFishSiteWx(ranked){
+  if(typeof ensureSiteWx !== 'function' || !ranked || !ranked.length) return;
+  const pts = ranked.map(r => r.spot).filter(Boolean);
+  const token = ++_fishSiteWxToken;
+  ensureSiteWx(pts).then(changed => {
+    if(!changed || token !== _fishSiteWxToken) return;
+    if(activeTab() === 'fishing'){
+      try{ renderFishing(); }catch(e){ console.error('renderFishing site-wx', e); }
+    }
+  }).catch(()=>{});
 }
 
 /** Overview brief — score nearby feature groups only (verified-water-pins.json). */
@@ -10748,7 +10984,7 @@ function renderFishTopPicks(ranked, ctx, sol){
         '<div class="rec"><strong>Gear:</strong> '+esc(spotGearLine(spot, ctx))+'</div>'+
       '</div></div>';
   }).join('') +
-  '<p class="plan-note" style="margin-top:8px">Tap a pick to select it — species lean &amp; On site detail follow that mark (same as Dive list → site). Bite numbers match the Plan glance. Order uses modest site-fit among nearest <strong>'+FISH_PICKER_POOL+'</strong> groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> spots · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill color = bite · top '+FISH_MAP_MAX_MARKERS+'; same-reef modules count once.</p>';
+  '<p class="plan-note" style="margin-top:8px">Tap a pick to select it — species lean &amp; On site detail follow that mark (same as Dive list → site). Bite numbers match the Plan glance. Order uses site-fit (Open-Meteo SST at the mark’s grid cell + nearest NOAA tide) among nearest <strong>'+FISH_PICKER_POOL+'</strong> groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> spots · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill color = bite · top '+FISH_MAP_MAX_MARKERS+'; same-reef modules count once.</p>';
 }
 
 function fishPlanVisible(){
@@ -11855,6 +12091,7 @@ function renderFishing(){
       lastFishPlanAllRanked = allPinRanked;
     }
     renderFishUtil(synthRanked, ctx, sw, sol);
+    scheduleFishSiteWx(ranked);
     if(activeSubtab('fishing') === 'onsite'){
       try{ renderOnsiteSwingWarns(); }catch(e){ console.error(e); }
     }
@@ -11897,7 +12134,7 @@ function renderFishing(){
           spotMiniBarHtml(tl)+
           '<div class="note"><strong>'+esc(spot.habitat)+'</strong> · '+esc(spot.depth)+'<br>'+esc(spot.tactics)+'</div></div>';
       }).join('') +
-      '<p class="plan-note" style="margin-top:8px">Tap a row to select the mark (updates tackle, briefing, and species lean above). <strong>'+nearestDetail.length+'</strong> spots — Bite matches the glance at trip time; order uses site-fit among nearest groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> feature groups · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill = bite · top '+FISH_MAP_MAX_MARKERS+'; other pins are unnumbered dots.</p>';
+      '<p class="plan-note" style="margin-top:8px">Tap a row to select the mark (updates tackle, briefing, and species lean above). <strong>'+nearestDetail.length+'</strong> spots — Bite matches the glance at trip time; order uses site-fit (mark-cell SST + nearest NOAA tide) among nearest groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> feature groups · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill = bite · top '+FISH_MAP_MAX_MARKERS+'; other pins are unnumbered dots.</p>';
     }
 
     const cards = [

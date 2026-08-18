@@ -269,7 +269,8 @@
 
   /**
    * Bias ocean context toward a mark: prefer pin-local CHL cell when present,
-   * else nearest CHL_ZONES sample. SST stays boat/model (Open-Meteo at vessel).
+   * else nearest CHL_ZONES sample. SST comes from ctx (Open-Meteo at the mark’s
+   * marine cell when BoatSiteWx has it; otherwise the boat snapshot).
    */
   function localizeOceanToSpot(spot, oceanIn, ctx) {
     var ocean = normalizeOcean(oceanIn, ctx);
