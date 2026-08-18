@@ -9549,7 +9549,7 @@ function hydrateSiteTide(id){
 function peekSiteWxPack(lat, lon){
   seedBoatSiteWx();
   if(lat == null || lon == null || !isFinite(+lat) || !isFinite(+lon)){
-    return { cell: null, station: NOAA_TIDE_STATIONS[0], marine: marine || null, tides: tides || null };
+    return { cell: null, station: NOAA_TIDE_STATIONS[0], marine: marine || null, tides: tides || null, wx: wx || null };
   }
   const cell = siteMarineCell(lat, lon);
   const station = nearestTideStation(lat, lon);
