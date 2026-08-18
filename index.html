@@ -13719,7 +13719,7 @@ function syncAnchorLocUi(){
     let html = '';
     if(custom){
       const d = haversineM(bp.lat, bp.lon, custom.lat, custom.lon) / NM;
-      html += '<option value="custom">'+esc(custom.region)+' · '+esc(custom.name)+' · '+f1(d)+' nm</option>';
+      html += '<option value="custom">'+esc(custom.name)+' · '+f1(d)+' nm</option>';
     }
     html += rows.map(({ a, d }) =>
       '<option value="'+esc(a.id)+'">'+esc(a.region)+' · '+esc(a.name)+' · '+f1(d)+' nm</option>'
