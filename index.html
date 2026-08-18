@@ -157,6 +157,10 @@ svg text{font-family:var(--font-mono)}
 
 #tab-ais.tabpanel.active{display:flex;flex-direction:column;overflow:hidden;min-height:0;height:100%;padding:0}
 #tab-ais .mapbar,#tab-ais .ais-upstream{flex:0 0 auto}
+#tab-maintenance.tabpanel.active{display:flex;flex-direction:column;overflow:hidden;min-height:0;height:100%;padding:0}
+#tab-maintenance .mapbar{flex:0 0 auto}
+.maint-frame-wrap{flex:1 1 auto;min-height:0;position:relative;background:var(--bg)}
+.maint-frame-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg)}
 #mapWrap{position:relative;height:calc(100% - 44px);min-height:300px}
 #tab-ais #mapWrap{flex:1 1 auto;min-height:0;height:auto}
 #map{height:100%;width:100%;background:var(--bg2)}
@@ -879,6 +883,19 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         <div class="sub" id="emPosNote">Use this when you call.</div>
       </div>
       <div id="emList"><div class="skel">Loading contacts…</div></div>
+    </section>
+
+    <section class="tabpanel nopad" id="tab-maintenance" data-tab="maintenance">
+      <div class="mapbar">
+        <span>Flyer 8 SPACEdeck · Mercury 300 — boat manuals</span>
+        <div class="grow"></div>
+        <a class="ais-help-btn" href="https://mikelee1991-del.github.io/boatmanuals/" target="_blank" rel="noopener">Open site</a>
+        <a class="ais-help-btn" href="https://github.com/mikelee1991-del/boatmanuals" target="_blank" rel="noopener">GitHub</a>
+        <button type="button" class="ais-help-btn" id="btnMaintReload" title="Reload manuals">Reload</button>
+      </div>
+      <div class="maint-frame-wrap">
+        <iframe id="maintFrame" title="Boat manuals — Flyer 8 maintenance Q&amp;A" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="about:blank"></iframe>
+      </div>
     </section>
 
     <section class="tabpanel" id="tab-dive" data-tab="dive">
@@ -1613,6 +1630,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
   <nav class="tabs" id="tabBar">
     <button class="tab active" data-tab="overview"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>Overview</button>
     <button class="tab" data-tab="emergency"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16.2" r="1" fill="currentColor" stroke="none"/></svg>Emergency</button>
+    <button class="tab" data-tab="maintenance"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4.1 4.1 0 00-5.8 5.8L4 16.9 7.1 20l4.8-4.9a4.1 4.1 0 002.8-7.8z"/><path d="M16 8l2.2-2.2"/></svg>Maint</button>
     <button class="tab" data-tab="underway"><svg viewBox="0 0 24 24"><path d="M12 2l7 18h-4l-1.5-4h-5L7 20H3L12 2z"/><circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none"/></svg>Underway</button>
     <button class="tab" data-tab="ais"><svg viewBox="0 0 24 24"><path d="M12 2L4 20h16L12 2z"/><circle cx="12" cy="14" r="2"/></svg>AIS</button>
     <button class="tab" data-tab="cruise"><svg viewBox="0 0 24 24"><path d="M4 18c2-3 5-5 8-5s6 2 8 5"/><path d="M6 14l2-4h8l2 4"/><circle cx="12" cy="9" r="2"/><path d="M2 20h20"/></svg>Cruise</button>
@@ -1757,6 +1775,8 @@ const REFRESH_AIS_UPTIME = 60e3;
  * Cache note: AIS client error-state + relay upstream timeout — 2026-08-06.
  */
 const AIS_HOSTED_RELAY_DEFAULT = 'wss://boatboard-ais.mikelee1.workers.dev';
+const BOAT_MANUALS_PAGE = 'https://mikelee1991-del.github.io/boatmanuals/';
+const BOAT_MANUALS_REPO = 'https://github.com/mikelee1991-del/boatmanuals';
 const COMPASS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const CDIP_BUOYS = [
   /* NDBC station pages — DMS converted to 6-decimal degrees, audit 2026-07-23 */
@@ -4589,6 +4609,16 @@ function copyEmergencyPos(){
       ta.remove();
       done();
     }catch(_){}
+  }
+}
+
+let maintFrameLoaded = false;
+function ensureMaintFrame(force){
+  const f = $('maintFrame');
+  if(!f) return;
+  if(force || !maintFrameLoaded){
+    f.src = BOAT_MANUALS_PAGE;
+    maintFrameLoaded = true;
   }
 }
 
@@ -18247,6 +18277,9 @@ function switchTab(name){
   if(name==='emergency'){
     try{ renderEmergency(); }catch(e){ console.error('renderEmergency', e); }
   }
+  if(name==='maintenance'){
+    ensureMaintFrame(false);
+  }
   if(name==='tides'){
     try{ renderTides(); }catch(e){ console.error('renderTides', e); }
     /* Force network when empty (recovers after prior CORS/timeout failure). */
@@ -18258,6 +18291,7 @@ function switchTab(name){
 /* ============ boot ============ */
 function bindUI(){
   $('emCopyPos')?.addEventListener('click', copyEmergencyPos);
+  $('btnMaintReload')?.addEventListener('click', ()=> ensureMaintFrame(true));
   $('tabBar').addEventListener('click', e=>{
     const t = e.target.closest('.tab');
     if(t && t.dataset.tab) switchTab(t.dataset.tab);
@@ -18597,7 +18631,8 @@ function boot(){
   $('ovLinks').innerHTML =
     linkHtml('https://cdip.ucsd.edu/m/forecast/model_grid/?wave_model=socal','CDIP SoCal','Nearshore swell grid')+
     linkHtml('https://tidesandcurrents.noaa.gov/noaatidepredictions.html?id='+TIDE_STATION,'NOAA tides — King Harbor','Official tide tables')+
-    '<a class="linkcard" href="#" data-goto-tab="emergency"><b>Emergency contacts</b><span>911 · USCG · Harbor Patrol · towing · DAN · marinas</span></a>';
+    '<a class="linkcard" href="#" data-goto-tab="emergency"><b>Emergency contacts</b><span>911 · USCG · Harbor Patrol · towing · DAN · marinas</span></a>'+
+    '<a class="linkcard" href="#" data-goto-tab="maintenance"><b>Boat manuals</b><span>Flyer 8 binder · Ask the boat · maintenance Q&amp;A</span></a>';
 }
 
 try{

@@ -10,7 +10,7 @@ Tablet/phone **BoatBoard** for a boat at **Port Royal, King Harbor** (33.84817, 
 - **Entry:** `index.html` (+ `dive-engine.js`). Legacy `socal-boat-dashboard.html` redirects here.
 - **No build** for the dashboard. Dark, mobile-first. No onboard AIS TX — device GPS + AISStream via Cloudflare Worker.
 
-**Tab order (nav):** Overview → Emergency → Underway → AIS → Cruise → Anchorage → Swell & Ocean → Weather → Tides → SST → Plankton → Fish → Dive → Lobster → Surf → Wildlife
+**Tab order (nav):** Overview → Emergency → Maint → Underway → AIS → Cruise → Anchorage → Swell & Ocean → Weather → Tides → SST → Plankton → Fish → Dive → Lobster → Surf → Wildlife
 
 ## Hard policies
 
