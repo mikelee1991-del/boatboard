@@ -8,7 +8,7 @@ Single-page marine dashboard for a multipurpose fishing / diving / cruising boat
 **Hosted:** https://mikelee1991-del.github.io/boatboard/ (after GitHub Pages is enabled).
 
 1. Allow GPS, or turn **Use device GPS** off and use slip / manual lat-lon (Overview + Settings).
-2. AIS: default cloud relay is baked in (`wss://boatboard-ais.aisrelay.workers.dev`). Paste your free [AISStream](https://aisstream.io) API key in Settings. See **[How to connect AIS on phone](#how-to-connect-ais-on-phone)**.
+2. AIS: default cloud relay is baked in (`wss://boatboard-ais.mikelee1.workers.dev`). Paste your free [AISStream](https://aisstream.io) API key in Settings. See **[How to connect AIS on phone](#how-to-connect-ais-on-phone)**.
 3. Cruise / Windy needs network. On **https** hosting, Map Forecast (`windy-waves-embed.html`) locks wave height to **ft**.
 
 No build step. See **[CONTEXT.md](CONTEXT.md)**, **[PROJECT.md](PROJECT.md)**, and **`.cursor/rules/water-pin-coords.mdc`**.
@@ -17,7 +17,7 @@ No build step. See **[CONTEXT.md](CONTEXT.md)**, **[PROJECT.md](PROJECT.md)**, a
 
 **Why GitHub can’t host the relay:** GitHub Pages serves static files only — no persistent WebSocket server. Actions runners are ephemeral. AISStream also **blocks browser WebSockets** (close 1006).
 
-**Default for this repo:** `wss://boatboard-ais.aisrelay.workers.dev` (`AIS_HOSTED_RELAY_DEFAULT` in `index.html`). Phones/laptops inherit it when Settings → AIS relay URL is blank.
+**Default for this repo:** `wss://boatboard-ais.mikelee1.workers.dev` (`AIS_HOSTED_RELAY_DEFAULT` in `index.html`). Phones/laptops inherit it when Settings → AIS relay URL is blank.
 
 1. Free [AISStream](https://aisstream.io) API key (GitHub login).
 2. Phone → BoatBoard **⚙ Settings** → paste **API key** → **Save** (leave relay blank to use the default).

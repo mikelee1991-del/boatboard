@@ -58,7 +58,7 @@ Live fish/dive lists in `index.html` / `dive-engine.js`. Feature groups: `pin-fe
 - Honest limits: not for navigation; **King Harbor BlueTopo often undelivered** (sparse S3 / transparent cells).
 
 ### AIS
-- Relay: `wss://boatboard-ais.aisrelay.workers.dev` (`AIS_HOSTED_RELAY_DEFAULT`)
+- Relay: `wss://boatboard-ais.mikelee1.workers.dev` (`AIS_HOSTED_RELAY_DEFAULT`)
 - Worker must **subscribe-after-client** (mobile-safe; idle upstream closes in ~3s) — see `ais-relay-worker/`
 - Need free AISStream **API key** in Settings; AIS tab → **Setup help**
 - Optional local: `ais-relay.mjs`

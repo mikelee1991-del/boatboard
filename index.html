@@ -1534,7 +1534,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <ol>
             <li>Get a free key at <a href="https://aisstream.io" target="_blank" rel="noopener">aisstream.io</a> (GitHub login).</li>
             <li>Open <strong>⚙ Settings</strong>, paste the key into <strong>AISStream API key</strong>, tap <strong>Save</strong>.</li>
-            <li>Live ships use the default relay <span class="mono">boatboard-ais.aisrelay.workers.dev</span> — no Pi or laptop to leave on.</li>
+            <li>Live ships use the default relay <span class="mono">boatboard-ais.mikelee1.workers.dev</span> — no Pi or laptop to leave on.</li>
             <li>Optional: override the relay URL in Settings if you run your own Worker.</li>
           </ol>
           <p style="margin:0 0 8px;font-size:12px;color:var(--ink3)">AISStream blocks browsers directly; GitHub Pages is static. Cached ships still show if the feed drops.</p>
@@ -1616,10 +1616,10 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
     <h2>Settings</h2>
     <p>Stored on this device only. Port Royal (King Harbor) is the home reference.</p>
     <div class="field"><label for="fAisKey">AISStream API key</label><input id="fAisKey" type="password" placeholder="Required — free key from aisstream.io" autocomplete="off"></div>
-    <div class="field"><label for="fAisRelay">AIS relay URL (optional override)</label><input id="fAisRelay" placeholder="Default: boatboard-ais.aisrelay.workers.dev" autocomplete="off"></div>
+    <div class="field"><label for="fAisRelay">AIS relay URL (optional override)</label><input id="fAisRelay" placeholder="Default: boatboard-ais.mikelee1.workers.dev" autocomplete="off"></div>
     <details class="ais-howto" id="aisSettingsHowto" open>
       <summary>How to connect AIS on phone</summary>
-      <p style="margin:8px 0 6px;font-size:12px;color:var(--ink2);line-height:1.45"><strong>Default relay is already set</strong> (<span class="mono">wss://boatboard-ais.aisrelay.workers.dev</span>). AISStream still blocks browsers, so BoatBoard talks through that cloud relay — no Pi to leave on.</p>
+      <p style="margin:8px 0 6px;font-size:12px;color:var(--ink2);line-height:1.45"><strong>Default relay is already set</strong> (<span class="mono">wss://boatboard-ais.mikelee1.workers.dev</span>). AISStream still blocks browsers, so BoatBoard talks through that cloud relay — no Pi to leave on.</p>
       <ol>
         <li>Get a free key at <a href="https://aisstream.io" target="_blank" rel="noopener">aisstream.io</a></li>
         <li>Paste it into <strong>AISStream API key</strong> above → <strong>Save</strong></li>
@@ -1722,7 +1722,7 @@ const REFRESH_AIS_UPTIME = 60e3;
  * Override anytime in Settings → AIS relay URL. Never put API keys here.
  * Cache note: AIS client error-state + relay upstream timeout — 2026-08-06.
  */
-const AIS_HOSTED_RELAY_DEFAULT = 'wss://boatboard-ais.aisrelay.workers.dev';
+const AIS_HOSTED_RELAY_DEFAULT = 'wss://boatboard-ais.mikelee1.workers.dev';
 const COMPASS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 const CDIP_BUOYS = [
   /* NDBC station pages — DMS converted to 6-decimal degrees, audit 2026-07-23 */
@@ -3072,7 +3072,11 @@ let offline = false;
 function loadSettings(){
   const s = store.json('boatSettings', {});
   settings.aisKey = s.aisKey || store.get('aisApiKey') || '';
-  settings.aisRelay = s.aisRelay || '';
+  const migratedRelay = migrateAisRelayHost(s.aisRelay || '');
+  settings.aisRelay = migratedRelay;
+  if((s.aisRelay || '') !== migratedRelay){
+    store.jset('boatSettings', { ...s, aisRelay: migratedRelay });
+  }
   settings.homeLat = s.homeLat ?? SLIP_LAT;
   settings.homeLon = s.homeLon ?? SLIP_LON;
   settings.gpsPrefExplicit = !!s.gpsPrefExplicit;
@@ -15552,12 +15556,15 @@ function scheduleAisReconnect(delayMs){
     reconnectAis();
   }, wait);
 }
+function migrateAisRelayHost(raw){
+  return String(raw || '').replace(/boatboard-ais\.aisrelay\.workers\.dev/gi, 'boatboard-ais.mikelee1.workers.dev');
+}
 function aisUsesRelay(){
   return !!aisRelayUrlRaw();
 }
 function aisRelayUrlRaw(){
   const custom = settings.aisRelay ? settings.aisRelay.trim() : '';
-  if(custom) return custom;
+  if(custom) return migrateAisRelayHost(custom);
   return AIS_HOSTED_RELAY_DEFAULT || '';
 }
 function aisIsPrivateHost(host){
@@ -15838,9 +15845,9 @@ function updateAisHelpPanel(forceOpen){
     : '';
   if(why){
     if(aisMixedContent){
-      why.innerHTML = 'This page is <strong>HTTPS</strong>, so a plain boat-Wi‑Fi <span class="mono">ws://</span> address is blocked. Clear the relay override or use <span class="mono">wss://boatboard-ais.aisrelay.workers.dev</span>.'+cached;
+      why.innerHTML = 'This page is <strong>HTTPS</strong>, so a plain boat-Wi‑Fi <span class="mono">ws://</span> address is blocked. Clear the relay override or use <span class="mono">wss://boatboard-ais.mikelee1.workers.dev</span>.'+cached;
     } else if(!settings.aisKey || aisNeedsKey){
-      why.innerHTML = 'Cloud relay is ready (<span class="mono">boatboard-ais.aisrelay.workers.dev</span>). Paste your free <strong>AISStream API key</strong> in Settings — browsers cannot talk to AISStream directly.'+cached;
+      why.innerHTML = 'Cloud relay is ready (<span class="mono">boatboard-ais.mikelee1.workers.dev</span>). Paste your free <strong>AISStream API key</strong> in Settings — browsers cannot talk to AISStream directly.'+cached;
     } else if(aisFeedUnreachable){
       why.innerHTML = '<strong>Live AIS feed is unreachable</strong> right now (cloud relay cannot open AISStream). Cached ships still show. Tap <strong>Save</strong> in Settings to retry, or check <span class="mono">/probe</span> on the relay. Community monitor: <a href="'+esc(AIS_UPTIME_PAGE_URL)+'" target="_blank" rel="noopener">aisuptime.buttermilkgreen.fyi</a>.'+cached;
     } else if(aisSilenceStreak > 0 || (aisStats.subSent && aisStats.rx === 0 && aisStats.subAt && Date.now() - aisStats.subAt > 40000) || aisUpstreamIsDegraded(aisUpstreamStatus)){
