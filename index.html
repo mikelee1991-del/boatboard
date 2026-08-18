@@ -608,6 +608,8 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .anchor-warn strong{color:var(--ink)}
 .anchor-warn.onsite{margin:0 0 10px;padding:10px 12px;font-size:12px}
 .anchor-warn .anchor-tab-link{display:inline;margin:0;padding:0;border:0;background:none;color:var(--accent);font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;touch-action:manipulation}
+.anchor-loc-row{margin-bottom:10px}
+.anchor-loc-meta{font-size:12px;color:var(--ink2);margin:0 0 10px;line-height:1.45}
 .anchor-hdg-now{font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:.02em;line-height:1.1}
 .anchor-hdg-sub{font-size:13px;color:var(--ink2);margin-top:4px}
 .anchor-force-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
@@ -1247,7 +1249,15 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
     </section>
 
     <section class="tabpanel" id="tab-anchorage" data-tab="anchorage">
-      <p class="prose" style="margin-bottom:10px"><strong>Anchorage</strong> — estimate the lay-to heading while at anchor (bow into wind / swell), and whether that heading will swing over the next hours as wind, swell, or tide phase shifts. Model is advisory — rode scope, bottom, and local current still rule.</p>
+      <p class="prose" style="margin-bottom:10px"><strong>Anchorage</strong> — estimate the lay-to heading while at anchor (bow into wind / swell), and whether that heading will swing over the next hours as wind, swell, or tide phase shifts. Toggle <strong>Boat now</strong> vs a <strong>chosen cove</strong> (published pins). Model is advisory — rode scope, bottom, and local current still rule.</p>
+      <div class="util-row anchor-loc-row">
+        <div class="chl-source-toggle" id="anchorLocToggle" role="group" aria-label="Anchorage location source">
+          <button type="button" class="active" data-anchor-loc="boat">Boat now</button>
+          <button type="button" data-anchor-loc="spot">Chosen spot</button>
+        </div>
+        <select id="anchorSpotSel" aria-label="Anchor spot"></select>
+      </div>
+      <p id="anchorLocMeta" class="anchor-loc-meta">Using your current position…</p>
       <div id="anchorWarn" class="anchor-warn ok" role="status">Loading anchorage forecast…</div>
       <div class="grid3" id="anchorGlance"><div class="skel">Sampling wind &amp; swell…</div></div>
       <div class="sec">Lay-to heading — next hours</div>
@@ -1273,6 +1283,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
       <div class="sec">How this works</div>
       <div class="card prose" style="font-size:13px;line-height:1.5;color:var(--ink2)">
         <p style="margin:0 0 8px">Lay-to ≈ bow into the strongest forcing — usually <strong>wind from</strong>, blended toward <strong>primary swell from</strong> when swell energy competes. Tide phase is shown as context (local current isn’t modeled yet).</p>
+        <p style="margin:0 0 8px"><strong>Boat now</strong> uses GPS/slip. <strong>Chosen spot</strong> uses a published cove pin (Catalina, Channel Islands, etc.) with that cell’s Open-Meteo wind/swell and the nearest NOAA tide — not the harbor you left from.</p>
         <p style="margin:0">Swing warning fires when the recommended heading rotates ~45°+ within the next 6 hours. Not a substitute for watching the rode or a proper swing-circle plot on the chartplotter.</p>
       </div>
     </section>
@@ -3513,11 +3524,11 @@ function marineSnapshotAt(when){
   return marineSnapshotFromData(marine, when);
 }
 
-function wxSnapshotAt(when){
-  if(!wx?.hourly?.time?.length) return wx?.current || null;
-  const i = planTimeIndex(wx.hourly.time, +when);
-  if(i < 0) return wx.current || null;
-  const H = wx.hourly;
+function wxSnapshotFromData(data, when){
+  if(!data?.hourly?.time?.length) return data?.current || null;
+  const i = planTimeIndex(data.hourly.time, +when);
+  if(i < 0) return data.current || null;
+  const H = data.hourly;
   const pick = (arr, def) => arr && arr[i] != null ? arr[i] : def;
   return {
     wind_speed_10m: pick(H.wind_speed_10m, null),
@@ -3530,9 +3541,12 @@ function wxSnapshotAt(when){
     is_day: pick(H.uv_index, 0) > 0 ? 1 : 0
   };
 }
+function wxSnapshotAt(when){
+  return wxSnapshotFromData(wx, when);
+}
 
-function currentSwellsAt(when){
-  const c = when ? marineSnapshotAt(when) : (marine?.current);
+function currentSwellsFromMarineData(data, when){
+  const c = data ? marineSnapshotFromData(data, when) : (when ? marineSnapshotAt(when) : (marine?.current));
   if(!c) return [];
   const ft = v => v == null ? null : v * M2FT;
   const out = [];
@@ -3540,6 +3554,9 @@ function currentSwellsAt(when){
   if(c.secondary_swell_wave_height != null && c.secondary_swell_wave_height > 0.05) out.push({ label:'Secondary swell', h:ft(c.secondary_swell_wave_height), dir:c.secondary_swell_wave_direction, per:c.secondary_swell_wave_period });
   if(c.wind_wave_height != null && c.wind_wave_height > 0.05) out.push({ label:'Wind sea', h:ft(c.wind_wave_height), dir:null, per:c.wind_wave_period });
   return out.filter(s => s.h != null);
+}
+function currentSwellsAt(when){
+  return currentSwellsFromMarineData(marine, when);
 }
 
 function planHorizonNote(when){
@@ -9443,7 +9460,8 @@ const NOAA_TIDE_STATIONS = [
 ];
 const siteMarineMem = new Map();
 const siteTideMem = new Map();
-const siteWxInflight = { marine: new Map(), tide: new Map() };
+const siteForecastMem = new Map();
+const siteWxInflight = { marine: new Map(), tide: new Map(), forecast: new Map() };
 let _siteWxEnsure = null;
 let _siteWxEnsureKey = '';
 
@@ -9482,6 +9500,13 @@ function seedBoatSiteWx(){
       siteTideMem.set(TIDE_STATION, { at: tidesFetchedAt || Date.now(), data: tides });
     }
   }
+  if(bp && wx && isFinite(bp.lat)){
+    const cell = siteMarineCell(bp.lat, bp.lon);
+    const prev = siteForecastMem.get(cell.key);
+    if(!prev || !siteWxFresh(prev.at)){
+      siteForecastMem.set(cell.key, { at: Date.now(), data: wx });
+    }
+  }
 }
 function hydrateSiteMarine(key){
   const hit = siteMarineMem.get(key);
@@ -9490,6 +9515,17 @@ function hydrateSiteMarine(key){
   if(c && !c.stale && c.data){
     const row = { at: c.at || Date.now(), data: c.data };
     siteMarineMem.set(key, row);
+    return row;
+  }
+  return hit && hit.data ? hit : null;
+}
+function hydrateSiteForecast(key){
+  const hit = siteForecastMem.get(key);
+  if(hit && siteWxFresh(hit.at) && hit.data) return hit;
+  const c = loadCache('wxCell:'+key, REFRESH_MARINE);
+  if(c && !c.stale && c.data){
+    const row = { at: c.at || Date.now(), data: c.data };
+    siteForecastMem.set(key, row);
     return row;
   }
   return hit && hit.data ? hit : null;
@@ -9519,10 +9555,12 @@ function peekSiteWxPack(lat, lon){
   const station = nearestTideStation(lat, lon);
   const m = hydrateSiteMarine(cell.key);
   const t = hydrateSiteTide(station.id);
+  const w = hydrateSiteForecast(cell.key);
   return {
     cell, station,
     marine: (m && m.data) || null,
-    tides: (t && t.data) || null
+    tides: (t && t.data) || null,
+    wx: (w && w.data) || null
   };
 }
 function peekSiteWxAt(lat, lon, when){
@@ -9538,6 +9576,7 @@ function peekSiteWxAt(lat, lon, when){
     cell: pack.cell,
     marine: pack.marine,
     tides: pack.tides,
+    wx: pack.wx,
     fromSiteMarine: !!(pack.marine && pack.cell && pack.marine !== marine),
     fromSiteTide: !!(pack.tides && pack.station && pack.station.id !== TIDE_STATION)
   };
@@ -9572,6 +9611,21 @@ async function fetchSiteMarineCell(cell){
   siteWxInflight.marine.set(key, p);
   return p;
 }
+async function fetchSiteForecastCell(cell){
+  const key = cell.key;
+  const inflight = siteWxInflight.forecast.get(key);
+  if(inflight) return inflight;
+  const p = fetchJSON(wxURL(cell.lat, cell.lon), 16000).then(data => {
+    if(data && data.hourly){
+      siteForecastMem.set(key, { at: Date.now(), data });
+      cacheData('wxCell:'+key, data);
+      return data;
+    }
+    return null;
+  }).finally(()=> siteWxInflight.forecast.delete(key));
+  siteWxInflight.forecast.set(key, p);
+  return p;
+}
 async function fetchSiteTideStation(station){
   const id = station.id;
   const inflight = siteWxInflight.tide.get(id);
@@ -9589,19 +9643,23 @@ async function fetchSiteTideStation(station){
   siteWxInflight.tide.set(id, p);
   return p;
 }
-async function ensureSiteWx(points){
+async function ensureSiteWx(points, opts){
+  opts = opts || {};
+  const wantWx = !!opts.wx;
   seedBoatSiteWx();
   const pts = (points || []).filter(p => p && isFinite(+p.lat) && isFinite(+p.lon));
   const cells = new Map();
   const stations = new Map();
+  const wxCells = new Map();
   pts.forEach(p => {
     const cell = siteMarineCell(p.lat, p.lon);
     if(!hydrateSiteMarine(cell.key)) cells.set(cell.key, cell);
     const st = nearestTideStation(p.lat, p.lon);
     if(!hydrateSiteTide(st.id)) stations.set(st.id, st);
+    if(wantWx && !hydrateSiteForecast(cell.key)) wxCells.set(cell.key, cell);
   });
-  const key = [...cells.keys()].sort().join('|')+'::'+[...stations.keys()].sort().join('|');
-  if(!cells.size && !stations.size) return false;
+  const key = [...cells.keys()].sort().join('|')+'::'+[...stations.keys()].sort().join('|')+'::wx'+(wantWx?'1':'0')+'::'+[...wxCells.keys()].sort().join('|');
+  if(!cells.size && !stations.size && !wxCells.size) return false;
   if(_siteWxEnsure && _siteWxEnsureKey === key) return _siteWxEnsure;
   _siteWxEnsureKey = key;
   _siteWxEnsure = (async ()=>{
@@ -9610,6 +9668,12 @@ async function ensureSiteWx(points){
       try{ if(await fetchSiteMarineCell(cell)) fetched++; }
       catch(e){ console.warn('site marine', cell.key, e); }
     });
+    if(wantWx){
+      await mapPoolLimit([...wxCells.values()], 2, async cell => {
+        try{ if(await fetchSiteForecastCell(cell)) fetched++; }
+        catch(e){ console.warn('site wx', cell.key, e); }
+      });
+    }
     await mapPoolLimit([...stations.values()], 2, async st => {
       try{ if(await fetchSiteTideStation(st)) fetched++; }
       catch(e){ console.warn('site tide', st.id, e); }
@@ -13341,6 +13405,103 @@ function segmentCrossesLand(lat1, lon1, lat2, lon2, steps){
 }
 
 /** Blend two true bearings along the shortest arc. t=0 → a, t=1 → b. */
+/**
+ * Published-pin coves / harbors (coords from existing Fish/Dive pins — not invented).
+ * Toggle vs boat GPS on the Anchorage tab.
+ */
+const ANCHORAGES = [
+  { id: 'king-harbor', name: 'King Harbor / Port Royal', lat: SLIP_LAT, lon: SLIP_LON, region: 'Mainland' },
+  { id: 'paradise', name: 'Paradise Cove — Malibu', lat: 34.0167, lon: -118.7833, region: 'Mainland' },
+  { id: 'dana', name: 'Dana Harbor', lat: 33.4544, lon: -117.6895, region: 'Mainland' },
+  { id: 'isthmus', name: 'Isthmus Cove — Two Harbors', lat: 33.44233333333333, lon: -118.495, region: 'Catalina' },
+  { id: 'cherry', name: 'Cherry Cove — Catalina', lat: 33.4515, lon: -118.50183333333334, region: 'Catalina' },
+  { id: 'howlands', name: "Howland's Landing — Catalina", lat: 33.462833333333336, lon: -118.5205, region: 'Catalina' },
+  { id: 'emerald', name: 'Emerald Bay — Catalina', lat: 33.46758333333333, lon: -118.52691666666666, region: 'Catalina' },
+  { id: 'cat-harbor', name: 'Cat Harbor — Catalina', lat: 33.4233, lon: -118.5083, region: 'Catalina' },
+  { id: 'avalon', name: 'Avalon Harbor — Catalina', lat: 33.3491, lon: -118.32466, region: 'Catalina' },
+  { id: 'smugglers', name: "Smuggler's Cove — Santa Cruz I.", lat: 34.0223, lon: -119.5373, region: 'Channel Islands' },
+  { id: 'forneys', name: "Forney's Cove — Santa Cruz I.", lat: 34.0525, lon: -119.9145, region: 'Channel Islands' },
+  { id: 'posa', name: 'Posa Anchorage — Santa Cruz I.', lat: 33.9767, lon: -119.8667, region: 'Channel Islands' },
+  { id: 'chinese', name: 'Chinese Harbor — Santa Cruz I.', lat: 34.0242, lon: -119.6117, region: 'Channel Islands' },
+  { id: 'pyramid', name: 'Pyramid Cove Anchorage — SCI', lat: 32.8146, lon: -118.3979, region: 'San Clemente I.' },
+  { id: 'west-cove', name: 'West Cove — San Clemente I.', lat: 33.0083, lon: -118.5945, region: 'San Clemente I.' },
+  { id: 'nw-harbor', name: 'Northwest Harbor — SCI', lat: 33.0333, lon: -118.5875, region: 'San Clemente I.' }
+];
+let anchorLocMode = 'boat';
+let anchorSpotId = 'isthmus';
+
+function loadAnchorLocPrefs(){
+  const mode = store.get('anchorLocMode');
+  if(mode === 'spot' || mode === 'boat') anchorLocMode = mode;
+  const id = store.get('anchorSpotId');
+  if(id && ANCHORAGES.some(a => a.id === id)) anchorSpotId = id;
+}
+function saveAnchorLocPrefs(){
+  store.set('anchorLocMode', anchorLocMode);
+  store.set('anchorSpotId', anchorSpotId);
+}
+function findAnchorage(id){
+  return ANCHORAGES.find(a => a.id === id) || ANCHORAGES[0];
+}
+function anchorPos(opts){
+  if(opts && opts.lat != null && opts.lon != null && isFinite(+opts.lat) && isFinite(+opts.lon)){
+    return { lat: +opts.lat, lon: +opts.lon, name: opts.name || 'Position', mode: 'explicit', spot: null };
+  }
+  const bp = boatPos();
+  if(anchorLocMode !== 'spot'){
+    return { lat: bp.lat, lon: bp.lon, name: 'Boat now', mode: 'boat', spot: null, boat: bp };
+  }
+  const spot = findAnchorage(anchorSpotId);
+  return { lat: spot.lat, lon: spot.lon, name: spot.name, mode: 'spot', spot, boat: bp };
+}
+function setAnchorLocMode(mode){
+  anchorLocMode = mode === 'spot' ? 'spot' : 'boat';
+  saveAnchorLocPrefs();
+  syncAnchorLocUi();
+  try{ renderAnchorage(); }catch(e){ console.error(e); }
+}
+function setAnchorSpotId(id){
+  if(!id || !ANCHORAGES.some(a => a.id === id)) return;
+  anchorSpotId = id;
+  anchorLocMode = 'spot';
+  saveAnchorLocPrefs();
+  syncAnchorLocUi();
+  try{ renderAnchorage(); }catch(e){ console.error(e); }
+}
+function syncAnchorLocUi(){
+  const tog = $('anchorLocToggle');
+  if(tog){
+    tog.querySelectorAll('[data-anchor-loc]').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-anchor-loc') === anchorLocMode);
+    });
+  }
+  const sel = $('anchorSpotSel');
+  const bp = boatPos();
+  if(sel){
+    const rows = ANCHORAGES.map(a => {
+      const d = haversineM(bp.lat, bp.lon, a.lat, a.lon) / NM;
+      return { a, d };
+    }).sort((x, y) => x.d - y.d);
+    sel.innerHTML = rows.map(({ a, d }) =>
+      '<option value="'+esc(a.id)+'">'+esc(a.region)+' · '+esc(a.name)+' · '+f1(d)+' nm</option>'
+    ).join('');
+    sel.value = anchorSpotId;
+    sel.disabled = false;
+  }
+  const meta = $('anchorLocMeta');
+  if(meta){
+    const ap = anchorPos();
+    if(ap.mode === 'spot' && ap.spot){
+      const d = haversineM(bp.lat, bp.lon, ap.lat, ap.lon) / NM;
+      const st = (typeof nearestTideStation === 'function') ? nearestTideStation(ap.lat, ap.lon) : null;
+      meta.textContent = 'Forecast at '+ap.name+' · '+fmtCoord(ap.lat)+', '+fmtCoord(ap.lon)+
+        ' · '+f1(d)+' nm from the boat'+(st ? ' · tide '+st.name : '');
+    }else{
+      meta.textContent = 'Forecast at your current position · '+fmtCoord(bp.lat)+', '+fmtCoord(bp.lon);
+    }
+  }
+}
+
 function circularBlend(a, b, t){
   if(a == null || !isFinite(+a)) return b != null ? normDeg(b) : null;
   if(b == null || !isFinite(+b)) return normDeg(a);
@@ -13385,8 +13546,11 @@ function scoreAnchorHeadingAt(lat, lon, courseHdg, sw, windSpd, windDir){
  */
 function anchorLayToAt(lat, lon, when){
   const at = when instanceof Date ? when : new Date(when);
-  const sw = typeof currentSwellsAt === 'function' ? currentSwellsAt(at) : currentSwells();
-  const wc = wxSnapshotAt(at);
+  const pack = (typeof peekSiteWxPack === 'function') ? peekSiteWxPack(lat, lon) : null;
+  const sw = (pack && pack.marine && typeof currentSwellsFromMarineData === 'function')
+    ? currentSwellsFromMarineData(pack.marine, at)
+    : (typeof currentSwellsAt === 'function' ? currentSwellsAt(at) : currentSwells());
+  const wc = (pack && pack.wx) ? wxSnapshotFromData(pack.wx, at) : wxSnapshotAt(at);
   const windKt = wc?.wind_speed_10m;
   const windFrom = wc?.wind_direction_10m != null ? normDeg(wc.wind_direction_10m) : null;
   const windGust = wc?.wind_gusts_10m;
@@ -13394,7 +13558,8 @@ function anchorLayToAt(lat, lon, when){
   const swellFt = prim?.h != null ? prim.h : 0;
   const swellFrom = prim?.dir != null ? normDeg(prim.dir) : null;
   const swellPer = prim?.per;
-  const tide = typeof tideStateAt === 'function' ? tideStateAt(+at) : null;
+  const tide = (pack && pack.tides) ? tideStateFromData(pack.tides, +at)
+    : (typeof tideStateAt === 'function' ? tideStateAt(+at) : null);
 
   const wF = (isFinite(windKt) && windKt > 0) ? windKt * windKt : 0;
   const sF = (swellFt > 0.25 && swellFrom != null) ? swellFt * swellFt * 28 : 0;
@@ -13485,12 +13650,12 @@ function anchorageSeries(opts){
   const fwdHr = opts.fwdHr != null ? opts.fwdHr : 18;
   const stepHr = opts.stepHr != null ? opts.stepHr : 1;
   const now = opts.nowMs != null ? opts.nowMs : Date.now();
-  const bp = boatPos();
+  const ap = typeof anchorPos === 'function' ? anchorPos(opts) : boatPos();
   const tMin = now - backHr * HR;
   const tMax = now + fwdHr * HR;
   const rows = [];
   for(let t = tMin; t <= tMax + 1; t += stepHr * HR){
-    rows.push(anchorLayToAt(bp.lat, bp.lon, t));
+    rows.push(anchorLayToAt(ap.lat, ap.lon, t));
   }
   /* Reference = nearest sample to now (lay-to you'd set if anchoring now). */
   let ref = rows[0];
@@ -13502,11 +13667,11 @@ function anchorageSeries(opts){
   const refHdg = ref.heading;
   rows.forEach(r => {
     r.swingFromNow = (refHdg != null && r.heading != null) ? angDist(refHdg, r.heading) : null;
-    const best = bestAnchorHeadingNear(bp.lat, bp.lon, r.sw, r.windKt, r.windFrom, r.heading);
+    const best = bestAnchorHeadingNear(ap.lat, ap.lon, r.sw, r.windKt, r.windFrom, r.heading);
     r.bestHeading = best.heading;
     r.bestComfort = best.comfort;
     r.holdComfort = (refHdg != null)
-      ? scoreAnchorHeadingAt(bp.lat, bp.lon, refHdg, r.sw, r.windKt, r.windFrom)
+      ? scoreAnchorHeadingAt(ap.lat, ap.lon, refHdg, r.sw, r.windKt, r.windFrom)
       : null;
   });
   const ahead = rows.filter(r => r.t >= now - 0.1 * HR && r.t <= now + 6 * HR);
@@ -13520,7 +13685,7 @@ function anchorageSeries(opts){
   });
   return {
     rows, tMin, tMax, now, ref, refHdg, maxSwing6h, swingAt,
-    lat: bp.lat, lon: bp.lon
+    lat: ap.lat, lon: ap.lon, loc: ap
   };
 }
 
@@ -13562,7 +13727,8 @@ function renderAnchorageGlance(pack){
   box.innerHTML =
     '<div class="card"><h3>Lay-to now</h3>'+
       '<div class="anchor-hdg-now">'+(ref.heading != null ? f0(ref.heading)+'°' : '—')+'</div>'+
-      '<div class="anchor-hdg-sub">'+(ref.heading != null ? compass(ref.heading)+' true · bow into the force' : 'No clear heading')+'</div>'+
+      '<div class="anchor-hdg-sub">'+(ref.heading != null ? compass(ref.heading)+' true · bow into the force' : 'No clear heading')+
+        (pack.loc && pack.loc.name ? ' · '+esc(pack.loc.name) : '')+'</div>'+
       '<div class="anchor-force-row">'+
         '<span class="anchor-force-pill">'+esc(forceLbl)+'</span>'+
         (ref.comfort != null ? '<span class="anchor-force-pill">Comfort '+ref.comfort+'/100</span>' : '')+
@@ -13707,6 +13873,8 @@ function renderAnchorageCharts(pack){
 }
 
 function renderAnchorage(){
+  loadAnchorLocPrefs();
+  syncAnchorLocUi();
   if(!marine && !wx){
     const g = $('anchorGlance');
     if(g) g.innerHTML = '<div class="skel">Waiting for marine / weather…</div>';
@@ -13719,6 +13887,18 @@ function renderAnchorage(){
   renderAnchorageGlance(pack);
   renderAnchorageTimeline(pack);
   renderAnchorageCharts(pack);
+  if(typeof ensureSiteWx === 'function'){
+    ensureSiteWx([{ lat: pack.lat, lon: pack.lon }], { wx: true }).then(changed => {
+      if(changed && activeTab() === 'anchorage'){
+        const next = anchorageSeries({ backHr: 3, fwdHr: 18, stepHr: 1 });
+        renderAnchorageWarn(next);
+        renderAnchorageGlance(next);
+        renderAnchorageTimeline(next);
+        renderAnchorageCharts(next);
+        syncAnchorLocUi();
+      }
+    }).catch(()=>{});
+  }
 }
 
 /** Compact rode-swing line for Fish / Dive On site (same model as Anchorage tab). */
@@ -13769,7 +13949,10 @@ function renderOnsiteSwingWarns(force){
     payload = onsiteSwingWarnPayload(null);
   }else{
     try{
-      payload = onsiteSwingWarnPayload(anchorageSeries({ backHr: 0, fwdHr: 6, stepHr: 1 }));
+      const bp = boatPos();
+      payload = onsiteSwingWarnPayload(anchorageSeries({
+        backHr: 0, fwdHr: 6, stepHr: 1, lat: bp.lat, lon: bp.lon, name: 'Boat now'
+      }));
     }catch(e){
       console.error('renderOnsiteSwingWarns', e);
       payload = {
@@ -17443,6 +17626,13 @@ function bindUI(){
   });
   $('aisLanesLegend')?.addEventListener('click', toggleShippingLanes);
   updateShippingLanesLegend();
+  $('anchorLocToggle')?.addEventListener('click', e=>{
+    const btn = e.target.closest('[data-anchor-loc]');
+    if(btn) setAnchorLocMode(btn.getAttribute('data-anchor-loc'));
+  });
+  $('anchorSpotSel')?.addEventListener('change', ()=>{
+    setAnchorSpotId($('anchorSpotSel').value);
+  });
   $('gpsPill')?.addEventListener('click', ()=>showSettings(true));
   const bindGpsToggle = (el)=>{
     if(!el) return;
@@ -17492,6 +17682,7 @@ function boot(){
   bindUI();
 
   loadSettings();
+  loadAnchorLocPrefs();
   $('fAisKey').value = settings.aisKey;
   $('fAisRelay').value = settings.aisRelay;
   $('fHomeLat').value = settings.homeLat;
