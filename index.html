@@ -247,7 +247,7 @@ svg text{font-family:var(--font-mono)}
 }
 .plan-split-map{min-width:0}
 .plan-split-map .plan-mapbox{margin-bottom:0}
-#divePlanMap,#fishMap,#lobsterMap,#surfMap,#wildMap,#chlMap,#sstMap,#bactMap,#anchorMap{aspect-ratio:1/1;width:100%;height:auto;min-height:220px;max-height:min(62vh,460px);background:var(--bg);position:relative;z-index:1}
+#divePlanMap,#fishMap,#lobsterMap,#surfMap,#wildMap,#chlMap,#sstMap,#bactMap,#anchorMap,#fishEffortMap{aspect-ratio:1/1;width:100%;height:auto;min-height:220px;max-height:min(62vh,460px);background:var(--bg);position:relative;z-index:1}
 .lob-banner{padding:10px 12px;border-radius:10px;border:1px solid var(--line);margin:0 0 10px;font-size:13px;line-height:1.45;color:var(--ink)}
 .lob-banner a{color:var(--accent)}
 .lob-banner-closed{background:rgba(255,68,102,.12);border-color:rgba(255,68,102,.45)}
@@ -609,6 +609,16 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .anchor-warn.onsite{margin:0 0 10px;padding:10px 12px;font-size:12px}
 .anchor-warn .anchor-tab-link{display:inline;margin:0;padding:0;border:0;background:none;color:var(--accent);font:inherit;font-weight:600;text-decoration:underline;cursor:pointer;touch-action:manipulation}
 .anchor-loc-row{margin-bottom:10px}
+.fish-heat-row{margin:0 0 10px;align-items:center}
+.fish-heat-lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:600}
+.fish-effort-bar{padding:8px 0 4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--ink2)}
+.fish-effort-bar label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:600;white-space:nowrap}
+.fish-effort-bar select{min-height:36px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--ink);font-family:var(--mono);font-size:12px;color-scheme:dark;max-width:min(46vw,200px)}
+.fish-effort-check{display:inline-flex;align-items:center;gap:6px;min-height:36px;font-size:12px;color:var(--ink2)}
+.fish-effort-check input{width:16px;height:16px;accent-color:var(--accent)}
+.fish-effort-scale{display:flex;height:10px;border-radius:4px;overflow:hidden;margin:6px 0 4px;border:1px solid var(--line2)}
+.fish-effort-scale i{flex:1;display:block;height:100%}
+.leaflet-interactive.fish-effort-cell{cursor:pointer}
 .anchor-loc-meta{font-size:12px;color:var(--ink2);margin:0 0 10px;line-height:1.45}
 #anchorMap{cursor:crosshair}
 .anchor-hdg-now{font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:.02em;line-height:1.1}
@@ -759,8 +769,8 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .dive-row label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:600}
 .dive-updated{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-left:auto}
 
-.subtabs{display:flex;gap:4px;margin:0 0 12px;padding:4px;background:var(--bg2);border:1px solid var(--line);border-radius:10px}
-.subtab{flex:1;min-height:42px;border:none;background:transparent;color:var(--ink3);font-family:var(--font-ui);font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border-radius:8px;cursor:pointer;touch-action:manipulation;padding:8px 6px;line-height:1.25}
+.subtabs{display:flex;gap:4px;margin:0 0 12px;padding:4px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;flex-wrap:wrap}
+.subtab{flex:1 1 28%;min-width:96px;min-height:42px;border:none;background:transparent;color:var(--ink3);font-family:var(--font-ui);font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border-radius:8px;cursor:pointer;touch-action:manipulation;padding:8px 6px;line-height:1.25}
 .subtab.active{background:var(--card);color:var(--accent);box-shadow:inset 0 0 0 1px var(--line)}
 .subtab small{display:block;font-size:10px;font-weight:500;letter-spacing:.04em;color:var(--ink3);text-transform:none;margin-top:2px}
 .subtab.active small{color:var(--ink2)}
@@ -957,6 +967,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
       <nav class="subtabs" id="fishSubtabs" aria-label="Fishing sections">
         <button type="button" class="subtab active" data-section="fishing" data-subtab="plan">Plan<small>Where · when · comfort · MPAs</small></button>
         <button type="button" class="subtab" data-section="fishing" data-subtab="onsite">On site<small>Tackle · bathymetry · tactics</small></button>
+        <button type="button" class="subtab" data-section="fishing" data-subtab="effort">Effort<small>AIS heat · hours · boats</small></button>
       </nav>
       <div class="subpanel active" data-section="fishing" data-subpanel="plan">
         <div class="plan-row">
@@ -983,7 +994,15 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <div class="plan-split-map">
             <div class="plan-mapbox">
               <h3>Fishing spots — ranked</h3>
-              <p>Every pin plotted · # = spot rank (same-reef modules count once) · MPAs</p>
+              <p>Every pin plotted · # = spot rank (same-reef modules count once) · MPAs · optional AIS effort heat</p>
+              <div class="util-row fish-heat-row">
+                <span class="fish-heat-lbl">AIS effort</span>
+                <div class="chl-source-toggle" id="fishPlanHeatToggle" role="group" aria-label="AIS effort heatmap on Plan map">
+                  <button type="button" class="active" data-fish-plan-heat="off">Off</button>
+                  <button type="button" data-fish-plan-heat="hours">Effort</button>
+                  <button type="button" data-fish-plan-heat="vessels">Popularity</button>
+                </div>
+              </div>
               <div id="fishMap"><div class="skel" style="padding:20px">Map loads with rankings…</div></div>
               <div class="plan-map-legend" id="fishMapLegend"></div>
               <div class="card" id="fishPlanMpaDetail" style="margin:0;border-radius:0 0 10px 10px;border-top:1px solid var(--line2)">
@@ -1065,6 +1084,47 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         <div id="fishUtilBathy"></div>
         <div class="sec">Regulations</div>
         <div id="fishLinks"></div>
+      </div>
+      <div class="subpanel" data-section="fishing" data-subpanel="effort">
+        <p class="prose" style="margin-bottom:10px"><strong>Effort</strong> — historical AIS <em>slow/stop</em> heat from positions BoatBoard has recorded (not a commercial VesselTracker dump, not bite quality). Tune the same metrics as Plan: <strong>Effort</strong> = fishing-hours in a cell; <strong>Popularity</strong> = unique vessel-days. Grid matches the ~3 nmi marine cell — not reef-scale.</p>
+        <div class="fish-effort-bar" id="fishEffortBar">
+          <span class="fish-heat-lbl">Metric</span>
+          <div class="chl-source-toggle" id="fishEffortMetricToggle" role="group" aria-label="Effort intensity metric">
+            <button type="button" class="active" data-fish-effort-metric="hours">Effort</button>
+            <button type="button" data-fish-effort-metric="vessels">Popularity</button>
+          </div>
+          <label for="fishEffortDays">Window</label>
+          <select id="fishEffortDays" aria-label="Lookback window">
+            <option value="7">7 days</option>
+            <option value="30">30 days</option>
+            <option value="90" selected>90 days</option>
+            <option value="365">365 days</option>
+          </select>
+          <label for="fishEffortSog">Max SOG</label>
+          <select id="fishEffortSog" aria-label="Max speed over ground for fishing dwell">
+            <option value="2">2 kn</option>
+            <option value="3" selected>3 kn</option>
+            <option value="5">5 kn</option>
+            <option value="8">8 kn</option>
+          </select>
+          <label class="fish-effort-check"><input type="checkbox" id="fishEffortType30"> AIS type 30 only</label>
+          <label class="fish-effort-check"><input type="checkbox" id="fishEffortShowSpots"> Ranked spots</label>
+        </div>
+        <p id="fishEffortMeta" class="anchor-loc-meta">No AIS effort archive yet — leave BoatBoard running with an AIS key to accumulate slow/stop samples.</p>
+        <div class="plan-mapbox">
+          <h3>Historical AIS effort</h3>
+          <p>Quiet → worked · percentile in the current map view · tap a cell for hours / boats · ▲ = you</p>
+          <div id="fishEffortMap"><div class="skel" style="padding:20px">Open Effort to load map…</div></div>
+          <div class="plan-map-legend" id="fishEffortMapLegend"></div>
+        </div>
+        <div class="sec">Hottest cells in view</div>
+        <div class="card" id="fishEffortList"><div class="skel">Waiting for AIS samples…</div></div>
+        <div class="sec">How this works</div>
+        <div class="card prose" style="font-size:13px;line-height:1.5;color:var(--ink2)">
+          <p style="margin:0 0 8px"><strong>Effort</strong> sums hours a vessel spent slow/stop in a cell (consecutive AIS reports ≤20 min apart, both under the SOG cap). Isolated pings count ~3 minutes. <strong>Popularity</strong> counts distinct MMSI×calendar-day visits.</p>
+          <p style="margin:0 0 8px">Color is a <strong>percentile in the current view</strong>, not an absolute “good fishing” score. High heat can mean a proven area or a crowded one. Transit (&gt; max SOG) is dropped. Type 30 (fishing) is optional — most sportboats report pleasure/unknown, so leaving it off is the honest default.</p>
+          <p style="margin:0">Not live traffic (that stays on AIS / Underway). Not bite. Not legal access — MPAs still apply. Plan can overlay the same heat without changing Bite X/100.</p>
+        </div>
       </div>
     </section>
 
@@ -2686,6 +2746,11 @@ let swellMap = null, swellMapInited = false, swellRayLayer = null, swellObstLaye
 const SWELL_MAP_DEFAULT_ZOOM = 11; // fallback before fitBounds
 const SWELL_MAP_FIT_NM = 25; // default auto-fit radius around boat (nmi)
 let fishMap = null, fishMapInited = false, fishSpotLayer = null, fishBoatMarker = null;
+let fishPlanHeatLayer = null;
+let fishEffortMap = null, fishEffortMapInited = false, fishEffortHeatLayer = null, fishEffortSpotLayer = null, fishEffortBoatMarker = null;
+let aisEffortSamples = [];
+const aisEffortLastAt = new Map();
+let _aisEffortSaveTimer = null;
 let anchorMap = null, anchorMapInited = false, anchorSpotLayer = null, anchorBoatMarker = null;
 let _anchorMapWantPan = false;
 let _anchorMapClickAt = 0;
@@ -3040,6 +3105,10 @@ function refreshBoatMarkers(){
   if(anchorMap && anchorBoatMarker){
     anchorBoatMarker.setLatLng([bp.lat, bp.lon]);
     anchorBoatMarker.setPopupContent(you+'<br>Tap to forecast at the boat');
+  }
+  if(fishEffortMap && fishEffortBoatMarker){
+    fishEffortBoatMarker.setLatLng([bp.lat, bp.lon]);
+    fishEffortBoatMarker.setPopupContent(you);
   }
   if(window.BoatDive?.invalidatePlanMap) BoatDive.invalidatePlanMap();
 }
@@ -11301,7 +11370,439 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     '<span><i style="display:inline-block;width:8px;height:8px;transform:rotate(45deg);background:var(--ink3);vertical-align:middle;margin:0 4px 0 2px"></i> Surface / troll</span>'+
     '<span># = rank (site-fit order) · fill = bite (= glance) · top '+Math.min(FISH_MAP_MAX_MARKERS, ranked.length)+' · '+plotted+' pins · ~'+FISH_MAP_FIT_NM+' nm ('+localGroups+' spots / '+localPins.length+' pins)</span>'+
     '<span>Basemap: imagery (land) · BlueTopo (water)</span>'+
+    (fishEffortPrefs().planHeat !== 'off' ? '<span>Heat = AIS slow/stop '+esc(fishEffortPrefs().planHeat === 'vessels' ? 'popularity' : 'effort')+' (percentile in view)</span>' : '')+
     MPA_LEGEND_HTML;
+  try{ paintFishEffortHeatOn(fishMap, 'plan'); }catch(e){ console.warn('plan effort heat', e); }
+}
+
+const AIS_EFFORT_CACHE = 'boatCache:aisEffort:v1';
+const AIS_EFFORT_MAX = 14000;
+const AIS_EFFORT_MIN_MS = 90e3;
+const AIS_EFFORT_MAX_GAP_MS = 20 * 60e3;
+const AIS_EFFORT_ISOLATED_HR = 3 / 60;
+const AIS_EFFORT_SOG_CAP = 12;
+const AIS_TYPE_FISHING = 30;
+
+function defaultFishEffortPrefs(){
+  return { metric:'hours', days:90, sogMax:3, type30:false, showSpots:false, planHeat:'off' };
+}
+function fishEffortPrefs(){
+  const d = defaultFishEffortPrefs();
+  const metric = store.get('fishEffortMetric');
+  if(metric === 'hours' || metric === 'vessels') d.metric = metric;
+  const days = parseInt(store.get('fishEffortDays'), 10);
+  if(days === 7 || days === 30 || days === 90 || days === 365) d.days = days;
+  const sog = parseFloat(store.get('fishEffortSog'));
+  if(sog === 2 || sog === 3 || sog === 5 || sog === 8) d.sogMax = sog;
+  d.type30 = store.get('fishEffortType30') === '1';
+  d.showSpots = store.get('fishEffortShowSpots') === '1';
+  const ph = store.get('fishPlanHeat');
+  if(ph === 'off' || ph === 'hours' || ph === 'vessels') d.planHeat = ph;
+  return d;
+}
+function saveFishEffortPrefs(p){
+  p = p || fishEffortPrefs();
+  store.set('fishEffortMetric', p.metric);
+  store.set('fishEffortDays', String(p.days));
+  store.set('fishEffortSog', String(p.sogMax));
+  store.set('fishEffortType30', p.type30 ? '1' : '0');
+  store.set('fishEffortShowSpots', p.showSpots ? '1' : '0');
+  store.set('fishPlanHeat', p.planHeat);
+}
+function syncFishEffortUi(){
+  const p = fishEffortPrefs();
+  document.querySelectorAll('#fishEffortMetricToggle [data-fish-effort-metric]').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-fish-effort-metric') === p.metric);
+  });
+  document.querySelectorAll('#fishPlanHeatToggle [data-fish-plan-heat]').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-fish-plan-heat') === p.planHeat);
+  });
+  const days = $('fishEffortDays');
+  if(days && document.activeElement !== days) days.value = String(p.days);
+  const sog = $('fishEffortSog');
+  if(sog && document.activeElement !== sog) sog.value = String(p.sogMax);
+  const t30 = $('fishEffortType30');
+  if(t30) t30.checked = p.type30;
+  const spots = $('fishEffortShowSpots');
+  if(spots) spots.checked = p.showSpots;
+}
+
+function loadAisEffortArchive(){
+  const c = store.json(AIS_EFFORT_CACHE, null);
+  if(!c || !Array.isArray(c.s)) return;
+  aisEffortSamples = c.s.filter(row => Array.isArray(row) && row.length >= 5);
+}
+function scheduleAisEffortSave(){
+  if(_aisEffortSaveTimer) return;
+  _aisEffortSaveTimer = setTimeout(()=>{
+    _aisEffortSaveTimer = null;
+    try{ store.jset(AIS_EFFORT_CACHE, { at: Date.now(), s: aisEffortSamples }); }
+    catch(e){ /* quota */ }
+  }, 4000);
+}
+function recordAisEffortSample(v){
+  if(!v || v.lat == null || v.lon == null) return;
+  const lat = +v.lat, lon = +v.lon;
+  if(!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+  if(Math.abs(lat) > 90 || Math.abs(lon) > 180) return;
+  if(typeof isOnLand === 'function' && isOnLand(lat, lon)) return;
+  const sog = (typeof normAisSog === 'function') ? normAisSog(v.sog) : +v.sog;
+  if(sog != null && Number.isFinite(sog) && sog > AIS_EFFORT_SOG_CAP) return;
+  const mmsi = String(v.mmsi || '');
+  if(!mmsi) return;
+  const now = Date.now();
+  const last = aisEffortLastAt.get(mmsi) || 0;
+  const cell = (typeof siteMarineCell === 'function') ? siteMarineCell(lat, lon) : { key: lat.toFixed(3)+','+lon.toFixed(3) };
+  const prev = aisEffortLastAt.get(mmsi + ':k');
+  if(now - last < AIS_EFFORT_MIN_MS && prev === cell.key) return;
+  aisEffortLastAt.set(mmsi, now);
+  aisEffortLastAt.set(mmsi + ':k', cell.key);
+  const type = Number.isFinite(+v.shipType) ? (+v.shipType | 0) : 0;
+  const sogX = (sog != null && Number.isFinite(sog)) ? Math.round(sog * 10) : -1;
+  aisEffortSamples.push([
+    mmsi,
+    Math.round(lat * 1e4),
+    Math.round(lon * 1e4),
+    Math.round(now / 60000),
+    sogX,
+    type
+  ]);
+  if(aisEffortSamples.length > AIS_EFFORT_MAX){
+    aisEffortSamples = aisEffortSamples.slice(-AIS_EFFORT_MAX);
+  }
+  scheduleAisEffortSave();
+}
+function ingestLiveAisEffort(){
+  if(!aisVessels) return;
+  for(const id in aisVessels){
+    try{ recordAisEffortSample(aisVessels[id]); }catch(_){}
+  }
+}
+
+function fishEffortColor(pct){
+  const p = clamp(pct, 0, 100);
+  if(p < 20) return '#1a4a7a';
+  if(p < 40) return '#2a8a8a';
+  if(p < 60) return '#d4c020';
+  if(p < 80) return '#e87810';
+  return '#c02820';
+}
+
+function aggregateFishEffort(opts){
+  opts = opts || fishEffortPrefs();
+  const now = Date.now();
+  const tMinMin = Math.floor((now - opts.days * 24 * HR) / 60000);
+  const sogMaxX = Math.round(opts.sogMax * 10);
+  const byMmsi = new Map();
+  (aisEffortSamples || []).forEach(row => {
+    const mmsi = String(row[0] || '');
+    const tMin = +row[3];
+    const sogX = +row[4];
+    const type = +row[5] || 0;
+    if(!mmsi || tMin < tMinMin) return;
+    if(opts.type30 && type !== AIS_TYPE_FISHING) return;
+    if(sogX >= 0 && sogX > sogMaxX) return;
+    const lat = row[1] / 1e4, lon = row[2] / 1e4;
+    if(!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    const t = tMin * 60000;
+    if(!byMmsi.has(mmsi)) byMmsi.set(mmsi, []);
+    byMmsi.get(mmsi).push({ lat, lon, t, sogX });
+  });
+  const hoursByKey = new Map();
+  const daysByKey = new Map();
+  const addHours = (key, lat, lon, hr) => {
+    let rec = hoursByKey.get(key);
+    if(!rec){ rec = { key, lat, lon, hours:0 }; hoursByKey.set(key, rec); }
+    rec.hours += hr;
+  };
+  const addDay = (key, lat, lon, mmsi, t) => {
+    let rec = daysByKey.get(key);
+    if(!rec){ rec = { key, lat, lon, set: new Set() }; daysByKey.set(key, rec); }
+    const d = new Date(t);
+    rec.set.add(mmsi + '|' + d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
+  };
+  byMmsi.forEach((rows, mmsi) => {
+    rows.sort((a, b) => a.t - b.t);
+    for(let i = 0; i < rows.length; i++){
+      const a = rows[i];
+      const cell = siteMarineCell(a.lat, a.lon);
+      addDay(cell.key, cell.lat, cell.lon, mmsi, a.t);
+      const b = rows[i + 1];
+      if(b){
+        const dt = b.t - a.t;
+        if(dt > 0 && dt <= AIS_EFFORT_MAX_GAP_MS){
+          const cellB = siteMarineCell(b.lat, b.lon);
+          addHours(cellB.key, cellB.lat, cellB.lon, dt / HR);
+          continue;
+        }
+      }
+      addHours(cell.key, cell.lat, cell.lon, AIS_EFFORT_ISOLATED_HR);
+    }
+  });
+  const cells = [];
+  hoursByKey.forEach((h, key) => {
+    const d = daysByKey.get(key);
+    cells.push({
+      key,
+      lat: h.lat,
+      lon: h.lon,
+      hours: h.hours,
+      vesselDays: d ? d.set.size : 0
+    });
+  });
+  daysByKey.forEach((d, key) => {
+    if(hoursByKey.has(key)) return;
+    cells.push({ key, lat: d.lat, lon: d.lon, hours: 0, vesselDays: d.set.size });
+  });
+  return { cells, sampleN: aisEffortSamples.length, vesselN: byMmsi.size, tMinMin };
+}
+
+function rankFishEffortPercentile(cells, metric){
+  const vals = cells.map(c => metric === 'vessels' ? c.vesselDays : c.hours).filter(v => v > 0);
+  if(!vals.length){
+    cells.forEach(c => { c.value = 0; c.pct = 0; });
+    return cells;
+  }
+  const sorted = vals.slice().sort((a, b) => a - b);
+  cells.forEach(c => {
+    const v = metric === 'vessels' ? c.vesselDays : c.hours;
+    c.value = v;
+    if(!(v > 0)){ c.pct = 0; return; }
+    let lo = 0, hi = sorted.length;
+    while(lo < hi){
+      const mid = (lo + hi) >> 1;
+      if(sorted[mid] <= v) lo = mid + 1;
+      else hi = mid;
+    }
+    c.pct = 100 * lo / sorted.length;
+  });
+  return cells;
+}
+
+function paintFishEffortHeatLayer(map, layerRefName, cells, metric){
+  if(!map || !window.L) return null;
+  let layer = map._fishEffortHeat;
+  if(layer){
+    try{ map.removeLayer(layer); }catch(_){}
+  }
+  layer = L.layerGroup();
+  const step = SITE_MARINE_CELL_DEG;
+  const half = step / 2;
+  const ranked = rankFishEffortPercentile(cells.slice(), metric);
+  ranked.forEach(c => {
+    if(!(c.value > 0)) return;
+    const col = fishEffortColor(c.pct);
+    const rect = L.rectangle(
+      [[c.lat - half, c.lon - half], [c.lat + half, c.lon + half]],
+      {
+        className: 'fish-effort-cell',
+        color: col,
+        weight: 1,
+        opacity: 0.55,
+        fillColor: col,
+        fillOpacity: 0.18 + 0.42 * (c.pct / 100),
+        interactive: true
+      }
+    );
+    const hrs = c.hours >= 10 ? f0(c.hours) : f1(c.hours);
+    rect.bindPopup(
+      '<b>AIS effort cell</b><br>'+fmtCoord(c.lat)+', '+fmtCoord(c.lon)+
+      '<br>Effort <strong>'+hrs+' h</strong> slow/stop'+
+      '<br>Popularity <strong>'+c.vesselDays+'</strong> vessel-day'+(c.vesselDays===1?'':'s')+
+      '<br>View percentile '+f0(c.pct)+
+      '<br><span style="opacity:.85">~'+f1(step*60)+'′ grid · not bite · not live traffic</span>'
+    );
+    rect.addTo(layer);
+  });
+  layer.addTo(map);
+  map._fishEffortHeat = layer;
+  if(layerRefName === 'plan') fishPlanHeatLayer = layer;
+  else fishEffortHeatLayer = layer;
+  return layer;
+}
+
+function paintFishEffortHeatOn(map, which){
+  if(!map) return;
+  const p = fishEffortPrefs();
+  const metric = which === 'plan' ? p.planHeat : p.metric;
+  if(which === 'plan' && (metric === 'off' || !metric)){
+    if(map._fishEffortHeat){
+      try{ map.removeLayer(map._fishEffortHeat); }catch(_){}
+      map._fishEffortHeat = null;
+    }
+    fishPlanHeatLayer = null;
+    return;
+  }
+  const agg = aggregateFishEffort(p);
+  const useMetric = metric === 'vessels' ? 'vessels' : 'hours';
+  let cells = agg.cells;
+  try{
+    const b = map.getBounds();
+    if(b && b.isValid()){
+      const vis = cells.filter(c => b.pad(0.15).contains([c.lat, c.lon]));
+      if(vis.length) cells = vis;
+    }
+  }catch(_){}
+  paintFishEffortHeatLayer(map, which, cells, useMetric);
+}
+
+function fishEffortLegendHtml(metric){
+  return '<div class="fish-effort-scale" aria-hidden="true">'+
+    '<i style="background:#1a4a7a"></i><i style="background:#2a8a8a"></i><i style="background:#d4c020"></i><i style="background:#e87810"></i><i style="background:#c02820"></i></div>'+
+    '<span>Quiet → worked · '+(metric === 'vessels' ? 'popularity (vessel-days)' : 'effort (slow/stop hours)')+' · percentile in view</span>';
+}
+
+function fishEffortVisible(){
+  const tab = document.querySelector('#tab-fishing.tabpanel.active');
+  const pan = document.querySelector('#tab-fishing .subpanel[data-subpanel="effort"].active');
+  return !!(tab && pan);
+}
+
+function paintFishEffortSpots(){
+  if(!fishEffortMap || !fishEffortSpotLayer) return;
+  fishEffortSpotLayer.clearLayers();
+  const p = fishEffortPrefs();
+  if(!p.showSpots || !lastFishPlanAllRanked) return;
+  lastFishPlanAllRanked.slice(0, FISH_MAP_MAX_MARKERS).forEach(({ spot, score, distNm }, i) => {
+    const mpos = (typeof fishMapPos === 'function') ? fishMapPos(spot) : spot;
+    const sz = 16;
+    L.marker([mpos.lat, mpos.lon], {
+      icon: L.divIcon({
+        className: '',
+        html: fishMapMarkerHtml(i + 1, score, 'numbered', classifyFishStyle(spot)),
+        iconSize: [sz, sz],
+        iconAnchor: [sz/2, sz/2]
+      }),
+      zIndexOffset: 200
+    }).bindPopup('<b>#'+(i+1)+' '+esc(fishGroupListName(spot))+'</b><br>Bite '+score+'/100 · '+f1(distNm)+' nm')
+      .addTo(fishEffortSpotLayer);
+  });
+}
+
+function renderFishEffortList(cells, metric){
+  const box = $('fishEffortList');
+  if(!box) return;
+  const ranked = cells.filter(c => c.value > 0).sort((a, b) => b.value - a.value).slice(0, 12);
+  if(!ranked.length){
+    box.innerHTML = '<p class="plan-note" style="margin:0">No slow/stop AIS samples in this window yet. Open AIS (or leave the app running with a key) so BoatBoard can archive dwell. Heat is not invented.</p>';
+    return;
+  }
+  const bp = boatPos();
+  box.innerHTML = ranked.map((c, i) => {
+    const d = haversineM(bp.lat, bp.lon, c.lat, c.lon) / NM;
+    const val = metric === 'vessels' ? (c.vesselDays+' vessel-day'+(c.vesselDays===1?'':'s')) : ((c.hours>=10?f0(c.hours):f1(c.hours))+' h');
+    return '<div class="lob-row" data-effort-key="'+esc(c.key)+'">'+
+      '<div class="lob-rank" style="background:'+fishEffortColor(c.pct)+'">'+(i+1)+'</div>'+
+      '<div class="lob-row-body"><div class="lob-name">'+fmtCoord(c.lat)+', '+fmtCoord(c.lon)+'</div>'+
+      '<div class="lob-meta">'+esc(val)+' · p'+f0(c.pct)+' · '+f1(d)+' nm from boat</div></div></div>';
+  }).join('');
+}
+
+function renderFishEffort(){
+  ingestLiveAisEffort();
+  syncFishEffortUi();
+  const p = fishEffortPrefs();
+  const agg = aggregateFishEffort(p);
+  const metric = p.metric === 'vessels' ? 'vessels' : 'hours';
+  let cells = rankFishEffortPercentile(agg.cells.slice(), metric);
+  const meta = $('fishEffortMeta');
+  if(meta){
+    const oldest = aisEffortSamples.length ? Math.min.apply(null, aisEffortSamples.map(r => +r[3] || 1e15)) : null;
+    const ageTxt = oldest != null && isFinite(oldest)
+      ? 'archive from '+fmtDayTime(new Date(oldest * 60000))
+      : 'no archive yet';
+    meta.textContent = agg.sampleN+' AIS samples · '+agg.vesselN+' vessels in window · '+
+      cells.filter(c => c.value > 0).length+' cells · '+ageTxt+
+      ' · '+p.sogMax+' kn cap'+(p.type30 ? ' · type 30 only' : '');
+  }
+  if(fishEffortMap){
+    try{
+      const b = fishEffortMap.getBounds();
+      if(b && b.isValid()){
+        const vis = cells.filter(c => b.pad(0.12).contains([c.lat, c.lon]));
+        if(vis.length) cells = rankFishEffortPercentile(vis, metric);
+      }
+    }catch(_){}
+    paintFishEffortHeatLayer(fishEffortMap, 'effort', cells, metric);
+    paintFishEffortSpots();
+    const bp = boatPos();
+    if(fishEffortBoatMarker){
+      fishEffortBoatMarker.setLatLng([bp.lat, bp.lon]);
+    }
+  }
+  const leg = $('fishEffortMapLegend');
+  if(leg){
+    leg.innerHTML = fishEffortLegendHtml(metric)+
+      '<span>▲ boat · tap cell for hours / vessel-days · not bite</span>';
+  }
+  renderFishEffortList(cells, metric);
+}
+
+async function ensureFishEffortMap(){
+  if(!fishEffortVisible()) return false;
+  try{
+    await loadLeaflet();
+    await loadCoastOverlayLite();
+  }catch(e){ return false; }
+  if(!window.L) return false;
+  const host = $('fishEffortMap');
+  if(!host) return false;
+  if(fishEffortMap){
+    fishEffortMap.invalidateSize(true);
+    renderFishEffort();
+    return true;
+  }
+  if(!host.offsetWidth || !host.offsetHeight) return false;
+  host.innerHTML = '';
+  const { lat, lon } = boatPos();
+  try{
+    fishEffortMap = L.map(host, { zoomControl:true, attributionControl:false, minZoom:7, maxZoom:16 })
+      .setView([lat, lon], FISH_MAP_DEFAULT_ZOOM);
+    try{ await attachSeafloorPlanBasemap(fishEffortMap); }
+    catch(e){
+      console.warn('Fish effort seafloor basemap', e);
+      planMapBaseLayer(fishEffortMap, {});
+    }
+    addCoastOverlay(L.layerGroup().addTo(fishEffortMap));
+    ensureMpaLayerGroup(fishEffortMap);
+    fishEffortHeatLayer = L.layerGroup().addTo(fishEffortMap);
+    fishEffortSpotLayer = L.layerGroup().addTo(fishEffortMap);
+    fishEffortBoatMarker = L.marker([lat, lon], {
+      icon: L.divIcon({
+        className:'boat-icon',
+        html:'<div style="font-size:24px;line-height:1;filter:drop-shadow(0 0 5px #3dd6f5)">▲</div>',
+        iconSize:[24,24], iconAnchor:[12,12]
+      }),
+      zIndexOffset:1000
+    }).bindPopup('<b>You'+boatPosLabel()+'</b><br>'+fmtCoord(lat)+', '+fmtCoord(lon)).addTo(fishEffortMap);
+    fishEffortMap.on('moveend zoomend', ()=>{ if(fishEffortVisible()) renderFishEffort(); });
+    fishEffortMapInited = true;
+    ensureMpaOverlay(fishEffortMap, 'fishEffort');
+    renderFishEffort();
+    return true;
+  }catch(e){
+    console.error('fish effort map init', e);
+    fishEffortMap = null; fishEffortHeatLayer = null; fishEffortSpotLayer = null; fishEffortBoatMarker = null;
+    fishEffortMapInited = false;
+    return false;
+  }
+}
+function initFishEffortMapWithRetry(attempt){
+  if(!fishEffortVisible()) return;
+  ensureFishEffortMap().then(ok => {
+    if(!fishEffortVisible()) return;
+    if(!ok && attempt < 8) setTimeout(() => initFishEffortMapWithRetry(attempt + 1), 180);
+    else if(ok && fishEffortMap) setTimeout(() => { try{ fishEffortMap.invalidateSize(true); renderFishEffort(); }catch(_){ } }, 80);
+  });
+}
+function applyFishEffortPrefPatch(patch){
+  const p = Object.assign(fishEffortPrefs(), patch || {});
+  saveFishEffortPrefs(p);
+  syncFishEffortUi();
+  try{ renderFishEffort(); }catch(e){ console.error(e); }
+  if(fishMap){
+    try{ paintFishEffortHeatOn(fishMap, 'plan'); }catch(e){ console.warn(e); }
+  }
 }
 
 function mpaMapState(map){
@@ -15205,6 +15706,7 @@ function aisColor(age){
 }
 
 function loadAisCache(){
+  loadAisEffortArchive();
   const c = store.json('boatCache:ais', {});
   if(!c || !c.vessels) return;
   const now = Date.now();
@@ -15217,8 +15719,8 @@ function loadAisCache(){
     kept[id] = v;
   }
   aisVessels = kept;
+  ingestLiveAisEffort();
 }
-
 function saveAisCache(){
   try{
     store.jset('boatCache:ais', { at:Date.now(), vessels:aisVessels });
@@ -15389,6 +15891,7 @@ function parseAisMsg(msg){
     name,
     lastRx: Date.now()
   };
+  try{ recordAisEffortSample(aisVessels[mmsi]); }catch(_){}
   return true;
 }
 
@@ -15401,6 +15904,8 @@ function parseShipStatic(msg){
   if(b.Name) v.name = b.Name.trim();
   const imo = b.ImoNumber ?? b.imoNumber ?? b.IMO;
   if(imo != null && +imo > 0) v.imo = String(+imo);
+  const st = b.Type ?? b.type ?? b.ShipType;
+  if(st != null && isFinite(+st)) v.shipType = +st;
 }
 
 function aisNeedsSetupHelp(){
@@ -17627,6 +18132,11 @@ function switchSubtab(section, name){
     try{ renderFishing(); }catch(e){ console.error(e); }
     if(lastFishUtilRow && lastFishUtilCtx) refreshFishSeafloor(lastFishUtilRow, lastFishUtilCtx);
   }
+  if(section === 'fishing' && name === 'effort'){
+    ingestLiveAisEffort();
+    initFishEffortMapWithRetry(0);
+    try{ renderFishEffort(); }catch(e){ console.error(e); }
+  }
 }
 
 function switchTab(name){
@@ -17637,6 +18147,7 @@ function switchTab(name){
   if(name === 'fishing' || name === 'dive'){
     let sub = store.get('boatSubtab:'+name) || 'plan';
     if(sub === 'mpa') sub = 'plan';
+    if(name === 'fishing' && sub !== 'plan' && sub !== 'onsite' && sub !== 'effort') sub = 'plan';
     switchSubtab(name, sub);
   }
   if(name==='dive'){
@@ -17832,10 +18343,44 @@ function bindUI(){
       try{ renderFishing(); }catch(e){ console.error(e); }
     });
   }
+  $('fishPlanHeatToggle')?.addEventListener('click', e=>{
+    const btn = e.target.closest('[data-fish-plan-heat]');
+    if(!btn) return;
+    const mode = btn.getAttribute('data-fish-plan-heat');
+    const patch = { planHeat: mode };
+    if(mode === 'hours' || mode === 'vessels') patch.metric = mode;
+    applyFishEffortPrefPatch(patch);
+  });
+  $('fishEffortMetricToggle')?.addEventListener('click', e=>{
+    const btn = e.target.closest('[data-fish-effort-metric]');
+    if(!btn) return;
+    applyFishEffortPrefPatch({ metric: btn.getAttribute('data-fish-effort-metric') });
+  });
+  $('fishEffortDays')?.addEventListener('change', ()=>{
+    applyFishEffortPrefPatch({ days: parseInt($('fishEffortDays').value, 10) });
+  });
+  $('fishEffortSog')?.addEventListener('change', ()=>{
+    applyFishEffortPrefPatch({ sogMax: parseFloat($('fishEffortSog').value) });
+  });
+  $('fishEffortType30')?.addEventListener('change', ()=>{
+    applyFishEffortPrefPatch({ type30: !!$('fishEffortType30').checked });
+  });
+  $('fishEffortShowSpots')?.addEventListener('change', ()=>{
+    applyFishEffortPrefPatch({ showSpots: !!$('fishEffortShowSpots').checked });
+  });
+  $('fishEffortList')?.addEventListener('click', e=>{
+    const row = e.target.closest('[data-effort-key]');
+    if(!row || !fishEffortMap) return;
+    const key = row.getAttribute('data-effort-key');
+    const cell = (aggregateFishEffort().cells || []).find(c => c.key === key);
+    if(!cell) return;
+    fishEffortMap.setView([cell.lat, cell.lon], Math.max(fishEffortMap.getZoom(), 11), { animate:false });
+  });
   window.addEventListener('resize', ()=>{
     if(activeTab()==='underway') fitUwRadar();
     if(activeTab()==='swell' && swellMap) swellMap.invalidateSize(true);
     if(activeTab()==='fishing' && fishMap) fishMap.invalidateSize(true);
+    if(activeTab()==='fishing' && fishEffortMap) fishEffortMap.invalidateSize(true);
     if(activeTab()==='surf' && surfMap) surfMap.invalidateSize(true);
     if(activeTab()==='cruise' && bactMap) bactMap.invalidateSize(true);
     if(activeTab()==='chlorophyll' && chlMap) chlMap.invalidateSize(true);
@@ -17937,6 +18482,8 @@ function boot(){
 
   loadSettings();
   loadAnchorLocPrefs();
+  loadAisEffortArchive();
+  syncFishEffortUi();
   $('fAisKey').value = settings.aisKey;
   $('fAisRelay').value = settings.aisRelay;
   $('fHomeLat').value = settings.homeLat;
@@ -18017,6 +18564,8 @@ function boot(){
       if(activeTab()==='underway') renderUnderwayTab();
     }
     saveAisCache();
+    ingestLiveAisEffort();
+    if(fishEffortVisible()) try{ renderFishEffort(); }catch(e){}
   }, 5000);
   timers.aisUpstream = setInterval(()=> refreshAisUpstreamStatus(false), REFRESH_AIS_UPTIME);
   refreshAisUpstreamStatus(true);
