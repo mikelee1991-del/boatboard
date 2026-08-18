@@ -612,12 +612,35 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
 .fish-heat-row{margin:0 0 10px;align-items:center}
 .fish-heat-lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:600}
 .fish-effort-bar{padding:8px 0 4px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--ink2)}
-.fish-effort-bar label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:600;white-space:nowrap}
-.fish-effort-bar select{min-height:36px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--ink);font-family:var(--mono);font-size:12px;color-scheme:dark;max-width:min(46vw,200px)}
+.fish-effort-controls{display:grid;gap:10px;margin-bottom:10px}
+.fish-effort-controls label{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:600;display:block;margin-bottom:4px}
+.fish-effort-controls select,.fish-effort-controls input[type=range]{width:100%;min-height:36px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;color:var(--ink);font-family:var(--mono);font-size:12px;color-scheme:dark}
+.fish-effort-controls select[multiple]{min-height:120px;padding:4px}
+.fish-effort-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .fish-effort-check{display:inline-flex;align-items:center;gap:6px;min-height:36px;font-size:12px;color:var(--ink2)}
 .fish-effort-check input{width:16px;height:16px;accent-color:var(--accent)}
 .fish-effort-scale{display:flex;height:10px;border-radius:4px;overflow:hidden;margin:6px 0 4px;border:1px solid var(--line2)}
 .fish-effort-scale i{flex:1;display:block;height:100%}
+.fish-effort-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:8px 0}
+.fish-effort-stats .stat{background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:8px 10px}
+.fish-effort-stats .k{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}
+.fish-effort-stats .v{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent)}
+.fish-effort-date .range-labels{display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--accent);font-family:var(--mono);margin-bottom:4px}
+.fish-effort-dual{position:relative;height:28px;display:flex;align-items:center}
+.fish-effort-dual .track{position:absolute;left:0;right:0;height:6px;border-radius:999px;background:rgba(86,212,233,.12);pointer-events:none}
+.fish-effort-dual .track-fill{position:absolute;height:6px;border-radius:999px;background:rgba(86,212,233,.45);pointer-events:none}
+.fish-effort-dual input[type=range]{position:absolute;left:0;width:100%;margin:0;padding:0;appearance:none;background:transparent;pointer-events:none;height:28px}
+.fish-effort-dual input[type=range]::-webkit-slider-thumb{appearance:none;pointer-events:auto;width:18px;height:18px;border-radius:50%;background:var(--accent);border:2px solid var(--card);cursor:pointer}
+.fish-effort-dual input[type=range]::-moz-range-thumb{pointer-events:auto;width:18px;height:18px;border-radius:50%;background:var(--accent);border:2px solid var(--card);cursor:pointer}
+.fish-effort-dual input[type=range]::-webkit-slider-runnable-track,.fish-effort-dual input[type=range]::-moz-range-track{height:6px;background:transparent}
+.fish-effort-hint{font-size:11px;color:var(--ink3);margin:4px 0 0;line-height:1.4}
+.fish-effort-multi-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.fish-effort-multi-head button{background:none;border:none;color:var(--accent);font-size:11px;cursor:pointer;padding:0}
+#fishEffortList article.heat{padding:10px 0;border-bottom:1px solid var(--line2);cursor:pointer}
+#fishEffortList article.heat:last-child{border-bottom:none}
+#fishEffortList article.heat h3{margin:0 0 4px;font-size:13px;color:var(--ink)}
+#fishEffortList article.heat .meta{font-size:11px;color:var(--ink3)}
+#fishEffortList article.heat .fpp{font-family:var(--mono);font-weight:700;color:var(--fair)}
 .leaflet-interactive.fish-effort-cell{cursor:pointer}
 .anchor-loc-meta{font-size:12px;color:var(--ink2);margin:0 0 10px;line-height:1.45}
 #anchorMap{cursor:crosshair}
@@ -1088,44 +1111,97 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         <div id="fishLinks"></div>
       </div>
       <div class="subpanel" data-section="fishing" data-subpanel="effort">
-        <p class="prose" style="margin-bottom:10px"><strong>Effort</strong> — historical AIS <em>slow/stop</em> heat from positions BoatBoard has recorded (not a commercial VesselTracker dump, not bite quality). Tune the same metrics as Plan: <strong>Effort</strong> = fishing-hours in a cell; <strong>Popularity</strong> = unique vessel-days. Grid matches the ~3 nmi marine cell — not reef-scale.</p>
-        <div class="fish-effort-bar" id="fishEffortBar">
-          <span class="fish-heat-lbl">Metric</span>
-          <div class="chl-source-toggle" id="fishEffortMetricToggle" role="group" aria-label="Effort intensity metric">
-            <button type="button" class="active" data-fish-effort-metric="hours">Effort</button>
-            <button type="button" data-fish-effort-metric="vessels">Popularity</button>
+        <p class="prose" style="margin-bottom:10px"><strong>Effort</strong> — same VesselTracker heat as <a href="https://mikelee1991-del.github.io/vesseltracker/" target="_blank" rel="noopener">VesselTracker</a>: AIS stops clustered at <strong>150 ft</strong>, dock-total attribution, full filter set. Not bite quality — shows where matched LA sportfishing boats actually hung.</p>
+        <div class="fish-effort-controls card" id="fishEffortBar">
+          <div class="fish-effort-date">
+            <label>Date range</label>
+            <div class="range-labels">
+              <span id="fishEffortDateStartLabel">—</span>
+              <span id="fishEffortDateEndLabel">—</span>
+            </div>
+            <div class="fish-effort-dual">
+              <div class="track"></div>
+              <div class="track-fill" id="fishEffortTrackFill"></div>
+              <input id="fishEffortDateStart" type="range" min="0" max="0" value="0" aria-label="Effort start date" />
+              <input id="fishEffortDateEnd" type="range" min="0" max="0" value="0" aria-label="Effort end date" />
+            </div>
           </div>
-          <label for="fishEffortDays">Window</label>
-          <select id="fishEffortDays" aria-label="Lookback window">
-            <option value="7">7 days</option>
-            <option value="30">30 days</option>
-            <option value="90" selected>90 days</option>
-            <option value="365">365 days</option>
-          </select>
-          <label for="fishEffortSog">Max SOG</label>
-          <select id="fishEffortSog" aria-label="Max speed over ground for fishing dwell">
-            <option value="2">2 kn</option>
-            <option value="3" selected>3 kn</option>
-            <option value="5">5 kn</option>
-            <option value="8">8 kn</option>
-          </select>
-          <label class="fish-effort-check"><input type="checkbox" id="fishEffortType30"> AIS type 30 only</label>
-          <label class="fish-effort-check"><input type="checkbox" id="fishEffortShowSpots"> Ranked spots</label>
+          <div>
+            <label for="fishEffortMetric">Intensity metric</label>
+            <select id="fishEffortMetric" aria-label="Effort intensity metric">
+              <option value="shrunk_fph" selected>Reliable FPH (evidence-weighted)</option>
+              <option value="dwell_fph">Dwell-attributed FPH (nominal hours)</option>
+              <option value="stopped_fph">Stopped FPH (AIS dwell)</option>
+              <option value="shrunk_stopped_fph">Reliable stopped FPH</option>
+              <option value="primary_fph">Primary-stop FPH (nominal)</option>
+              <option value="primary_stopped_fph">Primary-stop stopped FPH</option>
+              <option value="consistent_fph">Consistent FPH (25th pct)</option>
+              <option value="season_fph">Seasonal FPH (±30d of today, all years)</option>
+              <option value="trip_stopped_fph">Mean trip stopped FPH</option>
+              <option value="dwell">Total AIS dwell (min)</option>
+              <option value="visits">Boat-days</option>
+              <option value="fish">Attributed fish</option>
+              <option value="fpp">Mean trip fish/person</option>
+            </select>
+            <p class="fish-effort-hint" id="fishEffortMetricNote"></p>
+          </div>
+          <div class="fish-effort-row2">
+            <div>
+              <label for="fishEffortRadius">Radius <span id="fishEffortRadiusVal" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink2)">4 px</span></label>
+              <input id="fishEffortRadius" type="range" min="4" max="40" value="4" />
+            </div>
+            <div>
+              <label for="fishEffortBlur">Blur <span id="fishEffortBlurVal" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink2)">3 px</span></label>
+              <input id="fishEffortBlur" type="range" min="3" max="35" value="3" />
+            </div>
+          </div>
+          <div>
+            <label for="fishEffortOpacity">Opacity <span id="fishEffortOpacityVal" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink2)">80%</span></label>
+            <input id="fishEffortOpacity" type="range" min="15" max="100" value="80" />
+          </div>
+          <div>
+            <label for="fishEffortMax">Hot threshold <span id="fishEffortMaxVal" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink2)">0.60</span></label>
+            <input id="fishEffortMax" type="range" min="0.2" max="1.0" step="0.05" value="0.6" />
+            <p class="fish-effort-hint">Color scale auto-fits the current boat/species/date filter</p>
+          </div>
+          <label class="fish-effort-check"><input type="checkbox" id="fishEffortShowMarkers"> Show faint spot markers</label>
+          <div>
+            <div class="fish-effort-multi-head">
+              <label for="fishEffortBoatFilter">Boat <span id="fishEffortBoatSummary" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink2)">all</span></label>
+              <button type="button" id="fishEffortBoatClear">Clear</button>
+            </div>
+            <select id="fishEffortBoatFilter" class="multi" multiple size="6" aria-label="Boats (multi-select)"></select>
+            <p class="fish-effort-hint">⌘/Ctrl+click · empty = all boats</p>
+          </div>
+          <div>
+            <div class="fish-effort-multi-head">
+              <label for="fishEffortSpeciesFilter">Species <span id="fishEffortSpeciesSummary" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink2)">all</span></label>
+              <button type="button" id="fishEffortSpeciesClear">Clear</button>
+            </div>
+            <select id="fishEffortSpeciesFilter" class="multi" multiple size="9" aria-label="Species and groups (multi-select)"></select>
+            <p class="fish-effort-hint">Groups or species · empty = all · match any</p>
+          </div>
+          <p id="fishEffortStatus" class="anchor-loc-meta" style="margin:0">Loading VesselTracker effort data…</p>
         </div>
-        <p id="fishEffortMeta" class="anchor-loc-meta">No AIS effort archive yet — leave BoatBoard running with an AIS key to accumulate slow/stop samples.</p>
+        <p id="fishEffortMeta" class="anchor-loc-meta">150 ft AIS clusters · NOAA Cadastre + dock totals</p>
+        <div class="fish-effort-stats">
+          <div class="stat"><div class="k">Spots</div><div class="v" id="fishEffortStatSpots">—</div></div>
+          <div class="stat"><div class="k">Intensity</div><div class="v" id="fishEffortStatIntensity">—</div></div>
+          <div class="stat"><div class="k">Boats</div><div class="v" id="fishEffortStatBoats">—</div></div>
+        </div>
         <div class="plan-mapbox">
-          <h3>Historical AIS effort</h3>
-          <p>Quiet → worked · percentile in the current map view · tap a cell for hours / boats · ▲ = you</p>
+          <h3>Fishing effort heat</h3>
+          <p>Cool → hot for the selected metric · re-scaled to current filters · ▲ = you</p>
           <div id="fishEffortMap"><div class="skel" style="padding:20px">Open Effort to load map…</div></div>
           <div class="plan-map-legend" id="fishEffortMapLegend"></div>
         </div>
-        <div class="sec">Hottest cells in view</div>
-        <div class="card" id="fishEffortList"><div class="skel">Waiting for AIS samples…</div></div>
+        <div class="sec">Hottest spots in filter</div>
+        <div class="card" id="fishEffortList"><div class="skel">Loading…</div></div>
         <div class="sec">How this works</div>
         <div class="card prose" style="font-size:13px;line-height:1.5;color:var(--ink2)">
-          <p style="margin:0 0 8px"><strong>Effort</strong> sums hours a vessel spent slow/stop in a cell (consecutive AIS reports ≤20 min apart, both under the SOG cap). Isolated pings count ~3 minutes. <strong>Popularity</strong> counts distinct MMSI×calendar-day visits.</p>
-          <p style="margin:0 0 8px">Color is a <strong>percentile in the current view</strong>, not an absolute “good fishing” score. High heat can mean a proven area or a crowded one. Transit (&gt; max SOG) is dropped. Type 30 (fishing) is optional — most sportboats report pleasure/unknown, so leaving it off is the honest default.</p>
-          <p style="margin:0">Not live traffic (that stays on AIS / Underway). Not bite. Not legal access — MPAs still apply. Plan can overlay the same heat without changing Bite X/100.</p>
+          <p style="margin:0 0 8px">Same pipeline as VesselTracker: NOAA Marine Cadastre AIS (≤0.8 kn stops, ≥10 min) clustered at <strong>150 ft</strong>, joined to socalfishreports.com dock totals. Default metric is <strong>reliable (shrunk) FPH</strong>; also dwell, boat-days, species, and seasonal rates.</p>
+          <p style="margin:0 0 8px">Heat intensity <strong>re-scales</strong> to your boat/species/date filter so sub-selections still use the full color range. Min radius/blur defaults match VesselTracker for max clarity.</p>
+          <p style="margin:0">Plan tab can overlay the same heat (Effort = dwell min, Popularity = boat-days). Not live AIS. Not bite X/100. MPAs still apply.</p>
         </div>
       </div>
     </section>
@@ -2767,10 +2843,7 @@ const SWELL_MAP_DEFAULT_ZOOM = 11; // fallback before fitBounds
 const SWELL_MAP_FIT_NM = 25; // default auto-fit radius around boat (nmi)
 let fishMap = null, fishMapInited = false, fishSpotLayer = null, fishBoatMarker = null;
 let fishPlanHeatLayer = null;
-let fishEffortMap = null, fishEffortMapInited = false, fishEffortHeatLayer = null, fishEffortSpotLayer = null, fishEffortBoatMarker = null;
-let aisEffortSamples = [];
-const aisEffortLastAt = new Map();
-let _aisEffortSaveTimer = null;
+let fishEffortMap = null, fishEffortMapInited = false, fishEffortBoatMarker = null;
 let anchorMap = null, anchorMapInited = false, anchorSpotLayer = null, anchorBoatMarker = null;
 let _anchorMapWantPan = false;
 let _anchorMapClickAt = 0;
@@ -11390,286 +11463,37 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     '<span><i style="display:inline-block;width:8px;height:8px;transform:rotate(45deg);background:var(--ink3);vertical-align:middle;margin:0 4px 0 2px"></i> Surface / troll</span>'+
     '<span># = rank (site-fit order) · fill = bite (= glance) · top '+Math.min(FISH_MAP_MAX_MARKERS, ranked.length)+' · '+plotted+' pins · ~'+FISH_MAP_FIT_NM+' nm ('+localGroups+' spots / '+localPins.length+' pins)</span>'+
     '<span>Basemap: imagery (land) · BlueTopo (water)</span>'+
-    (fishEffortPrefs().planHeat !== 'off' ? '<span>Heat = AIS slow/stop '+esc(fishEffortPrefs().planHeat === 'vessels' ? 'popularity' : 'effort')+' (percentile in view)</span>' : '')+
+    (fishEffortPrefs().planHeat !== 'off' ? '<span>Heat = VesselTracker '+(fishEffortPrefs().planHeat === 'vessels' ? 'boat-days' : 'dwell min')+'</span>' : '')+
     MPA_LEGEND_HTML;
   try{ paintFishEffortHeatOn(fishMap, 'plan'); }catch(e){ console.warn('plan effort heat', e); }
 }
 
-const AIS_EFFORT_CACHE = 'boatCache:aisEffort:v1';
-const AIS_EFFORT_MAX = 14000;
-const AIS_EFFORT_MIN_MS = 90e3;
-const AIS_EFFORT_MAX_GAP_MS = 20 * 60e3;
-const AIS_EFFORT_ISOLATED_HR = 3 / 60;
-const AIS_EFFORT_SOG_CAP = 12;
-const AIS_TYPE_FISHING = 30;
-
-function defaultFishEffortPrefs(){
-  return { metric:'hours', days:90, sogMax:3, type30:false, showSpots:false, planHeat:'off' };
-}
-function fishEffortPrefs(){
-  const d = defaultFishEffortPrefs();
-  const metric = store.get('fishEffortMetric');
-  if(metric === 'hours' || metric === 'vessels') d.metric = metric;
-  const days = parseInt(store.get('fishEffortDays'), 10);
-  if(days === 7 || days === 30 || days === 90 || days === 365) d.days = days;
-  const sog = parseFloat(store.get('fishEffortSog'));
-  if(sog === 2 || sog === 3 || sog === 5 || sog === 8) d.sogMax = sog;
-  d.type30 = store.get('fishEffortType30') === '1';
-  d.showSpots = store.get('fishEffortShowSpots') === '1';
-  const ph = store.get('fishPlanHeat');
-  if(ph === 'off' || ph === 'hours' || ph === 'vessels') d.planHeat = ph;
-  return d;
-}
-function saveFishEffortPrefs(p){
-  p = p || fishEffortPrefs();
-  store.set('fishEffortMetric', p.metric);
-  store.set('fishEffortDays', String(p.days));
-  store.set('fishEffortSog', String(p.sogMax));
-  store.set('fishEffortType30', p.type30 ? '1' : '0');
-  store.set('fishEffortShowSpots', p.showSpots ? '1' : '0');
-  store.set('fishPlanHeat', p.planHeat);
-}
-function syncFishEffortUi(){
-  const p = fishEffortPrefs();
-  document.querySelectorAll('#fishEffortMetricToggle [data-fish-effort-metric]').forEach(btn => {
-    btn.classList.toggle('active', btn.getAttribute('data-fish-effort-metric') === p.metric);
-  });
-  document.querySelectorAll('#fishPlanHeatToggle [data-fish-plan-heat]').forEach(btn => {
-    btn.classList.toggle('active', btn.getAttribute('data-fish-plan-heat') === p.planHeat);
-  });
-  const days = $('fishEffortDays');
-  if(days && document.activeElement !== days) days.value = String(p.days);
-  const sog = $('fishEffortSog');
-  if(sog && document.activeElement !== sog) sog.value = String(p.sogMax);
-  const t30 = $('fishEffortType30');
-  if(t30) t30.checked = p.type30;
-  const spots = $('fishEffortShowSpots');
-  if(spots) spots.checked = p.showSpots;
-}
-
-function loadAisEffortArchive(){
-  const c = store.json(AIS_EFFORT_CACHE, null);
-  if(!c || !Array.isArray(c.s)) return;
-  aisEffortSamples = c.s.filter(row => Array.isArray(row) && row.length >= 5);
-}
-function scheduleAisEffortSave(){
-  if(_aisEffortSaveTimer) return;
-  _aisEffortSaveTimer = setTimeout(()=>{
-    _aisEffortSaveTimer = null;
-    try{ store.jset(AIS_EFFORT_CACHE, { at: Date.now(), s: aisEffortSamples }); }
-    catch(e){ /* quota */ }
-  }, 4000);
-}
-function recordAisEffortSample(v){
-  if(!v || v.lat == null || v.lon == null) return;
-  const lat = +v.lat, lon = +v.lon;
-  if(!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-  if(Math.abs(lat) > 90 || Math.abs(lon) > 180) return;
-  if(typeof isOnLand === 'function' && isOnLand(lat, lon)) return;
-  const sog = (typeof normAisSog === 'function') ? normAisSog(v.sog) : +v.sog;
-  if(sog != null && Number.isFinite(sog) && sog > AIS_EFFORT_SOG_CAP) return;
-  const mmsi = String(v.mmsi || '');
-  if(!mmsi) return;
-  const now = Date.now();
-  const last = aisEffortLastAt.get(mmsi) || 0;
-  const cell = (typeof siteMarineCell === 'function') ? siteMarineCell(lat, lon) : { key: lat.toFixed(3)+','+lon.toFixed(3) };
-  const prev = aisEffortLastAt.get(mmsi + ':k');
-  if(now - last < AIS_EFFORT_MIN_MS && prev === cell.key) return;
-  aisEffortLastAt.set(mmsi, now);
-  aisEffortLastAt.set(mmsi + ':k', cell.key);
-  const type = Number.isFinite(+v.shipType) ? (+v.shipType | 0) : 0;
-  const sogX = (sog != null && Number.isFinite(sog)) ? Math.round(sog * 10) : -1;
-  aisEffortSamples.push([
-    mmsi,
-    Math.round(lat * 1e4),
-    Math.round(lon * 1e4),
-    Math.round(now / 60000),
-    sogX,
-    type
-  ]);
-  if(aisEffortSamples.length > AIS_EFFORT_MAX){
-    aisEffortSamples = aisEffortSamples.slice(-AIS_EFFORT_MAX);
-  }
-  scheduleAisEffortSave();
-}
-function ingestLiveAisEffort(){
-  if(!aisVessels) return;
-  for(const id in aisVessels){
-    try{ recordAisEffortSample(aisVessels[id]); }catch(_){}
-  }
-}
-
-function fishEffortColor(pct){
-  const p = clamp(pct, 0, 100);
-  if(p < 20) return '#1a4a7a';
-  if(p < 40) return '#2a8a8a';
-  if(p < 60) return '#d4c020';
-  if(p < 80) return '#e87810';
-  return '#c02820';
-}
-
-function aggregateFishEffort(opts){
-  opts = opts || fishEffortPrefs();
-  const now = Date.now();
-  const tMinMin = Math.floor((now - opts.days * 24 * HR) / 60000);
-  const sogMaxX = Math.round(opts.sogMax * 10);
-  const byMmsi = new Map();
-  (aisEffortSamples || []).forEach(row => {
-    const mmsi = String(row[0] || '');
-    const tMin = +row[3];
-    const sogX = +row[4];
-    const type = +row[5] || 0;
-    if(!mmsi || tMin < tMinMin) return;
-    if(opts.type30 && type !== AIS_TYPE_FISHING) return;
-    if(sogX >= 0 && sogX > sogMaxX) return;
-    const lat = row[1] / 1e4, lon = row[2] / 1e4;
-    if(!Number.isFinite(lat) || !Number.isFinite(lon)) return;
-    const t = tMin * 60000;
-    if(!byMmsi.has(mmsi)) byMmsi.set(mmsi, []);
-    byMmsi.get(mmsi).push({ lat, lon, t, sogX });
-  });
-  const hoursByKey = new Map();
-  const daysByKey = new Map();
-  const addHours = (key, lat, lon, hr) => {
-    let rec = hoursByKey.get(key);
-    if(!rec){ rec = { key, lat, lon, hours:0 }; hoursByKey.set(key, rec); }
-    rec.hours += hr;
-  };
-  const addDay = (key, lat, lon, mmsi, t) => {
-    let rec = daysByKey.get(key);
-    if(!rec){ rec = { key, lat, lon, set: new Set() }; daysByKey.set(key, rec); }
-    const d = new Date(t);
-    rec.set.add(mmsi + '|' + d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
-  };
-  byMmsi.forEach((rows, mmsi) => {
-    rows.sort((a, b) => a.t - b.t);
-    for(let i = 0; i < rows.length; i++){
-      const a = rows[i];
-      const cell = siteMarineCell(a.lat, a.lon);
-      addDay(cell.key, cell.lat, cell.lon, mmsi, a.t);
-      const b = rows[i + 1];
-      if(b){
-        const dt = b.t - a.t;
-        if(dt > 0 && dt <= AIS_EFFORT_MAX_GAP_MS){
-          const cellB = siteMarineCell(b.lat, b.lon);
-          addHours(cellB.key, cellB.lat, cellB.lon, dt / HR);
-          continue;
-        }
+let _fishEffortVtPromise = null;
+function loadFishEffortVt(){
+  if(_fishEffortVtPromise) return _fishEffortVtPromise;
+  _fishEffortVtPromise = loadScript('https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js')
+    .then(()=> loadScript('fish-effort-vt.js?v=1'))
+    .then(()=>{
+      if(window.FishEffortVT && !window.FishEffortVT._inited){
+        FishEffortVT.init({ $: id => (typeof id === 'string' ? document.getElementById(id) : id), store, esc, fmtCoord });
+        window.FishEffortVT._inited = true;
       }
-      addHours(cell.key, cell.lat, cell.lon, AIS_EFFORT_ISOLATED_HR);
-    }
-  });
-  const cells = [];
-  hoursByKey.forEach((h, key) => {
-    const d = daysByKey.get(key);
-    cells.push({
-      key,
-      lat: h.lat,
-      lon: h.lon,
-      hours: h.hours,
-      vesselDays: d ? d.set.size : 0
+      return window.FishEffortVT;
     });
-  });
-  daysByKey.forEach((d, key) => {
-    if(hoursByKey.has(key)) return;
-    cells.push({ key, lat: d.lat, lon: d.lon, hours: 0, vesselDays: d.set.size });
-  });
-  return { cells, sampleN: aisEffortSamples.length, vesselN: byMmsi.size, tMinMin };
+  return _fishEffortVtPromise;
 }
 
-function rankFishEffortPercentile(cells, metric){
-  const vals = cells.map(c => metric === 'vessels' ? c.vesselDays : c.hours).filter(v => v > 0);
-  if(!vals.length){
-    cells.forEach(c => { c.value = 0; c.pct = 0; });
-    return cells;
-  }
-  const sorted = vals.slice().sort((a, b) => a - b);
-  cells.forEach(c => {
-    const v = metric === 'vessels' ? c.vesselDays : c.hours;
-    c.value = v;
-    if(!(v > 0)){ c.pct = 0; return; }
-    let lo = 0, hi = sorted.length;
-    while(lo < hi){
-      const mid = (lo + hi) >> 1;
-      if(sorted[mid] <= v) lo = mid + 1;
-      else hi = mid;
-    }
-    c.pct = 100 * lo / sorted.length;
+function fishEffortPrefs(){
+  if(window.FishEffortVT && FishEffortVT.prefs) return FishEffortVT.prefs();
+  const ph = store.get('fishPlanHeat');
+  return { planHeat: (ph === 'hours' || ph === 'vessels') ? ph : 'off' };
+}
+
+function syncFishEffortUi(){
+  document.querySelectorAll('#fishPlanHeatToggle [data-fish-plan-heat]').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-fish-plan-heat') === fishEffortPrefs().planHeat);
   });
-  return cells;
-}
-
-function paintFishEffortHeatLayer(map, layerRefName, cells, metric){
-  if(!map || !window.L) return null;
-  let layer = map._fishEffortHeat;
-  if(layer){
-    try{ map.removeLayer(layer); }catch(_){}
-  }
-  layer = L.layerGroup();
-  const step = SITE_MARINE_CELL_DEG;
-  const half = step / 2;
-  const ranked = rankFishEffortPercentile(cells.slice(), metric);
-  ranked.forEach(c => {
-    if(!(c.value > 0)) return;
-    const col = fishEffortColor(c.pct);
-    const rect = L.rectangle(
-      [[c.lat - half, c.lon - half], [c.lat + half, c.lon + half]],
-      {
-        className: 'fish-effort-cell',
-        color: col,
-        weight: 1,
-        opacity: 0.55,
-        fillColor: col,
-        fillOpacity: 0.18 + 0.42 * (c.pct / 100),
-        interactive: true
-      }
-    );
-    const hrs = c.hours >= 10 ? f0(c.hours) : f1(c.hours);
-    rect.bindPopup(
-      '<b>AIS effort cell</b><br>'+fmtCoord(c.lat)+', '+fmtCoord(c.lon)+
-      '<br>Effort <strong>'+hrs+' h</strong> slow/stop'+
-      '<br>Popularity <strong>'+c.vesselDays+'</strong> vessel-day'+(c.vesselDays===1?'':'s')+
-      '<br>View percentile '+f0(c.pct)+
-      '<br><span style="opacity:.85">~'+f1(step*60)+'′ grid · not bite · not live traffic</span>'
-    );
-    rect.addTo(layer);
-  });
-  layer.addTo(map);
-  map._fishEffortHeat = layer;
-  if(layerRefName === 'plan') fishPlanHeatLayer = layer;
-  else fishEffortHeatLayer = layer;
-  return layer;
-}
-
-function paintFishEffortHeatOn(map, which){
-  if(!map) return;
-  const p = fishEffortPrefs();
-  const metric = which === 'plan' ? p.planHeat : p.metric;
-  if(which === 'plan' && (metric === 'off' || !metric)){
-    if(map._fishEffortHeat){
-      try{ map.removeLayer(map._fishEffortHeat); }catch(_){}
-      map._fishEffortHeat = null;
-    }
-    fishPlanHeatLayer = null;
-    return;
-  }
-  const agg = aggregateFishEffort(p);
-  const useMetric = metric === 'vessels' ? 'vessels' : 'hours';
-  let cells = agg.cells;
-  try{
-    const b = map.getBounds();
-    if(b && b.isValid()){
-      const vis = cells.filter(c => b.pad(0.15).contains([c.lat, c.lon]));
-      if(vis.length) cells = vis;
-    }
-  }catch(_){}
-  paintFishEffortHeatLayer(map, which, cells, useMetric);
-}
-
-function fishEffortLegendHtml(metric){
-  return '<div class="fish-effort-scale" aria-hidden="true">'+
-    '<i style="background:#1a4a7a"></i><i style="background:#2a8a8a"></i><i style="background:#d4c020"></i><i style="background:#e87810"></i><i style="background:#c02820"></i></div>'+
-    '<span>Quiet → worked · '+(metric === 'vessels' ? 'popularity (vessel-days)' : 'effort (slow/stop hours)')+' · percentile in view</span>';
+  if(window.FishEffortVT && FishEffortVT.syncUi) FishEffortVT.syncUi();
 }
 
 function fishEffortVisible(){
@@ -11678,84 +11502,28 @@ function fishEffortVisible(){
   return !!(tab && pan);
 }
 
-function paintFishEffortSpots(){
-  if(!fishEffortMap || !fishEffortSpotLayer) return;
-  fishEffortSpotLayer.clearLayers();
+function paintFishEffortHeatOn(map, which){
+  if(!map || which !== 'plan') return;
   const p = fishEffortPrefs();
-  if(!p.showSpots || !lastFishPlanAllRanked) return;
-  lastFishPlanAllRanked.slice(0, FISH_MAP_MAX_MARKERS).forEach(({ spot, score, distNm }, i) => {
-    const mpos = (typeof fishMapPos === 'function') ? fishMapPos(spot) : spot;
-    const sz = 16;
-    L.marker([mpos.lat, mpos.lon], {
-      icon: L.divIcon({
-        className: '',
-        html: fishMapMarkerHtml(i + 1, score, 'numbered', classifyFishStyle(spot)),
-        iconSize: [sz, sz],
-        iconAnchor: [sz/2, sz/2]
-      }),
-      zIndexOffset: 200
-    }).bindPopup('<b>#'+(i+1)+' '+esc(fishGroupListName(spot))+'</b><br>Bite '+score+'/100 · '+f1(distNm)+' nm')
-      .addTo(fishEffortSpotLayer);
-  });
-}
-
-function renderFishEffortList(cells, metric){
-  const box = $('fishEffortList');
-  if(!box) return;
-  const ranked = cells.filter(c => c.value > 0).sort((a, b) => b.value - a.value).slice(0, 12);
-  if(!ranked.length){
-    box.innerHTML = '<p class="plan-note" style="margin:0">No slow/stop AIS samples in this window yet. Open AIS (or leave the app running with a key) so BoatBoard can archive dwell. Heat is not invented.</p>';
+  if(p.planHeat === 'off'){
+    if(map._vtHeatLayer){
+      try{ map.removeLayer(map._vtHeatLayer); }catch(_){}
+      map._vtHeatLayer = null;
+    }
     return;
   }
-  const bp = boatPos();
-  box.innerHTML = ranked.map((c, i) => {
-    const d = haversineM(bp.lat, bp.lon, c.lat, c.lon) / NM;
-    const val = metric === 'vessels' ? (c.vesselDays+' vessel-day'+(c.vesselDays===1?'':'s')) : ((c.hours>=10?f0(c.hours):f1(c.hours))+' h');
-    return '<div class="lob-row" data-effort-key="'+esc(c.key)+'">'+
-      '<div class="lob-rank" style="background:'+fishEffortColor(c.pct)+'">'+(i+1)+'</div>'+
-      '<div class="lob-row-body"><div class="lob-name">'+fmtCoord(c.lat)+', '+fmtCoord(c.lon)+'</div>'+
-      '<div class="lob-meta">'+esc(val)+' · p'+f0(c.pct)+' · '+f1(d)+' nm from boat</div></div></div>';
-  }).join('');
+  loadFishEffortVt().then(vt => {
+    if(vt) vt.paintPlanHeat(map, p.planHeat);
+  }).catch(e=> console.warn('plan effort heat', e));
 }
 
 function renderFishEffort(){
-  ingestLiveAisEffort();
-  syncFishEffortUi();
-  const p = fishEffortPrefs();
-  const agg = aggregateFishEffort(p);
-  const metric = p.metric === 'vessels' ? 'vessels' : 'hours';
-  let cells = rankFishEffortPercentile(agg.cells.slice(), metric);
-  const meta = $('fishEffortMeta');
-  if(meta){
-    const oldest = aisEffortSamples.length ? Math.min.apply(null, aisEffortSamples.map(r => +r[3] || 1e15)) : null;
-    const ageTxt = oldest != null && isFinite(oldest)
-      ? 'archive from '+fmtDayTime(new Date(oldest * 60000))
-      : 'no archive yet';
-    meta.textContent = agg.sampleN+' AIS samples · '+agg.vesselN+' vessels in window · '+
-      cells.filter(c => c.value > 0).length+' cells · '+ageTxt+
-      ' · '+p.sogMax+' kn cap'+(p.type30 ? ' · type 30 only' : '');
-  }
-  if(fishEffortMap){
-    try{
-      const b = fishEffortMap.getBounds();
-      if(b && b.isValid()){
-        const vis = cells.filter(c => b.pad(0.12).contains([c.lat, c.lon]));
-        if(vis.length) cells = rankFishEffortPercentile(vis, metric);
-      }
-    }catch(_){}
-    paintFishEffortHeatLayer(fishEffortMap, 'effort', cells, metric);
-    paintFishEffortSpots();
+  if(!fishEffortMap) return;
+  loadFishEffortVt().then(vt => {
+    if(vt) vt.render(fishEffortMap);
     const bp = boatPos();
-    if(fishEffortBoatMarker){
-      fishEffortBoatMarker.setLatLng([bp.lat, bp.lon]);
-    }
-  }
-  const leg = $('fishEffortMapLegend');
-  if(leg){
-    leg.innerHTML = fishEffortLegendHtml(metric)+
-      '<span>▲ boat · tap cell for hours / vessel-days · not bite</span>';
-  }
-  renderFishEffortList(cells, metric);
+    if(fishEffortBoatMarker) fishEffortBoatMarker.setLatLng([bp.lat, bp.lon]);
+  }).catch(e=> console.error('fish effort', e));
 }
 
 async function ensureFishEffortMap(){
@@ -11763,6 +11531,7 @@ async function ensureFishEffortMap(){
   try{
     await loadLeaflet();
     await loadCoastOverlayLite();
+    await loadFishEffortVt();
   }catch(e){ return false; }
   if(!window.L) return false;
   const host = $('fishEffortMap');
@@ -11776,7 +11545,7 @@ async function ensureFishEffortMap(){
   host.innerHTML = '';
   const { lat, lon } = boatPos();
   try{
-    fishEffortMap = L.map(host, { zoomControl:true, attributionControl:false, minZoom:7, maxZoom:16 })
+    fishEffortMap = L.map(host, { zoomControl:true, attributionControl:false, minZoom:7, maxZoom:18 })
       .setView([lat, lon], FISH_MAP_DEFAULT_ZOOM);
     try{ await attachSeafloorPlanBasemap(fishEffortMap); }
     catch(e){
@@ -11785,8 +11554,6 @@ async function ensureFishEffortMap(){
     }
     addCoastOverlay(L.layerGroup().addTo(fishEffortMap));
     ensureMpaLayerGroup(fishEffortMap);
-    fishEffortHeatLayer = L.layerGroup().addTo(fishEffortMap);
-    fishEffortSpotLayer = L.layerGroup().addTo(fishEffortMap);
     fishEffortBoatMarker = L.marker([lat, lon], {
       icon: L.divIcon({
         className:'boat-icon',
@@ -11802,7 +11569,7 @@ async function ensureFishEffortMap(){
     return true;
   }catch(e){
     console.error('fish effort map init', e);
-    fishEffortMap = null; fishEffortHeatLayer = null; fishEffortSpotLayer = null; fishEffortBoatMarker = null;
+    fishEffortMap = null; fishEffortBoatMarker = null;
     fishEffortMapInited = false;
     return false;
   }
@@ -11816,8 +11583,12 @@ function initFishEffortMapWithRetry(attempt){
   });
 }
 function applyFishEffortPrefPatch(patch){
-  const p = Object.assign(fishEffortPrefs(), patch || {});
-  saveFishEffortPrefs(p);
+  if(window.FishEffortVT && FishEffortVT.savePrefs){
+    const p = Object.assign(FishEffortVT.prefs(), patch || {});
+    FishEffortVT.savePrefs(p);
+  } else if(patch && patch.planHeat != null){
+    store.set('fishPlanHeat', patch.planHeat);
+  }
   syncFishEffortUi();
   try{ renderFishEffort(); }catch(e){ console.error(e); }
   if(fishMap){
@@ -15739,7 +15510,6 @@ function aisColor(age){
 }
 
 function loadAisCache(){
-  loadAisEffortArchive();
   const c = store.json('boatCache:ais', {});
   if(!c || !c.vessels) return;
   const now = Date.now();
@@ -15752,7 +15522,6 @@ function loadAisCache(){
     kept[id] = v;
   }
   aisVessels = kept;
-  ingestLiveAisEffort();
 }
 function saveAisCache(){
   try{
@@ -15924,7 +15693,6 @@ function parseAisMsg(msg){
     name,
     lastRx: Date.now()
   };
-  try{ recordAisEffortSample(aisVessels[mmsi]); }catch(_){}
   return true;
 }
 
@@ -18166,7 +17934,6 @@ function switchSubtab(section, name){
     if(lastFishUtilRow && lastFishUtilCtx) refreshFishSeafloor(lastFishUtilRow, lastFishUtilCtx);
   }
   if(section === 'fishing' && name === 'effort'){
-    ingestLiveAisEffort();
     initFishEffortMapWithRetry(0);
     try{ renderFishEffort(); }catch(e){ console.error(e); }
   }
@@ -18379,35 +18146,15 @@ function bindUI(){
   $('fishPlanHeatToggle')?.addEventListener('click', e=>{
     const btn = e.target.closest('[data-fish-plan-heat]');
     if(!btn) return;
-    const mode = btn.getAttribute('data-fish-plan-heat');
-    const patch = { planHeat: mode };
-    if(mode === 'hours' || mode === 'vessels') patch.metric = mode;
-    applyFishEffortPrefPatch(patch);
-  });
-  $('fishEffortMetricToggle')?.addEventListener('click', e=>{
-    const btn = e.target.closest('[data-fish-effort-metric]');
-    if(!btn) return;
-    applyFishEffortPrefPatch({ metric: btn.getAttribute('data-fish-effort-metric') });
-  });
-  $('fishEffortDays')?.addEventListener('change', ()=>{
-    applyFishEffortPrefPatch({ days: parseInt($('fishEffortDays').value, 10) });
-  });
-  $('fishEffortSog')?.addEventListener('change', ()=>{
-    applyFishEffortPrefPatch({ sogMax: parseFloat($('fishEffortSog').value) });
-  });
-  $('fishEffortType30')?.addEventListener('change', ()=>{
-    applyFishEffortPrefPatch({ type30: !!$('fishEffortType30').checked });
-  });
-  $('fishEffortShowSpots')?.addEventListener('change', ()=>{
-    applyFishEffortPrefPatch({ showSpots: !!$('fishEffortShowSpots').checked });
+    applyFishEffortPrefPatch({ planHeat: btn.getAttribute('data-fish-plan-heat') });
   });
   $('fishEffortList')?.addEventListener('click', e=>{
-    const row = e.target.closest('[data-effort-key]');
+    const row = e.target.closest('.heat[data-lat]');
     if(!row || !fishEffortMap) return;
-    const key = row.getAttribute('data-effort-key');
-    const cell = (aggregateFishEffort().cells || []).find(c => c.key === key);
-    if(!cell) return;
-    fishEffortMap.setView([cell.lat, cell.lon], Math.max(fishEffortMap.getZoom(), 11), { animate:false });
+    const lat = +row.getAttribute('data-lat');
+    const lon = +row.getAttribute('data-lon');
+    if(!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    fishEffortMap.setView([lat, lon], Math.max(fishEffortMap.getZoom(), 12), { animate:false });
   });
   window.addEventListener('resize', ()=>{
     if(activeTab()==='underway') fitUwRadar();
@@ -18515,8 +18262,8 @@ function boot(){
 
   loadSettings();
   loadAnchorLocPrefs();
-  loadAisEffortArchive();
   syncFishEffortUi();
+  loadFishEffortVt().then(vt => { if(vt) vt.syncUi(); }).catch(()=>{});
   $('fAisKey').value = settings.aisKey;
   $('fAisRelay').value = settings.aisRelay;
   $('fHomeLat').value = settings.homeLat;
@@ -18597,7 +18344,6 @@ function boot(){
       if(activeTab()==='underway') renderUnderwayTab();
     }
     saveAisCache();
-    ingestLiveAisEffort();
     if(fishEffortVisible()) try{ renderFishEffort(); }catch(e){}
   }, 5000);
   timers.aisUpstream = setInterval(()=> refreshAisUpstreamStatus(false), REFRESH_AIS_UPTIME);
