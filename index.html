@@ -1262,7 +1262,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
       <div class="plan-mapbox">
         <h3>Pick a spot</h3>
         <p>▲ = boat · gold = published cove · coral diamond = your map tap · tap empty water to drop a mark at that exact lat/lon</p>
-        <div id="anchorMap"></div>
+        <div id="anchorMap"><div class="skel" style="padding:20px">Loading chart…</div></div>
         <div class="plan-map-legend">Gold pins are published coves (same coords as Fish/Dive — not invented). An empty tap uses that GPS; it is not snapped to a named cove unless you hit a pin. Boat vs chosen spot is still the toggle above. Fish/Dive On site swing stays at the boat.</div>
       </div>
       <div id="anchorWarn" class="anchor-warn ok" role="status">Loading anchorage forecast…</div>
@@ -13452,25 +13452,31 @@ let anchorSpotId = 'isthmus';
 let anchorCustomLat = null;
 let anchorCustomLon = null;
 
+function finiteCoord(lat, lon){
+  const la = typeof lat === 'number' ? lat : parseFloat(lat);
+  const lo = typeof lon === 'number' ? lon : parseFloat(lon);
+  if(!Number.isFinite(la) || !Number.isFinite(lo)) return null;
+  if(Math.abs(la) > 90 || Math.abs(lo) > 180) return null;
+  return { lat: la, lon: lo };
+}
 function customAnchorSpot(){
-  if(!isFinite(anchorCustomLat) || !isFinite(anchorCustomLon)) return null;
-  if(Math.abs(anchorCustomLat) > 90 || Math.abs(anchorCustomLon) > 180) return null;
+  const pt = finiteCoord(anchorCustomLat, anchorCustomLon);
+  if(!pt) return null;
   return {
     id: 'custom',
-    name: 'Map pin · '+anchorCustomLat.toFixed(4)+', '+anchorCustomLon.toFixed(4),
-    lat: anchorCustomLat,
-    lon: anchorCustomLon,
+    name: 'Map pin · '+pt.lat.toFixed(4)+', '+pt.lon.toFixed(4),
+    lat: pt.lat,
+    lon: pt.lon,
     region: 'Map pin'
   };
 }
 function loadAnchorLocPrefs(){
   const mode = store.get('anchorLocMode');
   if(mode === 'spot' || mode === 'boat') anchorLocMode = mode;
-  const clat = parseFloat(store.get('anchorCustomLat'));
-  const clon = parseFloat(store.get('anchorCustomLon'));
-  if(isFinite(clat) && isFinite(clon) && Math.abs(clat) <= 90 && Math.abs(clon) <= 180){
-    anchorCustomLat = clat;
-    anchorCustomLon = clon;
+  const pt = finiteCoord(store.get('anchorCustomLat'), store.get('anchorCustomLon'));
+  if(pt){
+    anchorCustomLat = pt.lat;
+    anchorCustomLon = pt.lon;
   }
   const id = store.get('anchorSpotId');
   if(id === 'custom' && customAnchorSpot()) anchorSpotId = 'custom';
@@ -13479,9 +13485,10 @@ function loadAnchorLocPrefs(){
 function saveAnchorLocPrefs(){
   store.set('anchorLocMode', anchorLocMode);
   store.set('anchorSpotId', anchorSpotId);
-  if(isFinite(anchorCustomLat) && isFinite(anchorCustomLon)){
-    store.set('anchorCustomLat', String(anchorCustomLat));
-    store.set('anchorCustomLon', String(anchorCustomLon));
+  const pt = finiteCoord(anchorCustomLat, anchorCustomLon);
+  if(pt){
+    store.set('anchorCustomLat', String(pt.lat));
+    store.set('anchorCustomLon', String(pt.lon));
   }
 }
 function findAnchorage(id){
@@ -13528,10 +13535,10 @@ function setAnchorSpotId(id){
   try{ renderAnchorage(); }catch(e){ console.error(e); }
 }
 function setCustomAnchor(lat, lon){
-  lat = +lat; lon = +lon;
-  if(!isFinite(lat) || !isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return;
-  anchorCustomLat = lat;
-  anchorCustomLon = lon;
+  const pt = finiteCoord(lat, lon);
+  if(!pt) return;
+  anchorCustomLat = pt.lat;
+  anchorCustomLon = pt.lon;
   anchorSpotId = 'custom';
   anchorLocMode = 'spot';
   _anchorMapWantPan = false;
@@ -13620,32 +13627,49 @@ function paintAnchorMap(){
     }
   }
 }
+function destroyAnchorMap(){
+  try{ if(anchorMap) anchorMap.remove(); }catch(_){}
+  anchorMap = null;
+  anchorSpotLayer = null;
+  anchorBoatMarker = null;
+  anchorMapInited = false;
+  const host = $('anchorMap');
+  if(host){
+    host.innerHTML = '<div class="skel" style="padding:20px">Loading chart…</div>';
+    try{ delete host._leaflet_id; }catch(_){ host._leaflet_id = undefined; }
+  }
+}
 async function ensureAnchorMap(){
   if(activeTab() !== 'anchorage') return false;
-  try{
-    await loadLeaflet();
-    await loadCoastOverlayLite();
-  }catch(e){ return false; }
+  try{ await loadLeaflet(); }
+  catch(e){ return false; }
   if(!window.L) return false;
   const host = $('anchorMap');
   if(!host) return false;
   if(anchorMap){
-    anchorMap.invalidateSize(true);
-    paintAnchorMap();
-    return true;
+    try{
+      anchorMap.invalidateSize(true);
+      paintAnchorMap();
+      return true;
+    }catch(e){
+      console.warn('anchor map reuse', e);
+      destroyAnchorMap();
+    }
   }
+  if(host._leaflet_id) destroyAnchorMap();
   if(!host.offsetWidth || !host.offsetHeight) return false;
   host.innerHTML = '';
   const ap = anchorPos();
   try{
-    anchorMap = L.map(host, { zoomControl:true, attributionControl:false, minZoom:7, maxZoom:16 })
-      .setView([ap.lat, ap.lon], ANCHOR_MAP_DEFAULT_ZOOM);
-    try{ await attachSeafloorPlanBasemap(anchorMap); }
-    catch(e){
-      console.warn('Anchorage seafloor basemap', e);
-      planMapBaseLayer(anchorMap, {});
-    }
-    addCoastOverlay(L.layerGroup().addTo(anchorMap));
+    anchorMap = L.map(host, {
+      zoomControl:true, attributionControl:false, minZoom:7, maxZoom:16,
+      tap:true, tapTolerance:22
+    }).setView([ap.lat, ap.lon], ANCHOR_MAP_DEFAULT_ZOOM);
+    planMapBaseLayer(anchorMap, {});
+    loadCoastOverlayLite().then(()=>{
+      if(!anchorMap) return;
+      try{ addCoastOverlay(L.layerGroup().addTo(anchorMap)); }catch(e){ console.warn('anchor coast overlay', e); }
+    }).catch(()=>{});
     anchorSpotLayer = L.layerGroup().addTo(anchorMap);
     const bp = boatPos();
     anchorBoatMarker = L.marker([bp.lat, bp.lon], {
@@ -13661,10 +13685,11 @@ async function ensureAnchorMap(){
     anchorMap.on('click', onAnchorMapClick);
     anchorMapInited = true;
     paintAnchorMap();
+    attachSeafloorPlanBasemap(anchorMap).catch(e => console.warn('Anchorage seafloor basemap', e));
     return true;
   }catch(e){
     console.error('anchor map init', e);
-    anchorMap = null; anchorSpotLayer = null; anchorBoatMarker = null; anchorMapInited = false;
+    destroyAnchorMap();
     return false;
   }
 }
@@ -17815,6 +17840,9 @@ function bindUI(){
     if(activeTab()==='cruise' && bactMap) bactMap.invalidateSize(true);
     if(activeTab()==='chlorophyll' && chlMap) chlMap.invalidateSize(true);
     if(activeTab()==='temperature' && sstMap) sstMap.invalidateSize(true);
+    if(activeTab()==='anchorage' && anchorMap){
+      try{ anchorMap.invalidateSize(true); }catch(_){}
+    }
     if(activeTab()==='dive' && window.BoatDive?.invalidatePlanMap) BoatDive.invalidatePlanMap();
   });
   window.addEventListener('orientationchange', ()=>{ setTimeout(()=>{
