@@ -60,7 +60,7 @@
     { id: 'redondoreefj', name: 'Redondo Beach Artificial Reef J', lat: 33.8366667, lon: -118.4094444, face: 200, depth: 65, verified: true, boat: true , cdfgAppendix: true, userTrusted: true},
     { id: 'redondoreefk', name: 'Redondo Beach Artificial Reef K', lat: 33.8363889, lon: -118.4086111, face: 200, depth: 65, verified: true, boat: true , cdfgAppendix: true, userTrusted: true},
     { id: 'redondoctr', name: 'Redondo Beach Artificial Reef Center', lat: 33.8372222, lon: -118.4088889, face: 200, depth: 65, verified: true, boat: true , cdfgAppendix: true, userTrusted: true},
-    { id: 'palawan', name: 'SS Palawan - San Pedro / Redondo artificial reef', lat: 33.8236111, lon: -118.4147222, face: 190, depth: 120, verified: true, boat: true, userTrusted: true},
+    { id: 'palawan', name: 'SS Palawan - Redondo Beach artificial reef', lat: 33.8236111, lon: -118.4147222, face: 190, depth: 120, verified: true, boat: true, userTrusted: true},
     { id: 'mdreyreef', name: 'Marina del Rey Artificial Reef (Center)', lat: 33.9683333, lon: -118.4863889, face: 250, depth: 65, verified: true, boat: true , cdfgAppendix: true, userTrusted: true},
     { id: 'mdrey2a', name: 'Marina del Rey Artificial Reef 2A', lat: 33.9672222, lon: -118.4869444, face: 250, depth: 65, verified: true, boat: true , cdfgAppendix: true, userTrusted: true},
     { id: 'mdrey1ctr', name: 'Marina del Rey Artificial Reef 1 Center', lat: 33.965, lon: -118.4861111, face: 250, depth: 65, verified: true, boat: true , cdfgAppendix: true, userTrusted: true},

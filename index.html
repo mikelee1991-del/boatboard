@@ -1996,7 +1996,7 @@ function ensureDiveEngine(){
   if(window.BoatDive) return Promise.resolve(window.BoatDive);
   if(_diveEnginePromise) return _diveEnginePromise;
   _diveEnginePromise = loadScript('pin-feature-groups-data.js?v=2').catch(function(){ /* optional */ })
-    .then(()=> loadScript('dive-briefings-data.js?v=3'))
+    .then(()=> loadScript('dive-briefings-data.js?v=4'))
     .then(()=> loadScript('dive-site-intel.js'))
     .then(()=> loadScript('briefing-synth.js?v=5'))
     .then(()=> ensureForecastCharts())

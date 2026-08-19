@@ -308,13 +308,13 @@ window.__BOAT_DIVE_BRIEFINGS__ = {
   ],
   palawan: [
     { h: 'Why dive here', body: [
-      'The SS Palawan is a deep boat wreck in San Pedro Bay \u2014 a freighter resting near 120 ft, well beyond recreational limits for most divers. Listed for technical divers and as a navigation landmark; confirm current condition reports and operator permissions before planning.',
+      'The SS Palawan is a 441-ft Liberty-ship hull sunk in 1977 as a CDFW artificial reef in Santa Monica Bay off Redondo Beach \u2014 about 1.7 nm SW of King Harbor, in ~120 ft. Not the Redondo Beach Artificial Reef rock modules (~0.9 nm NNE, 65\u201372 ft). Technical depth for most divers; confirm current condition reports and operator permissions before planning.',
       'Dive character is deep wreck archaeology: hull structure on sand, heavy encrustation, limited ambient light. Historical interest as one of SoCal\u2019s deeper accessible wrecks for trimix divers. Not a wildlife-focused shallow reef \u2014 plan for depth and overhead environment first.',
       'Best season: summer vis windows with experienced tech boat; calm seas for long decompression. Requires technical training, redundancy, and local operator briefing.'
     ]},
     { h: 'Navigation, POIs & hazards', body: [
       'Technical dive profiles only \u2014 gas planning, decompression, and redundancy required. Strong currents possible; boat support with experienced crew mandatory. Depth 115\u2013130 ft typical on hull \u2014 no recreational profiles.',
-      'POIs: hull sections, prop area (if accessible per briefing), sand plain for decompression drift. No penetration without proper wreck training and site-specific briefing. Catalina Express and shipping traffic cross the bay \u2014 surface safety critical.',
+      'POIs: hull sections, prop area (if accessible per briefing), sand plain for decompression drift. No penetration without proper wreck training and site-specific briefing. Recreational sportfishing AIS heat in this pocket is mostly the shallower Redondo Reef modules to the NNE, not this 120-ft hull.',
       'Navigation: shot line or live-boat decompression; SMB mandatory. Entanglement and silt hazards inside hull \u2014 most operators restrict penetration. Confirm wreck coordinates with local ops \u2014 positions can be reported differently.'
     ]},
     { h: 'Marine life by zone', body: [
