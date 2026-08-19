@@ -407,10 +407,7 @@ const UNKNOWN_FISH = "Unknown fish";
           `${vtState.speciesGroups.groups.length} groups (${nType} type · ${nHab} habitat)` +
           (source ? ` · ${source}` : "");
       }
-      if (!silent) {
-        if (state.tab === "spots") renderSpots();
-        if (state.tab === "heat") scheduleRender(vtRenderHeatCore, 40);
-      }
+      if (!silent) scheduleFishEffortRender();
     }
 
     function openSpeciesGroupsModal() {
@@ -445,7 +442,7 @@ const UNKNOWN_FISH = "Unknown fish";
     async function loadSpeciesGroups() {
       let shipped = { version: 1, aliases: {}, groups: [] };
       try {
-        shipped = await (await fetch("data/species_groups.json")).json();
+        shipped = await (await fetch(VT_DATA + "species_groups.json")).json();
       } catch (err) {
         console.warn("species_groups.json missing", err);
       }
@@ -817,16 +814,24 @@ const UNKNOWN_FISH = "Unknown fish";
 
     /** Tighten heat kernels when zoomed in or spots are well separated (higher effective resolution). */
     function heatKernelPx(baseRadius, baseBlur, points) {
-      const radiusFloor = Math.max(HEAT_RADIUS_MIN, Number(el("fishEffortRadius").min) || HEAT_RADIUS_MIN);
-      const blurFloor = Math.max(HEAT_BLUR_MIN, Number(el("fishEffortBlur").min) || HEAT_BLUR_MIN);
+      const radiusEl = el("fishEffortRadius");
+      const blurEl = el("fishEffortBlur");
+      const radiusFloor = Math.max(HEAT_RADIUS_MIN, Number(radiusEl && radiusEl.min) || HEAT_RADIUS_MIN);
+      const blurFloor = Math.max(HEAT_BLUR_MIN, Number(blurEl && blurEl.min) || HEAT_BLUR_MIN);
       const radiusAtMin = baseRadius <= radiusFloor;
       const blurAtMin = baseBlur <= blurFloor;
       // At the minimum setting, keep that axis exact so the map shows min radius/blur.
       if (radiusAtMin && blurAtMin) {
         return { radius: radiusFloor, blur: blurFloor };
       }
+      if (!effortMap || typeof effortMap.getZoom !== "function") {
+        return {
+          radius: Math.max(radiusFloor, Math.round(baseRadius)),
+          blur: Math.max(blurFloor, Math.round(baseBlur)),
+        };
+      }
 
-      const zoom = effortMap.getZoom();
+      const zoom = effortMap && effortMap.getZoom ? effortMap.getZoom() : 10;
       // Prefer sharper kernels as zoom rises (leaflet.heat radius is screen pixels).
       const zoomT = Math.max(0, Math.min(1, (zoom - 10) / 5));
       let radius = radiusAtMin ? radiusFloor : baseRadius * (1 - 0.35 * zoomT);
@@ -965,11 +970,11 @@ const UNKNOWN_FISH = "Unknown fish";
       const boatSet = new Set();
       scored.forEach(({ loc }) => (loc.boats || []).forEach((b) => boatSet.add(b)));
 
-      el("fishEffortStatSpots").textContent = String(scored.length);
-      el("fishEffortStatIntensity").textContent = scored.length
+      if (el("fishEffortStatSpots")) el("fishEffortStatSpots").textContent = String(scored.length);
+      if (el("fishEffortStatIntensity")) el("fishEffortStatIntensity").textContent = scored.length
         ? `${fmt(intensitySum, metric === "visits" || metric === "dwell" ? 0 : 1)} / ${fmt(intensityMean, 2)}`
         : "—";
-      el("fishEffortStatBoats").textContent = String(boatSet.size);
+      if (el("fishEffortStatBoats")) el("fishEffortStatBoats").textContent = String(boatSet.size);
 
       const top = [...scored].sort((a, b) => b.intensity - a.intensity).slice(0, 40);
       const listEl = el("fishEffortList"); if (listEl) listEl.innerHTML = top.map(({ loc, intensity }) => `
@@ -992,7 +997,7 @@ const UNKNOWN_FISH = "Unknown fish";
       syncMultiSummary("fishEffortBoatFilter", "fishEffortBoatSummary"); syncMultiSummary("fishEffortSpeciesFilter", "fishEffortSpeciesSummary");
       const boatLabel = boats.length ? ` · ${selectionSummary(boats)}` : "";
       const decimals = metric === "visits" || metric === "dwell" ? 0 : 2;
-      el("fishEffortStatus").textContent =
+      if (el("fishEffortStatus")) el("fishEffortStatus").textContent =
         `${start || "?"} → ${end || "?"}${boatLabel}${speciesFilterLabel(speciesKeys)} · ${scored.length} hot spot(s) · ${metric}` +
         (scored.length ? ` · auto max ${fmt(dataMax, decimals)}` : "") +
         (typeof L.heatLayer !== "function" ? " · heat plugin missing" : "");
@@ -1030,6 +1035,7 @@ const UNKNOWN_FISH = "Unknown fish";
     if (vtState.loaded) return vtState;
     if (vtState.loading) return vtState.loading;
     vtState.loading = (async () => {
+      try {
       const meta = await (await fetch(VT_DATA + 'meta.json')).json();
       vtState.meta = meta;
       const cacheBust = encodeURIComponent(meta.ais_window?.end || '') + '-' + (meta.stats?.n_trips || '');
@@ -1052,7 +1058,12 @@ const UNKNOWN_FISH = "Unknown fish";
       if (vtState.spotsDates.length < 2) vtState.spotsDates = [aisStart, aisEnd];
       populateBoatSpeciesFilters(meta);
       vtState.loaded = true;
+      syncFishEffortUiFromStore();
       return vtState;
+      } catch (err) {
+        vtState.loading = null;
+        throw err;
+      }
     })();
     return vtState.loading;
   }
@@ -1080,8 +1091,18 @@ const UNKNOWN_FISH = "Unknown fish";
       setupDualRange('fishEffort', vtState.spotsDates, () => scheduleFishEffortRender());
       const startEl = el('fishEffortDateStart');
       const endEl = el('fishEffortDateEnd');
-      if (startEl && p.dateStartIdx != null) startEl.value = p.dateStartIdx;
-      if (endEl && p.dateEndIdx != null) endEl.value = p.dateEndIdx;
+      const max = Math.max(0, vtState.spotsDates.length - 1);
+      const startIdx = p.dateStartIdx;
+      const endIdx = p.dateEndIdx;
+      /* 0→0 is the HTML default and also a leftover from the uninitialized slider bug. */
+      const collapsedDefault = startIdx === 0 && endIdx === 0 && max > 0;
+      const savedValid = startIdx != null && endIdx != null
+        && startIdx >= 0 && endIdx <= max && endIdx >= startIdx
+        && !collapsedDefault;
+      if (startEl && endEl && savedValid) {
+        startEl.value = startIdx;
+        endEl.value = endIdx;
+      }
       syncDualRange('fishEffort');
     }
     updateFishEffortMetricNote();
@@ -1138,15 +1159,19 @@ const UNKNOWN_FISH = "Unknown fish";
   }
 
   function renderFishEffortOnMap(map) {
-    if (!map || typeof L === 'undefined' || typeof L.heatLayer !== 'function') return;
+    if (!map || typeof L === 'undefined') return;
     effortMap = map;
     if (!vtState.loaded) {
       const st = el('fishEffortStatus');
       if (st) st.textContent = 'Loading VesselTracker effort data…';
       loadFishEffortVT().then(() => renderFishEffortOnMap(map)).catch((e) => {
-        if (st) st.textContent = 'Failed: ' + e.message;
+        if (st) st.textContent = 'Failed: ' + (e && e.message ? e.message : e);
       });
       return;
+    }
+    if (typeof L.heatLayer !== 'function') {
+      const st = el('fishEffortStatus');
+      if (st) st.textContent = 'Heat plugin missing — reload the page, then open Effort again.';
     }
     vtRenderHeatCore();
     const meta = el('fishEffortMeta');

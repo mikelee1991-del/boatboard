@@ -11696,16 +11696,35 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
 }
 
 let _fishEffortVtPromise = null;
+const LEAFLET_HEAT_SRC = 'https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js';
+function leafletHeatReady(){
+  return !!(window.L && typeof L.heatLayer === 'function');
+}
+/** leaflet.heat throws if L is missing; a cached loadScript then never re-attaches. */
+function loadLeafletHeat(){
+  if(leafletHeatReady()) return Promise.resolve();
+  return loadLeaflet().then(()=>{
+    if(leafletHeatReady()) return;
+    if(_scriptLoads[LEAFLET_HEAT_SRC]) delete _scriptLoads[LEAFLET_HEAT_SRC];
+    return loadScript(LEAFLET_HEAT_SRC).then(()=>{
+      if(!leafletHeatReady()) throw new Error('leaflet.heat failed to attach');
+    });
+  });
+}
 function loadFishEffortVt(){
   if(_fishEffortVtPromise) return _fishEffortVtPromise;
-  _fishEffortVtPromise = loadScript('https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js')
-    .then(()=> loadScript('fish-effort-vt.js?v=1'))
+  _fishEffortVtPromise = loadLeafletHeat()
+    .then(()=> loadScript('fish-effort-vt.js?v=2'))
     .then(()=>{
       if(window.FishEffortVT && !window.FishEffortVT._inited){
         FishEffortVT.init({ $: id => (typeof id === 'string' ? document.getElementById(id) : id), store, esc, fmtCoord });
         window.FishEffortVT._inited = true;
       }
       return window.FishEffortVT;
+    })
+    .catch(e=>{
+      _fishEffortVtPromise = null;
+      throw e;
     });
   return _fishEffortVtPromise;
 }
@@ -11750,7 +11769,11 @@ function renderFishEffort(){
     if(vt) vt.render(fishEffortMap);
     const bp = boatPos();
     if(fishEffortBoatMarker) fishEffortBoatMarker.setLatLng([bp.lat, bp.lon]);
-  }).catch(e=> console.error('fish effort', e));
+  }).catch(e=> {
+    console.error('fish effort', e);
+    const st = $('fishEffortStatus');
+    if(st) st.textContent = 'Failed: ' + (e && e.message ? e.message : e);
+  });
 }
 
 async function ensureFishEffortMap(){
@@ -11759,7 +11782,12 @@ async function ensureFishEffortMap(){
     await loadLeaflet();
     await loadCoastOverlayLite();
     await loadFishEffortVt();
-  }catch(e){ return false; }
+  }catch(e){
+    console.error('ensureFishEffortMap', e);
+    const st = $('fishEffortStatus');
+    if(st) st.textContent = 'Failed: ' + (e && e.message ? e.message : e);
+    return false;
+  }
   if(!window.L) return false;
   const host = $('fishEffortMap');
   if(!host) return false;
@@ -18501,7 +18529,6 @@ function boot(){
   loadSettings();
   loadAnchorLocPrefs();
   syncFishEffortUi();
-  loadFishEffortVt().then(vt => { if(vt) vt.syncUi(); }).catch(()=>{});
   $('fAisKey').value = settings.aisKey;
   $('fAisRelay').value = settings.aisRelay;
   $('fHomeLat').value = settings.homeLat;
