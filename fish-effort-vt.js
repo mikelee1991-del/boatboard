@@ -896,7 +896,21 @@ const UNKNOWN_FISH = "Unknown fish";
       }
     }
 
-    function vtRenderHeatCore() {
+    function intensityIsRate(metric) {
+      return metric !== "visits" && metric !== "dwell" && metric !== "fish";
+    }
+
+    function intensityStatLabel(metric) {
+      if (metric === "dwell") return "Dwell min";
+      if (metric === "visits") return "Boat-days";
+      if (metric === "fish") return "Fish";
+      if (metric === "fpp") return "Mean FPP";
+      return "Mean FPH";
+    }
+
+    function vtRenderHeatCore(opts) {
+      opts = opts || {};
+      const updateUi = opts.updateUi !== false;
       if (!effortMap) return;
       vtClearHeat(effortMap);
       const locs = vtLocationsForHeat();
@@ -965,24 +979,30 @@ const UNKNOWN_FISH = "Unknown fish";
         });
       }
 
+      if (updateUi) {
       const intensitySum = scored.reduce((a, x) => a + x.intensity, 0);
       const intensityMean = scored.length ? intensitySum / scored.length : null;
       const boatSet = new Set();
       scored.forEach(({ loc }) => (loc.boats || []).forEach((b) => boatSet.add(b)));
 
       if (el("fishEffortStatSpots")) el("fishEffortStatSpots").textContent = String(scored.length);
-      if (el("fishEffortStatIntensity")) el("fishEffortStatIntensity").textContent = scored.length
-        ? `${fmt(intensitySum, metric === "visits" || metric === "dwell" ? 0 : 1)} / ${fmt(intensityMean, 2)}`
-        : "—";
+      const kEl = el("fishEffortStatIntensityK");
+      if (kEl) kEl.textContent = intensityStatLabel(metric);
+      if (el("fishEffortStatIntensity")) {
+        if (!scored.length) el("fishEffortStatIntensity").textContent = "—";
+        else if (intensityIsRate(metric)) el("fishEffortStatIntensity").textContent = fmt(intensityMean, 2);
+        else el("fishEffortStatIntensity").textContent = fmt(intensitySum, 0);
+      }
       if (el("fishEffortStatBoats")) el("fishEffortStatBoats").textContent = String(boatSet.size);
 
       const top = [...scored].sort((a, b) => b.intensity - a.intensity).slice(0, 40);
+      const metricShort = intensityStatLabel(metric).replace(/^Mean /, "");
       const listEl = el("fishEffortList"); if (listEl) listEl.innerHTML = top.map(({ loc, intensity }) => `
         <article class="heat" data-lat="${loc.lat}" data-lon="${loc.lon}">
           <h3>${loc.lat.toFixed(3)}°, ${loc.lon.toFixed(3)}°</h3>
           <div class="meta">${loc.n_boat_days || 0} boat-days · ${fmt(loc.total_dwell_min, 0)} min dwell · ${loc.n_boats || 0} boat(s)</div>
-          <div><span class="fpp">${fmt(intensity, metric === "visits" || metric === "dwell" ? 0 : 2)}</span>
-            <span class="meta"> intensity · ${fmt(100 * intensity / dataMax, 0)}% of filter max</span></div>
+          <div><span class="fpp">${fmt(intensity, intensityIsRate(metric) ? 2 : 0)}</span>
+            <span class="meta"> ${metricShort} · ${fmt(100 * intensity / dataMax, 0)}% of filter max</span></div>
         </article>`).join("") || "<p class='status'>No heat points for this filter.</p>";
 
       listEl && listEl.querySelectorAll(".heat").forEach((node) => {
@@ -996,15 +1016,11 @@ const UNKNOWN_FISH = "Unknown fish";
       const { start, end } = fishEffortDateBounds();
       syncMultiSummary("fishEffortBoatFilter", "fishEffortBoatSummary"); syncMultiSummary("fishEffortSpeciesFilter", "fishEffortSpeciesSummary");
       const boatLabel = boats.length ? ` · ${selectionSummary(boats)}` : "";
-      const decimals = metric === "visits" || metric === "dwell" ? 0 : 2;
+      const decimals = intensityIsRate(metric) ? 2 : 0;
       if (el("fishEffortStatus")) el("fishEffortStatus").textContent =
-        `${start || "?"} → ${end || "?"}${boatLabel}${speciesFilterLabel(speciesKeys)} · ${scored.length} hot spot(s) · ${metric}` +
-        (scored.length ? ` · auto max ${fmt(dataMax, decimals)}` : "") +
+        `${start || "?"} → ${end || "?"}${boatLabel}${speciesFilterLabel(speciesKeys)} · ${scored.length} AIS cluster(s) · ${metric}` +
+        (scored.length ? ` · color max ${fmt(dataMax, decimals)}` : "") +
         (typeof L.heatLayer !== "function" ? " · heat plugin missing" : "");
-
-      if (points.length && !vtState.hasFittedBounds) {
-        effortMap.fitBounds(points.map((p) => [p[0], p[1]]), { padding: [36, 36], maxZoom: 11 });
-        vtState.hasFittedBounds = true;
       }
     }
 
@@ -1179,13 +1195,13 @@ const UNKNOWN_FISH = "Unknown fish";
       const ft = vtState.meta.feature_cluster_radius_ft || 150;
       const aw = vtState.meta.ais_window || {};
       meta.textContent = ft + ' ft AIS clusters · ' + (aw.start || '?') + ' → ' + (aw.end || '?') +
-        ' · ' + (vtState.locations.length || 0) + ' spots · VesselTracker pipeline (dock totals + Cadastre AIS)';
+        ' · ' + (vtState.locations.length || 0) + ' AIS clusters · VesselTracker pipeline (dock totals + Cadastre AIS)';
     }
     const leg = el('fishEffortMapLegend');
     if (leg) {
       leg.innerHTML = '<div class="fish-effort-scale" aria-hidden="true">' +
         '<i style="background:#0b3d4a"></i><i style="background:#17687a"></i><i style="background:#c4a574"></i><i style="background:#c47a3a"></i><i style="background:#b54a2a"></i></div>' +
-        '<span>Cool → hot · re-scaled to current filter · 150 ft clusters</span>';
+        '<span>Cool → hot AIS hang · numbered pins = Plan ranked spots · 150 ft clusters</span>';
     }
   }
 
@@ -1194,15 +1210,19 @@ const UNKNOWN_FISH = "Unknown fish";
       if (map) vtClearHeat(map);
       return;
     }
-    effortMap = map;
-    const metric = planHeatMode === 'vessels' ? 'visits' : 'dwell';
     if (!vtState.loaded) {
       loadFishEffortVT().then(() => paintPlanHeat(map, planHeatMode));
       return;
     }
-    _metricOverride = metric;
-    vtRenderHeatCore();
-    _metricOverride = null;
+    const prev = effortMap;
+    effortMap = map;
+    _metricOverride = planHeatMode === 'vessels' ? 'visits' : 'dwell';
+    try {
+      vtRenderHeatCore({ updateUi: false });
+    } finally {
+      _metricOverride = null;
+      effortMap = prev;
+    }
   }
 
   function bindFishEffortVtEvents() {

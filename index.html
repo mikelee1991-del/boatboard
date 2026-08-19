@@ -1214,7 +1214,8 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
             <input id="fishEffortMax" type="range" min="0.2" max="1.0" step="0.05" value="0.6" />
             <p class="fish-effort-hint">Color scale auto-fits the current boat/species/date filter</p>
           </div>
-          <label class="fish-effort-check"><input type="checkbox" id="fishEffortShowMarkers"> Show faint spot markers</label>
+          <label class="fish-effort-check"><input type="checkbox" id="fishEffortShowSpots" checked> Ranked fishing spots</label>
+          <label class="fish-effort-check"><input type="checkbox" id="fishEffortShowMarkers"> Faint AIS cluster markers</label>
           <div>
             <div class="fish-effort-multi-head">
               <label for="fishEffortBoatFilter">Boat <span id="fishEffortBoatSummary" style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink2)">all</span></label>
@@ -1235,13 +1236,13 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         </div>
         <p id="fishEffortMeta" class="anchor-loc-meta">150 ft AIS clusters · NOAA Cadastre + dock totals</p>
         <div class="fish-effort-stats">
-          <div class="stat"><div class="k">Spots</div><div class="v" id="fishEffortStatSpots">—</div></div>
-          <div class="stat"><div class="k">Intensity</div><div class="v" id="fishEffortStatIntensity">—</div></div>
+          <div class="stat"><div class="k">AIS clusters</div><div class="v" id="fishEffortStatSpots">—</div></div>
+          <div class="stat"><div class="k" id="fishEffortStatIntensityK">Mean FPH</div><div class="v" id="fishEffortStatIntensity">—</div></div>
           <div class="stat"><div class="k">Boats</div><div class="v" id="fishEffortStatBoats">—</div></div>
         </div>
         <div class="plan-mapbox">
           <h3>Fishing effort heat</h3>
-          <p>Cool → hot for the selected metric · re-scaled to current filters · ▲ = you</p>
+          <p>Cool → hot AIS hang · numbered pins = Plan ranked spots · ▲ = you</p>
           <div id="fishEffortMap"><div class="skel" style="padding:20px">Open Effort to load map…</div></div>
           <div class="plan-map-legend" id="fishEffortMapLegend"></div>
         </div>
@@ -2897,7 +2898,7 @@ const SWELL_MAP_DEFAULT_ZOOM = 11; // fallback before fitBounds
 const SWELL_MAP_FIT_NM = 25; // default auto-fit radius around boat (nmi)
 let fishMap = null, fishMapInited = false, fishSpotLayer = null, fishBoatMarker = null;
 let fishPlanHeatLayer = null;
-let fishEffortMap = null, fishEffortMapInited = false, fishEffortBoatMarker = null;
+let fishEffortMap = null, fishEffortMapInited = false, fishEffortBoatMarker = null, fishEffortSpotLayer = null;
 let anchorMap = null, anchorMapInited = false, anchorSpotLayer = null, anchorBoatMarker = null;
 let _anchorMapWantPan = false;
 let _anchorMapClickAt = 0;
@@ -11714,7 +11715,7 @@ function loadLeafletHeat(){
 function loadFishEffortVt(){
   if(_fishEffortVtPromise) return _fishEffortVtPromise;
   _fishEffortVtPromise = loadLeafletHeat()
-    .then(()=> loadScript('fish-effort-vt.js?v=2'))
+    .then(()=> loadScript('fish-effort-vt.js?v=3'))
     .then(()=>{
       if(window.FishEffortVT && !window.FishEffortVT._inited){
         FishEffortVT.init({ $: id => (typeof id === 'string' ? document.getElementById(id) : id), store, esc, fmtCoord });
@@ -11735,10 +11736,16 @@ function fishEffortPrefs(){
   return { planHeat: (ph === 'hours' || ph === 'vessels') ? ph : 'off' };
 }
 
+function fishEffortShowSpotsPref(){
+  return store.get('fishEffortShowSpots') !== '0';
+}
+
 function syncFishEffortUi(){
   document.querySelectorAll('#fishPlanHeatToggle [data-fish-plan-heat]').forEach(btn => {
     btn.classList.toggle('active', btn.getAttribute('data-fish-plan-heat') === fishEffortPrefs().planHeat);
   });
+  const sp = $('fishEffortShowSpots');
+  if(sp) sp.checked = fishEffortShowSpotsPref();
   if(window.FishEffortVT && FishEffortVT.syncUi) FishEffortVT.syncUi();
 }
 
@@ -11763,10 +11770,35 @@ function paintFishEffortHeatOn(map, which){
   }).catch(e=> console.warn('plan effort heat', e));
 }
 
+function paintFishEffortSpots(){
+  if(!fishEffortMap || !fishEffortSpotLayer) return;
+  fishEffortSpotLayer.clearLayers();
+  if(!fishEffortShowSpotsPref()) return;
+  const ranked = lastFishSynthRanked || lastFishRanked;
+  if(!ranked || !ranked.length) return;
+  ranked.slice(0, FISH_MAP_MAX_MARKERS).forEach(({ spot, score, distNm }, i) => {
+    const mpos = (typeof fishMapPos === 'function') ? fishMapPos(spot) : spot;
+    if(mpos.lat == null || mpos.lon == null) return;
+    const sz = 16;
+    L.marker([mpos.lat, mpos.lon], {
+      icon: L.divIcon({
+        className: '',
+        html: fishMapMarkerHtml(i + 1, score, 'numbered', classifyFishStyle(spot)),
+        iconSize: [sz, sz],
+        iconAnchor: [sz/2, sz/2]
+      }),
+      zIndexOffset: 400
+    }).bindPopup('<b>#'+(i+1)+' '+esc(fishGroupListName(spot))+'</b><br>Bite '+score+'/100 · '+f1(distNm)+' nm · Plan rank (not AIS heat)')
+      .addTo(fishEffortSpotLayer);
+  });
+  try{ if(fishEffortSpotLayer.bringToFront) fishEffortSpotLayer.bringToFront(); }catch(_){}
+}
+
 function renderFishEffort(){
   if(!fishEffortMap) return;
   loadFishEffortVt().then(vt => {
     if(vt) vt.render(fishEffortMap);
+    paintFishEffortSpots();
     const bp = boatPos();
     if(fishEffortBoatMarker) fishEffortBoatMarker.setLatLng([bp.lat, bp.lon]);
   }).catch(e=> {
@@ -11809,6 +11841,7 @@ async function ensureFishEffortMap(){
     }
     addCoastOverlay(L.layerGroup().addTo(fishEffortMap));
     ensureMpaLayerGroup(fishEffortMap);
+    fishEffortSpotLayer = L.layerGroup().addTo(fishEffortMap);
     fishEffortBoatMarker = L.marker([lat, lon], {
       icon: L.divIcon({
         className:'boat-icon',
@@ -11824,7 +11857,7 @@ async function ensureFishEffortMap(){
     return true;
   }catch(e){
     console.error('fish effort map init', e);
-    fishEffortMap = null; fishEffortBoatMarker = null;
+    fishEffortMap = null; fishEffortBoatMarker = null; fishEffortSpotLayer = null;
     fishEffortMapInited = false;
     return false;
   }
@@ -11838,6 +11871,14 @@ function initFishEffortMapWithRetry(attempt){
   });
 }
 function applyFishEffortPrefPatch(patch){
+  if(patch && patch.showSpots != null){
+    store.set('fishEffortShowSpots', patch.showSpots ? '1' : '0');
+  }
+  if(patch && patch.showSpots != null && patch.planHeat == null && patch.metric == null){
+    syncFishEffortUi();
+    try{ paintFishEffortSpots(); }catch(e){ console.error(e); }
+    return;
+  }
   if(window.FishEffortVT && FishEffortVT.savePrefs){
     const p = Object.assign(FishEffortVT.prefs(), patch || {});
     FishEffortVT.savePrefs(p);
@@ -12620,6 +12661,7 @@ function renderFishing(){
           renderFishTopPicks(rankedS, ctx, sol);
           if(lastFishUtilRow && activeSubtab('fishing') === 'onsite')
             renderFishUtilDetail(lastFishUtilRow, ctx, sw, sol);
+          if(fishEffortVisible()) try{ paintFishEffortSpots(); }catch(_){}
         }catch(e){ console.warn('fish smart paint', e); }
       }
     }).catch(()=>{});
@@ -12648,6 +12690,7 @@ function renderFishing(){
             renderFishMap(synth2, allPin2, sol, tide, ctx);
             lastFishPlanAllRanked = allPin2;
           }
+          if(fishEffortVisible()) try{ paintFishEffortSpots(); }catch(_){}
           const g2 = $('fishGlance');
           if(g2 && fishOceanCache){
             const chlSub = fishOceanCache.chlBand
@@ -12728,8 +12771,8 @@ function renderFishing(){
     }
     if(activeSubtab('fishing') === 'plan'){
       renderFishMap(synthRanked, allPinRanked, sol, tide, ctx);
-      lastFishPlanAllRanked = allPinRanked;
     }
+    lastFishPlanAllRanked = allPinRanked;
     renderFishUtil(synthRanked, ctx, sw, sol);
     scheduleFishSiteWx(ranked);
     if(activeSubtab('fishing') === 'onsite'){
@@ -12811,6 +12854,7 @@ function renderFishing(){
       linkHtml('https://www.976tuna.com/','976-TUNA reports','SoCal landings & recent catches')+
       linkHtml('https://upwell.pfeg.noaa.gov/erddap/griddap/jplMURSST41.html','NOAA/JPL MUR SST','Daily 1 km sea surface temperature (legacy erdGHssta retired)')+
       linkHtml('https://www.ndbc.noaa.gov/','NDBC buoys','Observed wind/wave');
+    if(fishEffortVisible()) try{ paintFishEffortSpots(); }catch(_){}
   }catch(e){
     console.error('renderFishing', e);
     const adv = $('fishAdvice');
@@ -18192,6 +18236,7 @@ function switchSubtab(section, name){
     if(lastFishUtilRow && lastFishUtilCtx) refreshFishSeafloor(lastFishUtilRow, lastFishUtilCtx);
   }
   if(section === 'fishing' && name === 'effort'){
+    try{ renderFishing(); }catch(e){ console.error(e); }
     initFishEffortMapWithRetry(0);
     try{ renderFishEffort(); }catch(e){ console.error(e); }
   }
@@ -18413,6 +18458,9 @@ function bindUI(){
     const btn = e.target.closest('[data-fish-plan-heat]');
     if(!btn) return;
     applyFishEffortPrefPatch({ planHeat: btn.getAttribute('data-fish-plan-heat') });
+  });
+  $('fishEffortShowSpots')?.addEventListener('change', ()=>{
+    applyFishEffortPrefPatch({ showSpots: !!$('fishEffortShowSpots').checked });
   });
   $('fishEffortList')?.addEventListener('click', e=>{
     const row = e.target.closest('.heat[data-lat]');
