@@ -1242,7 +1242,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         </div>
         <div class="plan-mapbox">
           <h3>Fishing effort heat</h3>
-          <p>Cool → hot AIS hang · numbered pins = Plan ranked spots · ▲ = you</p>
+          <p>Cool → hot AIS hang · # = Plan ranked spots · dots = other nearby pins · ▲ = you</p>
           <div id="fishEffortMap"><div class="skel" style="padding:20px">Open Effort to load map…</div></div>
           <div class="plan-map-legend" id="fishEffortMapLegend"></div>
         </div>
@@ -11715,7 +11715,7 @@ function loadLeafletHeat(){
 function loadFishEffortVt(){
   if(_fishEffortVtPromise) return _fishEffortVtPromise;
   _fishEffortVtPromise = loadLeafletHeat()
-    .then(()=> loadScript('fish-effort-vt.js?v=3'))
+    .then(()=> loadScript('fish-effort-vt.js?v=4'))
     .then(()=>{
       if(window.FishEffortVT && !window.FishEffortVT._inited){
         FishEffortVT.init({ $: id => (typeof id === 'string' ? document.getElementById(id) : id), store, esc, fmtCoord });
@@ -11773,25 +11773,85 @@ function paintFishEffortHeatOn(map, which){
 function paintFishEffortSpots(){
   if(!fishEffortMap || !fishEffortSpotLayer) return;
   fishEffortSpotLayer.clearLayers();
+  const leg = $('fishEffortMapLegend');
+  const spotLeg = leg && leg.querySelector('[data-effort-spots-leg]');
+  if(spotLeg) spotLeg.remove();
   if(!fishEffortShowSpotsPref()) return;
   const ranked = lastFishSynthRanked || lastFishRanked;
   if(!ranked || !ranked.length) return;
-  ranked.slice(0, FISH_MAP_MAX_MARKERS).forEach(({ spot, score, distNm }, i) => {
+  const allPinRanked = lastFishPlanAllRanked
+    || (lastFishRankPack && lastFishRankPack.ctx
+      ? (()=>{ try{ return rankFishSpots(lastFishRankPack.ctx, { everyPin: true }); }catch(_){ return null; } })()
+      : null);
+  const featured = ranked.slice(0, FISH_MAP_MAX_MARKERS);
+  const secondary = ranked.slice(FISH_MAP_MAX_MARKERS);
+  const repNames = new Set(ranked.map(r => r.spot.name));
+  let plotted = 0;
+
+  featured.forEach(({ spot, score, distNm }, i) => {
+    const rank = i + 1;
     const mpos = (typeof fishMapPos === 'function') ? fishMapPos(spot) : spot;
     if(mpos.lat == null || mpos.lon == null) return;
-    const sz = 16;
+    plotted++;
+    const sz = rank <= 6 ? 22 : 18;
+    const style = classifyFishStyle(spot);
     L.marker([mpos.lat, mpos.lon], {
       icon: L.divIcon({
         className: '',
-        html: fishMapMarkerHtml(i + 1, score, 'numbered', classifyFishStyle(spot)),
+        html: fishMapMarkerHtml(rank, score, 'numbered', style),
         iconSize: [sz, sz],
         iconAnchor: [sz/2, sz/2]
       }),
-      zIndexOffset: 400
-    }).bindPopup('<b>#'+(i+1)+' '+esc(fishGroupListName(spot))+'</b><br>Bite '+score+'/100 · '+f1(distNm)+' nm · Plan rank (not AIS heat)')
+      zIndexOffset: 400 - i
+    }).bindPopup('<b>#'+rank+' '+esc(fishGroupListName(spot))+'</b><br>Bite '+score+'/100 · '+f1(distNm)+' nm · Plan rank (not AIS heat)')
       .addTo(fishEffortSpotLayer);
   });
+
+  secondary.forEach(({ spot, score, distNm }) => {
+    const mpos = (typeof fishMapPos === 'function') ? fishMapPos(spot) : spot;
+    if(mpos.lat == null || mpos.lon == null) return;
+    plotted++;
+    const style = classifyFishStyle(spot);
+    const dotSz = distNm > FISH_MAP_LOCAL_NM ? 10 : 14;
+    L.marker([mpos.lat, mpos.lon], {
+      icon: L.divIcon({
+        className: '',
+        html: fishMapMarkerHtml(0, score, distNm > FISH_MAP_LOCAL_NM ? 'dot' : 'secondary', style),
+        iconSize: [dotSz, dotSz],
+        iconAnchor: [dotSz/2, dotSz/2]
+      }),
+      zIndexOffset: 50
+    }).bindPopup('<b>'+esc(fishGroupListName(spot))+'</b><br>Bite '+score+'/100 · '+f1(distNm)+' nm · Plan rank (not AIS heat)')
+      .addTo(fishEffortSpotLayer);
+  });
+
+  (allPinRanked || []).filter(r => !repNames.has(r.spot.name)).forEach(({ spot, score, distNm }) => {
+    const mpos = (typeof fishMapPos === 'function') ? fishMapPos(spot) : spot;
+    if(mpos.lat == null || mpos.lon == null) return;
+    if(distNm > FISH_MAP_FIT_NM) return;
+    plotted++;
+    const style = classifyFishStyle(spot);
+    const dotSz = distNm > FISH_MAP_LOCAL_NM ? 10 : 14;
+    L.marker([mpos.lat, mpos.lon], {
+      icon: L.divIcon({
+        className: '',
+        html: fishMapMarkerHtml(0, score, distNm > FISH_MAP_LOCAL_NM ? 'dot' : 'secondary', style),
+        iconSize: [dotSz, dotSz],
+        iconAnchor: [dotSz/2, dotSz/2]
+      }),
+      zIndexOffset: 40
+    }).bindPopup('<b>'+esc(spot.name)+'</b><br>Bite '+score+'/100 · '+f1(distNm)+' nm'+(spot.cdfgAppendix ? ' · CDFG' : ''))
+      .addTo(fishEffortSpotLayer);
+  });
+
   try{ if(fishEffortSpotLayer.bringToFront) fishEffortSpotLayer.bringToFront(); }catch(_){}
+  if(leg){
+    const localPins = (allPinRanked || ranked).filter(r => r.distNm <= FISH_MAP_FIT_NM);
+    const localGroups = new Set(localPins.map(r => r.spot.featureGroup || r.spot.name)).size;
+    leg.insertAdjacentHTML('beforeend',
+      '<span data-effort-spots-leg># = top '+Math.min(FISH_MAP_MAX_MARKERS, ranked.length)+
+      ' · '+plotted+' pins · ~'+FISH_MAP_FIT_NM+' nm ('+localGroups+' spots / '+localPins.length+' pins)</span>');
+  }
 }
 
 function renderFishEffort(){
@@ -12649,10 +12709,12 @@ function renderFishing(){
       if(activeTab() === 'fishing'){
         try{
           const rankedS = rankFishSpots(ctx);
+          const allPinS = rankFishSpots(ctx, { everyPin: true });
           const synthS = attachSpotComfort(rankedS, ctx, sw, windSpd, windDir);
           ensureFishSpotSelected(rankedS);
           lastFishRanked = rankedS;
           lastFishSynthRanked = synthS;
+          lastFishPlanAllRanked = allPinS;
           lastFishRankPack = { ctx, ranked: rankedS, synth: synthS, sol, sw, tide };
           const biteS = fishBiteScore(ctx);
           const advS = $('fishAdvice');

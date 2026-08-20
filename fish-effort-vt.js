@@ -1201,7 +1201,7 @@ const UNKNOWN_FISH = "Unknown fish";
     if (leg) {
       leg.innerHTML = '<div class="fish-effort-scale" aria-hidden="true">' +
         '<i style="background:#0b3d4a"></i><i style="background:#17687a"></i><i style="background:#c4a574"></i><i style="background:#c47a3a"></i><i style="background:#b54a2a"></i></div>' +
-        '<span>Cool → hot AIS hang · numbered pins = Plan ranked spots · 150 ft clusters</span>';
+        '<span>Cool → hot AIS hang · # = Plan ranks · dots = other nearby pins · 150 ft clusters</span>';
     }
   }
 
