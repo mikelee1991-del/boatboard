@@ -11,6 +11,8 @@ npx wrangler deploy
 
 Default client URL: `https://boatboard-wild.mikelee1.workers.dev/?url=<encoded>`
 
+Allowlist: `api.whaledata.org`, `api.inaturalist.org`, `api.obis.org`
+
 Override in the browser console if needed:
 
 ```js

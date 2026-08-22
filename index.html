@@ -1632,7 +1632,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         <div class="wild-embed-wrap" id="wildEmbedWrap" hidden>
           <iframe id="wildEmbedFrame" title="Point Blue Whale Alert West Coast map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="about:blank"></iframe>
         </div>
-        <div class="wild-data-pill">Data: iNaturalist API · Point Blue embed uses <code>?nms=</code> region presets (nearest to your GPS/slip) · not exact lat/lon centering</div>
+        <div class="wild-data-pill">Data: iNaturalist (research-grade) · OBIS (HappyWhale &amp; surveys) · whaledata.org (GBIF/OBIS/NOAA) · Point Blue embed uses <code>?nms=</code> region presets</div>
       </div>
       <div class="sec" id="wildSeasonalSec">Offshore — seasonal guide</div>
       <div class="card" id="wildSeasonal"><div class="skel">Loading seasonal intel…</div></div>
@@ -3074,6 +3074,10 @@ const WILD_INAT_URL = 'https://api.inaturalist.org/v1/observations';
 /* iNat moved Cetacea under Artiodactyla — use baleen + toothed whale parvorders (not taxon_name=Cetacea). */
 const WILD_INAT_TAXON_IDS = '424321,424322';
 const WILD_WHALE_DATA_URL = 'https://api.whaledata.org/sightings/';
+const WILD_WHALE_STRANDINGS_URL = 'https://api.whaledata.org/strandings/';
+const WILD_OBIS_URL = 'https://api.obis.org/v3/occurrence';
+/** Strandings are rare — plot NOAA/OBIS strand reports up to this many days back. */
+const WILD_STRANDINGS_LOOKBACK_DAYS = 365;
 /** Optional hosted CORS proxy (deploy wild-proxy-worker). Falls back to public proxies + local /wild-proxy. */
 const WILD_CORS_PROXY_DEFAULT = 'https://boatboard-wild.mikelee1.workers.dev';
 const WILD_CORS_PROXY_PUBLIC = [
@@ -13790,8 +13794,57 @@ function wildInLaBbox(lat, lon){
   return lat >= WILD_LA_BBOX.latMin && lat <= WILD_LA_BBOX.latMax &&
     lon >= WILD_LA_BBOX.lonMin && lon <= WILD_LA_BBOX.lonMax;
 }
+function wildLaBboxPolygon(){
+  const { latMin, latMax, lonMin, lonMax } = WILD_LA_BBOX;
+  return `POLYGON((${lonMin} ${latMin}, ${lonMax} ${latMin}, ${lonMax} ${latMax}, ${lonMin} ${latMax}, ${lonMin} ${latMin}))`;
+}
+function wildParseIsoDate(s){
+  if(s == null || s === '') return '';
+  const str = String(s);
+  if(/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0, 10);
+  const n = Number(s);
+  if(isFinite(n) && n > 1e11) return new Date(n).toISOString().slice(0, 10);
+  return str.slice(0, 10);
+}
+function wildObisEventDate(row){
+  const e = row.eventDate || row.verbatimEventDate || '';
+  if(e) return wildParseIsoDate(e);
+  if(row.date_year && row.month && row.day){
+    return String(row.date_year).padStart(4, '0') + '-' +
+      String(row.month).padStart(2, '0') + '-' +
+      String(row.day).padStart(2, '0');
+  }
+  return wildParseIsoDate(row.date_start);
+}
+function wildObisDisplayName(row){
+  return row.vernacularName || row.scientificName || 'Cetacean';
+}
+function wildObisSourceLabel(row){
+  const inst = row.institutionCode || row.ownerInstitutionCode || '';
+  if(/happywhale/i.test(inst)) return 'HappyWhale (OBIS)';
+  if(/inaturalist/i.test(inst)) return 'iNaturalist (OBIS)';
+  if(inst) return inst + ' (OBIS)';
+  return 'OBIS';
+}
+function wildObisUrl(row){
+  const cat = row.catalogNumber || '';
+  if(/^https?:/i.test(cat)) return cat;
+  if(row.id) return 'https://obis.org/occurrence/' + encodeURIComponent(row.id);
+  return 'https://portal.obis.org';
+}
+function wildIsDupSighting(sightings, lat, lon, species, distM){
+  distM = distM != null ? distM : 200;
+  return sightings.some(s => haversineM(s.lat, s.lon, lat, lon) < distM && s.species === species);
+}
+function wildPushSighting(sightings, row){
+  if(wildIsDupSighting(sightings, row.lat, row.lon, row.species)) return;
+  sightings.push(row);
+}
 function wildSightingMarkerHtml(color){
   return '<div style="width:14px;height:14px;border-radius:50%;background:'+color+';border:2px solid #fff;box-shadow:0 0 8px rgba(0,0,0,.85)"></div>';
+}
+function wildStrandingMarkerHtml(color){
+  return '<div style="width:11px;height:11px;background:'+color+';border:2px solid #fff;box-shadow:0 0 6px rgba(0,0,0,.85);transform:rotate(45deg)"></div>';
 }
 function wildHotspotMarkerHtml(name){
   return '<div style="font:9px/1.1 ui-monospace,monospace;color:#8899aa;white-space:nowrap;text-shadow:0 1px 3px #000">'+esc(name)+'</div>';
@@ -13827,7 +13880,7 @@ async function fetchWildSightings(){
   const now = Date.now();
   if(wildSightingsCache && now - wildSightingsFetchedAt < WILD_SIGHTINGS_TTL) return wildSightingsCache;
   const sightings = [];
-  let inatOk = false, whaleDataOk = false;
+  let inatOk = false, whaleDataOk = false, obisOk = false, strandingsOk = false;
   const today = new Date();
   const d2 = today.toISOString().slice(0, 10);
   const d1 = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
@@ -13837,6 +13890,7 @@ async function fetchWildSightings(){
       swlat: String(WILD_LA_BBOX.latMin), swlng: String(WILD_LA_BBOX.lonMin),
       nelat: String(WILD_LA_BBOX.latMax), nelng: String(WILD_LA_BBOX.lonMax),
       taxon_id: WILD_INAT_TAXON_IDS, d1, d2, per_page: '200',
+      quality_grade: 'research',
       order_by: 'observed_on', order: 'desc', geo: 'true'
     });
     const j = await fetchWildJson(WILD_INAT_URL + '?' + q);
@@ -13847,16 +13901,46 @@ async function fetchWildSightings(){
       if(parts.length < 2) continue;
       const lat = parseFloat(parts[0]), lon = parseFloat(parts[1]);
       if(!isFinite(lat) || !isFinite(lon) || !wildInLaBbox(lat, lon)) continue;
-      sightings.push({
-        lat, lon,
-        species: o.taxon?.preferred_common_name || o.taxon?.name || 'Cetacean',
+      const species = o.taxon?.preferred_common_name || o.taxon?.name || 'Cetacean';
+      wildPushSighting(sightings, {
+        lat, lon, species,
         date: o.observed_on || o.created_at?.slice(0, 10) || '',
-        source: 'iNaturalist',
-        url: o.uri || ('https://www.inaturalist.org/observations/'+o.id)
+        source: 'iNaturalist (research)',
+        url: o.uri || ('https://www.inaturalist.org/observations/'+o.id),
+        kind: 'sighting'
       });
     }
   }catch(e){
     console.warn('wild iNat fetch', e);
+  }
+  try{
+    const q = new URLSearchParams({
+      scientificname: 'Cetacea',
+      geometry: wildLaBboxPolygon(),
+      startdate: d1,
+      enddate: d2,
+      basisofrecord: 'HumanObservation',
+      size: '200'
+    });
+    const j = await fetchWildJson(WILD_OBIS_URL + '?' + q);
+    obisOk = true;
+    for(const row of j.results || []){
+      const lat = row.decimalLatitude, lon = row.decimalLongitude;
+      if(lat == null || lon == null || !isFinite(lat) || !isFinite(lon) || !wildInLaBbox(lat, lon)) continue;
+      const date = wildObisEventDate(row);
+      if(date && (date < d1 || date > d2)) continue;
+      const species = wildObisDisplayName(row);
+      wildPushSighting(sightings, {
+        lat, lon, species,
+        date,
+        source: wildObisSourceLabel(row),
+        url: wildObisUrl(row),
+        kind: 'sighting',
+        note: row.datasetName ? String(row.datasetName).slice(0, 80) : ''
+      });
+    }
+  }catch(e){
+    console.warn('wild OBIS fetch', e);
   }
   try{
     const q = new URLSearchParams({ from_date: d1, to_date: d2, limit: '500' });
@@ -13864,21 +13948,46 @@ async function fetchWildSightings(){
     whaleDataOk = true;
     for(const x of j.data || []){
       if(!wildInLaBbox(x.latitude, x.longitude)) continue;
-      const dup = sightings.some(s => haversineM(s.lat, s.lon, x.latitude, x.longitude) < 200 &&
-        s.species === x.common_name);
-      if(dup) continue;
-      sightings.push({
+      const species = x.common_name || 'Whale';
+      wildPushSighting(sightings, {
         lat: x.latitude, lon: x.longitude,
-        species: x.common_name || 'Whale',
+        species,
         date: x.sighted_on || '',
-        source: x.source || 'whaledata.org',
-        url: x.source_url || 'https://whaledata.org'
+        source: x.source ? (x.source + ' via whaledata.org') : 'whaledata.org',
+        url: x.source_url || 'https://whaledata.org',
+        kind: 'sighting'
       });
     }
   }catch(e){
-    console.warn('wild whaledata fetch', e);
+    console.warn('wild whaledata sightings fetch', e);
   }
-  wildSightingsCache = { sightings, inatOk, whaleDataOk, monthLabel };
+  try{
+    const strandFrom = new Date(today);
+    strandFrom.setDate(strandFrom.getDate() - WILD_STRANDINGS_LOOKBACK_DAYS);
+    const q = new URLSearchParams({
+      from_date: strandFrom.toISOString().slice(0, 10),
+      to_date: d2,
+      limit: '500'
+    });
+    const j = await fetchWildJson(WILD_WHALE_STRANDINGS_URL + '?' + q);
+    strandingsOk = true;
+    for(const x of j.data || []){
+      if(!wildInLaBbox(x.latitude, x.longitude)) continue;
+      const species = x.common_name || 'Whale';
+      wildPushSighting(sightings, {
+        lat: x.latitude, lon: x.longitude,
+        species,
+        date: x.stranded_on || '',
+        source: (x.source === 'noaa' ? 'NOAA stranding' : (x.source || 'Stranding')) + ' via whaledata.org',
+        url: x.source_url || 'https://whaledata.org',
+        kind: 'stranding',
+        note: x.condition ? 'Condition: ' + x.condition : ''
+      });
+    }
+  }catch(e){
+    console.warn('wild whaledata strandings fetch', e);
+  }
+  wildSightingsCache = { sightings, inatOk, whaleDataOk, obisOk, strandingsOk, monthLabel };
   wildSightingsFetchedAt = now;
   return wildSightingsCache;
 }
@@ -13886,20 +13995,27 @@ function paintWildSightings(data){
   if(!wildMap || !wildSightingLayer) return;
   wildSightingLayer.clearLayers();
   const usedSpecies = new Set();
+  let strandingN = 0;
   for(const s of data.sightings){
     const sty = wildSpeciesStyle(s.species);
     usedSpecies.add(sty.label);
+    const isStrand = s.kind === 'stranding';
+    if(isStrand) strandingN++;
+    const icon = L.divIcon({
+      className: isStrand ? 'wild-strand-marker' : 'wild-sight-marker',
+      html: isStrand ? wildStrandingMarkerHtml(sty.color) : wildSightingMarkerHtml(sty.color),
+      iconSize: isStrand ? [14, 14] : [14, 14],
+      iconAnchor: isStrand ? [7, 7] : [7, 7]
+    });
+    const noteLine = s.note ? '<br><span style="font-size:12px;opacity:.85">'+esc(s.note)+'</span>' : '';
+    const kindLine = isStrand ? '<br><span style="font-size:11px;color:var(--warn)">Stranding report</span>' : '';
     L.marker([s.lat, s.lon], {
-      icon: L.divIcon({
-        className: 'wild-sight-marker',
-        html: wildSightingMarkerHtml(sty.color),
-        iconSize: [14, 14], iconAnchor: [7, 7]
-      }),
-      zIndexOffset: 500
+      icon,
+      zIndexOffset: isStrand ? 520 : 500
     }).bindPopup(
-      '<b>'+esc(sty.label)+'</b><br>'+
+      '<b>'+esc(sty.label)+'</b>'+kindLine+'<br>'+
       (s.date ? esc(s.date)+'<br>' : '')+
-      esc(s.source)+'<br>'+
+      esc(s.source)+noteLine+'<br>'+
       (s.url ? '<a href="'+esc(s.url)+'" target="_blank" rel="noopener">View report ↗</a>' : '')
     ).addTo(wildSightingLayer);
   }
@@ -13908,6 +14024,7 @@ function paintWildSightings(data){
     const parts = WILD_SPECIES.filter(s => usedSpecies.has(s.label)).map(s =>
       '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+s.color+';vertical-align:middle;margin-right:4px"></i>'+esc(s.label)+'</span>'
     );
+    if(strandingN) parts.push('<span><i style="display:inline-block;width:9px;height:9px;background:var(--warn);border:1px solid #fff;vertical-align:middle;margin-right:4px;transform:rotate(45deg)"></i>Stranding</span>');
     parts.push('<span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;border:1px dashed #8899aa;background:transparent;vertical-align:middle;margin-right:4px"></i>Hotspot</span>');
     parts.push('<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#ffd966;vertical-align:middle;margin-right:4px"></i>Slip</span>');
     leg.innerHTML = parts.join(' ') || '<span style="color:var(--ink3)">No recent sightings plotted — see seasonal guide below</span>';
@@ -13916,10 +14033,12 @@ function paintWildSightings(data){
   if(st){
     const n = data.sightings.length;
     const monthLabel = data.monthLabel || new Date().toLocaleString('en-US', { month: 'short', year: 'numeric' });
-    let msg = n ? n+' recent sighting'+(n === 1 ? '' : 's')+' in LA offshore box ('+monthLabel+')' : 'No plotted sightings in LA offshore box for '+monthLabel;
-    if(data.inatOk) msg += ' · iNaturalist ✓';
-    else msg += ' · iNaturalist unavailable';
-    if(data.whaleDataOk) msg += ' · whaledata.org ✓';
+    let msg = n ? n+' plotted report'+(n === 1 ? '' : 's')+' in LA offshore box ('+monthLabel+')' : 'No plotted reports in LA offshore box for '+monthLabel;
+    if(data.inatOk) msg += ' · iNat ✓';
+    else msg += ' · iNat unavailable';
+    if(data.obisOk) msg += ' · OBIS ✓';
+    if(data.whaleDataOk) msg += ' · whaledata ✓';
+    if(data.strandingsOk) msg += ' · strandings ✓';
     st.textContent = msg;
   }
 }
@@ -14180,8 +14299,11 @@ function renderWildlife(){
       linkHtml('https://pacificwhale.org/what-we-do/research/learn-about-marine-life/whale-dolphin-tracker-live-sightins-map/','Pacific Whale Foundation tracker','Citizen-science map — last 7 days worldwide (no public embed API)')+
       linkHtml('https://geo.pointblue.org/whale-map/index.php','Point Blue / Whale Alert map','West Coast professional & citizen sightings — embedded above via toggle')+
       linkHtml('https://whaleaware.org/where-are-the-whales/','Whale Alert — West Coast','NOAA/Point Blue/IFAW strike-avoidance program')+
-      linkHtml('https://www.inaturalist.org/observations?swlat=33.5&swlng=-118.8&nelat=34.2&nelng=-117.8&taxon_id=424321,424322','iNaturalist — LA whales & dolphins','Baleen + toothed whale parvorders (map markers)')+
-      linkHtml('https://whaledata.org/','whaledata.org','Global open whale database (proxied when CORS blocks direct fetch)');
+      linkHtml('https://www.inaturalist.org/observations?swlat=33.5&swlng=-118.8&nelat=34.2&nelng=-117.8&taxon_id=424321,424322&quality_grade=research','iNaturalist — LA whales & dolphins','Research-grade observations (map markers)')+
+      linkHtml('https://obis.org/','OBIS — Ocean Biodiversity Information System','Institutional surveys · HappyWhale · research-grade iNat')+
+      linkHtml('https://happywhale.com/','HappyWhale','Photo-ID whale encounters (via OBIS)')+
+      linkHtml('https://docs.whaledata.org/','whaledata.org API','Aggregated GBIF, OBIS, NOAA strandings, iNat')+
+      linkHtml('https://www.fisheries.noaa.gov/national/marine-life-distress/marine-mammal-stranding-network','NOAA Marine Mammal Stranding Network','Official coastal stranding response');
   }
 }
 

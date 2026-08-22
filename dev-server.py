@@ -15,7 +15,7 @@ import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-ALLOW_HOSTS = {"api.whaledata.org", "api.inaturalist.org"}
+ALLOW_HOSTS = {"api.whaledata.org", "api.inaturalist.org", "api.obis.org"}
 PORT = 8080
 
 

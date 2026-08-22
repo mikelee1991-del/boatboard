@@ -12,7 +12,8 @@
 
 const ALLOW_HOSTS = new Set([
   'api.whaledata.org',
-  'api.inaturalist.org'
+  'api.inaturalist.org',
+  'api.obis.org'
 ]);
 
 const CORS = {
@@ -40,7 +41,7 @@ export default {
     const target = u.searchParams.get('url');
     if (!target) {
       return new Response(
-        'BoatBoard wildlife CORS proxy\n\nGET /?url=<encoded https URL>\nAllowlist: api.whaledata.org, api.inaturalist.org\n',
+        'BoatBoard wildlife CORS proxy\n\nGET /?url=<encoded https URL>\nAllowlist: api.whaledata.org, api.inaturalist.org, api.obis.org\n',
         { status: 200, headers: { 'Content-Type': 'text/plain; charset=utf-8', ...CORS } }
       );
     }
