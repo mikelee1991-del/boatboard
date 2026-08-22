@@ -2013,7 +2013,7 @@ function ensureDiveEngine(){
     .then(()=> loadScript('dive-site-intel.js'))
     .then(()=> loadScript('briefing-synth.js?v=5'))
     .then(()=> ensureForecastCharts())
-    .then(()=> loadScript('dive-engine.js?v=18'))
+    .then(()=> loadScript('dive-engine.js?v=19'))
     .then(()=>{
       if(window.BoatDive) BoatDive.init(diveInitOpts());
       return window.BoatDive;
