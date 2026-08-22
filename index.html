@@ -921,8 +921,8 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <span id="diveUpdated" class="dive-updated"></span>
           <div class="plan-depth-wrap">
             <label for="divePlanMaxDepth">Max depth</label>
-            <input type="range" id="divePlanMaxDepth" min="30" max="200" step="5" value="200" aria-label="Maximum dive site depth in feet">
-            <output id="divePlanMaxDepthVal" class="plan-depth-val" for="divePlanMaxDepth">Any</output>
+            <input type="range" id="divePlanMaxDepth" min="30" max="200" step="5" value="110" aria-label="Maximum dive site depth in feet">
+            <output id="divePlanMaxDepthVal" class="plan-depth-val" for="divePlanMaxDepth">110 ft</output>
           </div>
           <span class="plan-note">Date/time set swell, wind, tide, and exposure. Max depth hides sites deeper than your limit (Any = no limit).</span>
         </div>
@@ -1065,7 +1065,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <span id="fishPlanLabel" class="dive-updated"></span>
           <div class="plan-depth-wrap">
             <label for="fishPlanMaxDepth">Max depth</label>
-            <input type="range" id="fishPlanMaxDepth" min="30" max="200" step="5" value="200" aria-label="Maximum fishing spot depth in feet">
+            <input type="range" id="fishPlanMaxDepth" min="30" max="220" step="5" value="220" aria-label="Maximum fishing spot depth in feet">
             <output id="fishPlanMaxDepthVal" class="plan-depth-val" for="fishPlanMaxDepth">Any</output>
           </div>
           <span class="plan-note">Date/time set bite, swell, tide, and comfort. Max depth filters spots whose depth band exceeds your limit (Any = no limit).</span>
@@ -3046,8 +3046,11 @@ const SST_SCALE_CACHE_MS = 55000;
 const SST_SCALE_BOUNDS_STEP = 0.08;
 const FISH_MAP_MAX_MARKERS = 30; // numbered markers on plan map (top bite ranks among nearby groups)
 const FISH_MAP_FIT_NM = 10; // auto-fit bounds + ranking pool radius — far bank/regional pins still plot as dots
-/** Plan tab max-depth slider at max = no filter (matches dive Plan). */
-const PLAN_MAX_DEPTH_ANY = 200;
+const DIVE_PLAN_MAX_DEPTH_DEFAULT = 110;
+const DIVE_PLAN_MAX_DEPTH_ANY = 200;
+const FISH_PLAN_MAX_DEPTH_DEFAULT = 220;
+/** Fish slider at max = no depth filter. */
+const FISH_PLAN_MAX_DEPTH_ANY = 220;
 const FISH_PLAN_MAX_DEPTH_LS = 'fishPlanMaxDepthFt';
 const FISH_MAP_LOCAL_NM = 20; // comfort chart, secondary marker cutoff
 const FISH_MAP_DEFAULT_ZOOM = 11;
@@ -3709,18 +3712,21 @@ function parseSpotDepthFt(depthOrSpot){
   const max = Math.max.apply(null, nums);
   return { mid: (min + max) / 2, min, max };
 }
-function spotPassesPlanMaxDepth(spot, maxFt){
-  if(maxFt == null || !isFinite(maxFt) || maxFt >= PLAN_MAX_DEPTH_ANY) return true;
+function spotPassesPlanMaxDepth(spot, maxFt, anyFt){
+  const any = anyFt != null ? anyFt : FISH_PLAN_MAX_DEPTH_ANY;
+  if(maxFt == null || !isFinite(maxFt) || maxFt >= any) return true;
   const d = parseSpotDepthFt(spot);
   if(d.max == null) return true;
   return d.max <= maxFt;
 }
-function formatPlanMaxDepthLabel(ft){
-  if(ft == null || !isFinite(ft) || ft >= PLAN_MAX_DEPTH_ANY) return 'Any';
+function formatPlanMaxDepthLabel(ft, anyFt){
+  const any = anyFt != null ? anyFt : FISH_PLAN_MAX_DEPTH_ANY;
+  if(ft == null || !isFinite(ft) || ft >= any) return 'Any';
   return ft + ' ft';
 }
-function planMaxDepthFootnote(ft){
-  if(ft == null || !isFinite(ft) || ft >= PLAN_MAX_DEPTH_ANY) return '';
+function planMaxDepthFootnote(ft, anyFt){
+  const any = anyFt != null ? anyFt : FISH_PLAN_MAX_DEPTH_ANY;
+  if(ft == null || !isFinite(ft) || ft >= any) return '';
   return ' · max depth ≤'+ft+' ft';
 }
 function getFishPlanMaxDepthFt(){
@@ -3728,9 +3734,9 @@ function getFishPlanMaxDepthFt(){
   let v = el ? parseInt(el.value, 10) : NaN;
   if(!isFinite(v)){
     const stored = store.get(FISH_PLAN_MAX_DEPTH_LS);
-    v = stored != null ? parseInt(stored, 10) : PLAN_MAX_DEPTH_ANY;
+    v = stored != null ? parseInt(stored, 10) : FISH_PLAN_MAX_DEPTH_DEFAULT;
   }
-  if(!isFinite(v)) v = PLAN_MAX_DEPTH_ANY;
+  if(!isFinite(v)) v = FISH_PLAN_MAX_DEPTH_DEFAULT;
   return v;
 }
 function resolveFishPlanMaxDepthFt(opts){
@@ -3740,29 +3746,31 @@ function resolveFishPlanMaxDepthFt(opts){
 }
 function fishSpotsForPlanRank(opts){
   const maxFt = resolveFishPlanMaxDepthFt(opts);
-  if(maxFt == null || maxFt >= PLAN_MAX_DEPTH_ANY) return FISH_SPOTS;
-  return FISH_SPOTS.filter(sp => spotPassesPlanMaxDepth(sp, maxFt));
+  if(maxFt == null || maxFt >= FISH_PLAN_MAX_DEPTH_ANY) return FISH_SPOTS;
+  return FISH_SPOTS.filter(sp => spotPassesPlanMaxDepth(sp, maxFt, FISH_PLAN_MAX_DEPTH_ANY));
 }
-function syncPlanMaxDepthUi(sliderId, outId, ft){
+function syncPlanMaxDepthUi(sliderId, outId, ft, anyFt){
   const slider = $(sliderId);
   const out = $(outId);
   if(slider) slider.value = String(ft);
-  if(out) out.textContent = formatPlanMaxDepthLabel(ft);
+  if(out) out.textContent = formatPlanMaxDepthLabel(ft, anyFt);
 }
-function bindPlanMaxDepth(sliderId, outId, storeKey, onChange){
+function bindPlanMaxDepth(sliderId, outId, storeKey, onChange, opts){
   const slider = $(sliderId);
   if(!slider) return;
-  let ft = PLAN_MAX_DEPTH_ANY;
+  const anyFt = (opts && opts.anyFt != null) ? opts.anyFt : FISH_PLAN_MAX_DEPTH_ANY;
+  const defaultFt = (opts && opts.defaultFt != null) ? opts.defaultFt : anyFt;
+  let ft = defaultFt;
   const stored = store.get(storeKey);
   if(stored != null) ft = parseInt(stored, 10);
-  if(!isFinite(ft)) ft = PLAN_MAX_DEPTH_ANY;
-  ft = Math.max(30, Math.min(PLAN_MAX_DEPTH_ANY, ft));
-  syncPlanMaxDepthUi(sliderId, outId, ft);
+  if(!isFinite(ft)) ft = defaultFt;
+  ft = Math.max(30, Math.min(anyFt, ft));
+  syncPlanMaxDepthUi(sliderId, outId, ft, anyFt);
   const apply = ()=>{
     let v = parseInt(slider.value, 10);
-    if(!isFinite(v)) v = PLAN_MAX_DEPTH_ANY;
+    if(!isFinite(v)) v = defaultFt;
     store.set(storeKey, String(v));
-    syncPlanMaxDepthUi(sliderId, outId, v);
+    syncPlanMaxDepthUi(sliderId, outId, v, anyFt);
     onChange();
   };
   slider.addEventListener('input', apply);
@@ -18546,7 +18554,7 @@ function bindUI(){
   }
   bindPlanMaxDepth('fishPlanMaxDepth', 'fishPlanMaxDepthVal', FISH_PLAN_MAX_DEPTH_LS, ()=>{
     try{ renderFishing(); }catch(e){ console.error(e); }
-  });
+  }, { defaultFt: FISH_PLAN_MAX_DEPTH_DEFAULT, anyFt: FISH_PLAN_MAX_DEPTH_ANY });
   $('fishPlanHeatToggle')?.addEventListener('click', e=>{
     const btn = e.target.closest('[data-fish-plan-heat]');
     if(!btn) return;

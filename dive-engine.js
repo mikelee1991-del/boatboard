@@ -16,8 +16,9 @@
   const DIVE_MAP_LOCAL_NM = 30;
   /** Fit the dive map to this radius around the boat so far CDFG modules don't zoom the view to all of CA. */
   const DIVE_MAP_FIT_NM = 10;
-  /** Slider at max = no depth filter (matches fish Plan tab). */
-  const PLAN_MAX_DEPTH_ANY = 200;
+  const DIVE_PLAN_MAX_DEPTH_DEFAULT = 110;
+  /** Slider at max = no depth filter. */
+  const DIVE_PLAN_MAX_DEPTH_ANY = 200;
   const DIVE_PLAN_MAX_DEPTH_LS = 'divePlanMaxDepthFt';
   /**
    * Modules/sections of the same reef (e.g. CDFG Hermosa A–D) share a feature group when their
@@ -913,35 +914,35 @@
     let v = el ? parseInt(el.value, 10) : NaN;
     if (!isFinite(v) && store) {
       const s = store.get(DIVE_PLAN_MAX_DEPTH_LS);
-      v = s != null ? parseInt(s, 10) : PLAN_MAX_DEPTH_ANY;
+      v = s != null ? parseInt(s, 10) : DIVE_PLAN_MAX_DEPTH_DEFAULT;
     }
-    if (!isFinite(v)) v = PLAN_MAX_DEPTH_ANY;
+    if (!isFinite(v)) v = DIVE_PLAN_MAX_DEPTH_DEFAULT;
     return v;
   }
 
   function diveSitePassesMaxDepth(site) {
     const maxFt = getDivePlanMaxDepthFt();
-    if (maxFt >= PLAN_MAX_DEPTH_ANY) return true;
+    if (maxFt >= DIVE_PLAN_MAX_DEPTH_ANY) return true;
     if (site.depth == null || !isFinite(Number(site.depth))) return true;
     return Number(site.depth) <= maxFt;
   }
 
   function diveSitesForPlanRank() {
     const maxFt = getDivePlanMaxDepthFt();
-    if (maxFt >= PLAN_MAX_DEPTH_ANY) return DIVE_SITES;
+    if (maxFt >= DIVE_PLAN_MAX_DEPTH_ANY) return DIVE_SITES;
     return DIVE_SITES.filter(diveSitePassesMaxDepth);
   }
 
   function planMaxDepthFootnoteDive() {
     const ft = getDivePlanMaxDepthFt();
-    return ft >= PLAN_MAX_DEPTH_ANY ? '' : ' · max depth ≤' + ft + ' ft';
+    return ft >= DIVE_PLAN_MAX_DEPTH_ANY ? '' : ' · max depth ≤' + ft + ' ft';
   }
 
   function syncDivePlanMaxDepthUi(ft) {
     const slider = $('divePlanMaxDepth');
     const out = $('divePlanMaxDepthVal');
     if (slider) slider.value = String(ft);
-    if (out) out.textContent = ft >= PLAN_MAX_DEPTH_ANY ? 'Any' : ft + ' ft';
+    if (out) out.textContent = ft >= DIVE_PLAN_MAX_DEPTH_ANY ? 'Any' : ft + ' ft';
   }
 
   /** One entry per feature group — nearest member to (lat,lon). Pool size = groups, not raw pins. */
@@ -2662,7 +2663,7 @@
         if (leg) leg.innerHTML =
           diveScoreRampLegendHtml() +
           '<span><i style="display:inline-block;width:10px;height:10px;border-radius:50%;border:2px solid #ff5c5c;vertical-align:middle;margin-right:3px;box-sizing:border-box"></i>Elevated bacteria ≤' + nearM + ' m</span>' +
-          '<span># = top ' + Math.min(DIVE_MAP_MAX_MARKERS, lastRanked.length) + ' spots · ' + plotted + ' pins · ~' + DIVE_MAP_FIT_NM + ' nm (' + localGroups + ' spots / ' + localN + ' pins)</span>' +
+          '<span># = top ' + Math.min(DIVE_MAP_MAX_MARKERS, lastRanked.length) + ' spots · ' + plotted + ' pins · ~' + DIVE_MAP_FIT_NM + ' nm (' + localGroups + ' spots / ' + localN + ' pins)' + planMaxDepthFootnoteDive() + '</span>' +
           '<span>Basemap: imagery (land) · BlueTopo (water)</span>' +
           mpaLeg;
       });
@@ -2922,17 +2923,17 @@
 
     const depthSlider = $('divePlanMaxDepth');
     if (depthSlider) {
-      let ft = PLAN_MAX_DEPTH_ANY;
+      let ft = DIVE_PLAN_MAX_DEPTH_DEFAULT;
       if (store) {
         const stored = store.get(DIVE_PLAN_MAX_DEPTH_LS);
         if (stored != null) ft = parseInt(stored, 10);
       }
-      if (!isFinite(ft)) ft = PLAN_MAX_DEPTH_ANY;
-      ft = Math.max(30, Math.min(PLAN_MAX_DEPTH_ANY, ft));
+      if (!isFinite(ft)) ft = DIVE_PLAN_MAX_DEPTH_DEFAULT;
+      ft = Math.max(30, Math.min(DIVE_PLAN_MAX_DEPTH_ANY, ft));
       syncDivePlanMaxDepthUi(ft);
       const onDepth = () => {
         let v = parseInt(depthSlider.value, 10);
-        if (!isFinite(v)) v = PLAN_MAX_DEPTH_ANY;
+        if (!isFinite(v)) v = DIVE_PLAN_MAX_DEPTH_DEFAULT;
         syncDivePlanMaxDepthUi(v);
         if (store) store.set(DIVE_PLAN_MAX_DEPTH_LS, String(v));
         const p = defaultPos();
