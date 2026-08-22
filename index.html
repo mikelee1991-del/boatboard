@@ -253,6 +253,9 @@ svg text{font-family:var(--font-mono)}
 .plan-row input[type=date]{min-width:140px}
 .plan-row input[type=time]{min-width:100px;max-width:130px}
 .plan-row .plan-note{font-size:11px;color:var(--ink3);width:100%;margin-top:2px}
+.plan-depth-wrap{display:flex;align-items:center;gap:8px;flex:1 1 220px;min-width:min(100%,200px)}
+.plan-depth-wrap input[type=range]{flex:1;min-width:72px;accent-color:var(--accent)}
+.plan-depth-val{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);min-width:52px;white-space:nowrap}
 @media(max-width:520px){.plan-row input[type=date],.plan-row input[type=time]{min-width:calc(50% - 28px)}}
 .plan-mapbox{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:8px}
 .plan-mapbox h3{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding:10px 12px 0;font-weight:600}
@@ -916,7 +919,12 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <button class="iconbtn" id="diveBtnNow" title="Now">Now</button>
           <button class="iconbtn" id="diveBtnRefresh" title="Refresh dive data">&#8635;</button>
           <span id="diveUpdated" class="dive-updated"></span>
-          <span class="plan-note">Use the date button or calendar icon — rankings update for swell, wind, tide, and site exposure.</span>
+          <div class="plan-depth-wrap">
+            <label for="divePlanMaxDepth">Max depth</label>
+            <input type="range" id="divePlanMaxDepth" min="30" max="200" step="5" value="200" aria-label="Maximum dive site depth in feet">
+            <output id="divePlanMaxDepthVal" class="plan-depth-val" for="divePlanMaxDepth">Any</output>
+          </div>
+          <span class="plan-note">Date/time set swell, wind, tide, and exposure. Max depth hides sites deeper than your limit (Any = no limit).</span>
         </div>
         <div id="diveBanner" class="banner" hidden></div>
         <div class="plan-split plan-split--map-first">
@@ -1055,7 +1063,12 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
           <input type="time" id="fishPlanTime" aria-label="Fishing trip time">
           <button class="iconbtn" id="fishPlanNow" title="Now">Now</button>
           <span id="fishPlanLabel" class="dive-updated"></span>
-          <span class="plan-note">Use the date button or calendar icon — forecasts rank spots for bite, swell, tide, solunar, and comfort.</span>
+          <div class="plan-depth-wrap">
+            <label for="fishPlanMaxDepth">Max depth</label>
+            <input type="range" id="fishPlanMaxDepth" min="30" max="200" step="5" value="200" aria-label="Maximum fishing spot depth in feet">
+            <output id="fishPlanMaxDepthVal" class="plan-depth-val" for="fishPlanMaxDepth">Any</output>
+          </div>
+          <span class="plan-note">Date/time set bite, swell, tide, and comfort. Max depth filters spots whose depth band exceeds your limit (Any = no limit).</span>
         </div>
         <div class="grid3" id="fishGlance"><div class="skel">Loading fishing intel…</div></div>
         <div class="card" style="margin-top:10px">
@@ -3033,6 +3046,9 @@ const SST_SCALE_CACHE_MS = 55000;
 const SST_SCALE_BOUNDS_STEP = 0.08;
 const FISH_MAP_MAX_MARKERS = 30; // numbered markers on plan map (top bite ranks among nearby groups)
 const FISH_MAP_FIT_NM = 10; // auto-fit bounds + ranking pool radius — far bank/regional pins still plot as dots
+/** Plan tab max-depth slider at max = no filter (matches dive Plan). */
+const PLAN_MAX_DEPTH_ANY = 200;
+const FISH_PLAN_MAX_DEPTH_LS = 'fishPlanMaxDepthFt';
 const FISH_MAP_LOCAL_NM = 20; // comfort chart, secondary marker cutoff
 const FISH_MAP_DEFAULT_ZOOM = 11;
 const FISH_PICKER_POOL = 30; // ranked list + picker pool (nearest groups within FISH_MAP_FIT_NM; matches dive SITE_PICKER_POOL)
@@ -3679,6 +3695,78 @@ function setFishPlanWhen(when){
 function initFishPlanWhen(){
   if(fishPlanDateOnly) return;
   setFishPlanWhen(new Date());
+}
+function parseSpotDepthFt(depthOrSpot){
+  const spot = typeof depthOrSpot === 'object' ? depthOrSpot : null;
+  const depth = spot ? spot.depth : depthOrSpot;
+  if(typeof depth === 'number' && isFinite(depth)){
+    return { mid: depth, min: depth, max: depth };
+  }
+  const s = String(depth || '');
+  const nums = (s.match(/[\d.]+/g) || []).map(Number).filter(n => isFinite(n));
+  if(!nums.length) return { mid: null, min: null, max: null };
+  const min = Math.min.apply(null, nums);
+  const max = Math.max.apply(null, nums);
+  return { mid: (min + max) / 2, min, max };
+}
+function spotPassesPlanMaxDepth(spot, maxFt){
+  if(maxFt == null || !isFinite(maxFt) || maxFt >= PLAN_MAX_DEPTH_ANY) return true;
+  const d = parseSpotDepthFt(spot);
+  if(d.max == null) return true;
+  return d.max <= maxFt;
+}
+function formatPlanMaxDepthLabel(ft){
+  if(ft == null || !isFinite(ft) || ft >= PLAN_MAX_DEPTH_ANY) return 'Any';
+  return ft + ' ft';
+}
+function planMaxDepthFootnote(ft){
+  if(ft == null || !isFinite(ft) || ft >= PLAN_MAX_DEPTH_ANY) return '';
+  return ' · max depth ≤'+ft+' ft';
+}
+function getFishPlanMaxDepthFt(){
+  const el = $('fishPlanMaxDepth');
+  let v = el ? parseInt(el.value, 10) : NaN;
+  if(!isFinite(v)){
+    const stored = store.get(FISH_PLAN_MAX_DEPTH_LS);
+    v = stored != null ? parseInt(stored, 10) : PLAN_MAX_DEPTH_ANY;
+  }
+  if(!isFinite(v)) v = PLAN_MAX_DEPTH_ANY;
+  return v;
+}
+function resolveFishPlanMaxDepthFt(opts){
+  if(opts && opts.maxDepthFt != null) return opts.maxDepthFt;
+  if(fishPlanVisible() || (opts && opts.plan)) return getFishPlanMaxDepthFt();
+  return null;
+}
+function fishSpotsForPlanRank(opts){
+  const maxFt = resolveFishPlanMaxDepthFt(opts);
+  if(maxFt == null || maxFt >= PLAN_MAX_DEPTH_ANY) return FISH_SPOTS;
+  return FISH_SPOTS.filter(sp => spotPassesPlanMaxDepth(sp, maxFt));
+}
+function syncPlanMaxDepthUi(sliderId, outId, ft){
+  const slider = $(sliderId);
+  const out = $(outId);
+  if(slider) slider.value = String(ft);
+  if(out) out.textContent = formatPlanMaxDepthLabel(ft);
+}
+function bindPlanMaxDepth(sliderId, outId, storeKey, onChange){
+  const slider = $(sliderId);
+  if(!slider) return;
+  let ft = PLAN_MAX_DEPTH_ANY;
+  const stored = store.get(storeKey);
+  if(stored != null) ft = parseInt(stored, 10);
+  if(!isFinite(ft)) ft = PLAN_MAX_DEPTH_ANY;
+  ft = Math.max(30, Math.min(PLAN_MAX_DEPTH_ANY, ft));
+  syncPlanMaxDepthUi(sliderId, outId, ft);
+  const apply = ()=>{
+    let v = parseInt(slider.value, 10);
+    if(!isFinite(v)) v = PLAN_MAX_DEPTH_ANY;
+    store.set(storeKey, String(v));
+    syncPlanMaxDepthUi(sliderId, outId, v);
+    onChange();
+  };
+  slider.addEventListener('input', apply);
+  slider.addEventListener('change', apply);
 }
 function openFishDatePicker(){
   PlanCalendar.open(getFishPlanWhen(), day => {
@@ -10919,8 +11007,9 @@ function fishSpotRankCmp(a, b){
 }
 
 /** One entry per feature group — nearest member to (lat,lon). Pool size = groups, not raw pins. */
-function fishNearestGroups(lat, lon, n, maxNm){
-  const withDist = FISH_SPOTS.map(s => ({
+function fishNearestGroups(lat, lon, n, maxNm, spots){
+  spots = spots || FISH_SPOTS;
+  const withDist = spots.map(s => ({
     spot: s,
     distNm: haversineM(lat, lon, s.lat, s.lon) / NM
   }));
@@ -10943,15 +11032,16 @@ function fishNearestGroups(lat, lon, n, maxNm){
  */
 function rankFishSpots(ctx, opts){
   const everyPin = opts && opts.everyPin;
+  const spots = fishSpotsForPlanRank(opts);
   if(everyPin){
-    return FISH_SPOTS.map(sp => ({ spot: sp, ...scoreFishSpot(sp, ctx) }))
+    return spots.map(sp => ({ spot: sp, ...scoreFishSpot(sp, ctx) }))
       .sort(fishSpotRankCmp);
   }
   const limit = (opts && opts.limit != null) ? opts.limit : FISH_PICKER_POOL;
-  const groupPool = fishNearestGroups(ctx.lat, ctx.lon, limit || FISH_FEATURE_GROUP_COUNT, limit ? FISH_MAP_FIT_NM : null);
+  const groupPool = fishNearestGroups(ctx.lat, ctx.lon, limit || FISH_FEATURE_GROUP_COUNT, limit ? FISH_MAP_FIT_NM : null, spots);
   const want = new Set(groupPool.map(r => r.spot.featureGroup || r.spot.name));
   const byGroup = new Map();
-  for(const sp of FISH_SPOTS){
+  for(const sp of spots){
     const g = sp.featureGroup || sp.name;
     if(limit && !want.has(g)) continue;
     if(!byGroup.has(g)) byGroup.set(g, []);
@@ -11467,7 +11557,7 @@ function renderFishTopPicks(ranked, ctx, sol){
         '<div class="rec"><strong>Gear:</strong> '+esc(spotGearLine(spot, ctx))+'</div>'+
       '</div></div>';
   }).join('') +
-  '<p class="plan-note" style="margin-top:8px">Tap a pick to select it — species lean &amp; On site detail follow that mark (same as Dive list → site). Bite is Open-Meteo SST/seas at the mark’s grid cell + nearest NOAA tide (the glance bite index is still the boat/regional snapshot). Order uses site-fit among nearest <strong>'+FISH_PICKER_POOL+'</strong> groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> spots · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill color = bite · top '+FISH_MAP_MAX_MARKERS+'; same-reef modules count once.</p>';
+  '<p class="plan-note" style="margin-top:8px">Tap a pick to select it — species lean &amp; On site detail follow that mark (same as Dive list → site). Bite is Open-Meteo SST/seas at the mark’s grid cell + nearest NOAA tide (the glance bite index is still the boat/regional snapshot). Order uses site-fit among nearest <strong>'+FISH_PICKER_POOL+'</strong> groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> spots · <strong>'+FISH_SPOTS.length+'</strong> pins)'+planMaxDepthFootnote(getFishPlanMaxDepthFt())+'. Map # = rank · fill color = bite · top '+FISH_MAP_MAX_MARKERS+'; same-reef modules count once.</p>';
 }
 
 function fishPlanVisible(){
@@ -11689,7 +11779,7 @@ function paintFishMap(ranked, allPinRanked, sol, tide, baseCtx){
     scoreRampLegendHtml('bite')+
     '<span><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ink3);vertical-align:middle;margin-right:3px"></i> Structure / bottom</span>'+
     '<span><i style="display:inline-block;width:8px;height:8px;transform:rotate(45deg);background:var(--ink3);vertical-align:middle;margin:0 4px 0 2px"></i> Surface / troll</span>'+
-    '<span># = rank (site-fit order) · fill = bite (= glance) · top '+Math.min(FISH_MAP_MAX_MARKERS, ranked.length)+' · '+plotted+' pins · ~'+FISH_MAP_FIT_NM+' nm ('+localGroups+' spots / '+localPins.length+' pins)</span>'+
+    '<span># = rank (site-fit order) · fill = bite (= glance) · top '+Math.min(FISH_MAP_MAX_MARKERS, ranked.length)+' · '+plotted+' pins · ~'+FISH_MAP_FIT_NM+' nm ('+localGroups+' spots / '+localPins.length+' pins)'+planMaxDepthFootnote(getFishPlanMaxDepthFt())+'</span>'+
     '<span>Basemap: imagery (land) · BlueTopo (water)</span>'+
     (fishEffortPrefs().planHeat !== 'off' ? '<span>Heat = VesselTracker '+(fishEffortPrefs().planHeat === 'vessels' ? 'boat-days' : 'dwell min')+'</span>' : '')+
     MPA_LEGEND_HTML;
@@ -12817,7 +12907,7 @@ function renderFishing(){
           spotMiniBarHtml(tl)+
           '<div class="note"><strong>'+esc(spot.habitat)+'</strong> · '+esc(spot.depth)+'<br>'+esc(spot.tactics)+'</div></div>';
       }).join('') +
-      '<p class="plan-note" style="margin-top:8px">Tap a row to select the mark (updates tackle, briefing, and species lean above). <strong>'+nearestDetail.length+'</strong> spots — Bite is at the mark (cell SST/seas + nearest NOAA tide); the glance bite index is the boat snapshot. Order uses site-fit among nearest groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> feature groups · <strong>'+FISH_SPOTS.length+'</strong> pins). Map # = rank · fill = bite · top '+FISH_MAP_MAX_MARKERS+'; other pins are unnumbered dots.</p>';
+      '<p class="plan-note" style="margin-top:8px">Tap a row to select the mark (updates tackle, briefing, and species lean above). <strong>'+nearestDetail.length+'</strong> spots — Bite is at the mark (cell SST/seas + nearest NOAA tide); the glance bite index is the boat snapshot. Order uses site-fit among nearest groups within ~'+FISH_MAP_FIT_NM+' nm (of <strong>'+FISH_FEATURE_GROUP_COUNT+'</strong> feature groups · <strong>'+FISH_SPOTS.length+'</strong> pins)'+planMaxDepthFootnote(getFishPlanMaxDepthFt())+'. Map # = rank · fill = bite · top '+FISH_MAP_MAX_MARKERS+'; other pins are unnumbered dots.</p>';
     }
 
     const cards = [
@@ -18454,6 +18544,9 @@ function bindUI(){
       try{ renderFishing(); }catch(e){ console.error(e); }
     });
   }
+  bindPlanMaxDepth('fishPlanMaxDepth', 'fishPlanMaxDepthVal', FISH_PLAN_MAX_DEPTH_LS, ()=>{
+    try{ renderFishing(); }catch(e){ console.error(e); }
+  });
   $('fishPlanHeatToggle')?.addEventListener('click', e=>{
     const btn = e.target.closest('[data-fish-plan-heat]');
     if(!btn) return;

@@ -16,6 +16,9 @@
   const DIVE_MAP_LOCAL_NM = 30;
   /** Fit the dive map to this radius around the boat so far CDFG modules don't zoom the view to all of CA. */
   const DIVE_MAP_FIT_NM = 10;
+  /** Slider at max = no depth filter (matches fish Plan tab). */
+  const PLAN_MAX_DEPTH_ANY = 200;
+  const DIVE_PLAN_MAX_DEPTH_LS = 'divePlanMaxDepthFt';
   /**
    * Modules/sections of the same reef (e.g. CDFG Hermosa A–D) share a feature group when their
    * normalized base name matches and they lie within this radius. Ranking / picker / plan lists
@@ -905,9 +908,45 @@
     }
   }
 
+  function getDivePlanMaxDepthFt() {
+    const el = $('divePlanMaxDepth');
+    let v = el ? parseInt(el.value, 10) : NaN;
+    if (!isFinite(v) && store) {
+      const s = store.get(DIVE_PLAN_MAX_DEPTH_LS);
+      v = s != null ? parseInt(s, 10) : PLAN_MAX_DEPTH_ANY;
+    }
+    if (!isFinite(v)) v = PLAN_MAX_DEPTH_ANY;
+    return v;
+  }
+
+  function diveSitePassesMaxDepth(site) {
+    const maxFt = getDivePlanMaxDepthFt();
+    if (maxFt >= PLAN_MAX_DEPTH_ANY) return true;
+    if (site.depth == null || !isFinite(Number(site.depth))) return true;
+    return Number(site.depth) <= maxFt;
+  }
+
+  function diveSitesForPlanRank() {
+    const maxFt = getDivePlanMaxDepthFt();
+    if (maxFt >= PLAN_MAX_DEPTH_ANY) return DIVE_SITES;
+    return DIVE_SITES.filter(diveSitePassesMaxDepth);
+  }
+
+  function planMaxDepthFootnoteDive() {
+    const ft = getDivePlanMaxDepthFt();
+    return ft >= PLAN_MAX_DEPTH_ANY ? '' : ' · max depth ≤' + ft + ' ft';
+  }
+
+  function syncDivePlanMaxDepthUi(ft) {
+    const slider = $('divePlanMaxDepth');
+    const out = $('divePlanMaxDepthVal');
+    if (slider) slider.value = String(ft);
+    if (out) out.textContent = ft >= PLAN_MAX_DEPTH_ANY ? 'Any' : ft + ' ft';
+  }
+
   /** One entry per feature group — nearest member to (lat,lon). Pool size = groups, not raw pins. */
   function nearestSites(lat, lon, n, maxNm) {
-    const withDist = DIVE_SITES.map(s => ({ ...s, dist: haversineNm(lat, lon, s.lat, s.lon) }));
+    const withDist = diveSitesForPlanRank().map(s => ({ ...s, dist: haversineNm(lat, lon, s.lat, s.lon) }));
     const best = new Map();
     for (const s of withDist) {
       const g = s.featureGroup || s.id;
@@ -947,8 +986,9 @@
     const probe = parseSeries(marine, wx, tides);
     if (!probe.ok.marine && !probe.ok.wx) return [];
 
+    const poolSites = diveSitesForPlanRank();
     if (everyPin) {
-      const ranked = DIVE_SITES.map(raw => scoreSiteAt(raw, when, marine, wx, tides, lat, lon))
+      const ranked = poolSites.map(raw => scoreSiteAt(raw, when, marine, wx, tides, lat, lon))
         .sort((a, b) => b.R.composite - a.R.composite);
       return ranked;
     }
@@ -956,7 +996,7 @@
     const groupPool = nearestSites(lat, lon, limit || FEATURE_GROUP_COUNT, limit ? DIVE_MAP_FIT_NM : null);
     const want = new Set(groupPool.map(s => s.featureGroup || s.id));
     const byGroup = new Map();
-    for (const s of DIVE_SITES) {
+    for (const s of poolSites) {
       const g = s.featureGroup || s.id;
       if (limit && !want.has(g)) continue;
       if (!byGroup.has(g)) byGroup.set(g, []);
@@ -2455,7 +2495,7 @@
         '<div class="dr-verdict">' + esc(R.verdict) + cap + '</div>' +
         '</div></div>';
     }).join('') +
-    '<p class="plan-note" style="margin-top:8px"><strong>' + ranked.length + '</strong> spots ranked by dive score among nearest groups within ~' + DIVE_MAP_FIT_NM + ' nm (of <strong>' + FEATURE_GROUP_COUNT + '</strong> feature groups · <strong>' + DIVE_SITES.length + '</strong> pins). SST/swell from the mark’s Open-Meteo cell; tide from the nearest NOAA station. Map numbers top ' + Math.min(DIVE_MAP_MAX_MARKERS, ranked.length) + '; other pins are unnumbered dots. Same-reef modules count once. Conditions at <strong>' + fmtFull(whenD) + '</strong>.</p>';
+    '<p class="plan-note" style="margin-top:8px"><strong>' + ranked.length + '</strong> spots ranked by dive score among nearest groups within ~' + DIVE_MAP_FIT_NM + ' nm (of <strong>' + FEATURE_GROUP_COUNT + '</strong> feature groups · <strong>' + DIVE_SITES.length + '</strong> pins)' + planMaxDepthFootnoteDive() + '. SST/swell from the mark’s Open-Meteo cell; tide from the nearest NOAA station. Map numbers top ' + Math.min(DIVE_MAP_MAX_MARKERS, ranked.length) + '; other pins are unnumbered dots. Same-reef modules count once. Conditions at <strong>' + fmtFull(whenD) + '</strong>.</p>';
 
     lastRanked = ranked;
     renderSiteSelect();
@@ -2879,6 +2919,29 @@
 
     const hero = $('diveHero');
     if (hero && !hero.innerHTML.trim()) hero.innerHTML = '<div class="skel">Select a site — data loads when you open this tab.</div>';
+
+    const depthSlider = $('divePlanMaxDepth');
+    if (depthSlider) {
+      let ft = PLAN_MAX_DEPTH_ANY;
+      if (store) {
+        const stored = store.get(DIVE_PLAN_MAX_DEPTH_LS);
+        if (stored != null) ft = parseInt(stored, 10);
+      }
+      if (!isFinite(ft)) ft = PLAN_MAX_DEPTH_ANY;
+      ft = Math.max(30, Math.min(PLAN_MAX_DEPTH_ANY, ft));
+      syncDivePlanMaxDepthUi(ft);
+      const onDepth = () => {
+        let v = parseInt(depthSlider.value, 10);
+        if (!isFinite(v)) v = PLAN_MAX_DEPTH_ANY;
+        syncDivePlanMaxDepthUi(v);
+        if (store) store.set(DIVE_PLAN_MAX_DEPTH_LS, String(v));
+        const p = defaultPos();
+        updateNearestList(p.lat, p.lon, current ? current.id : null);
+        syncRecommendations(getMarine && getMarine(), getWx && getWx(), getTides && getTides());
+      };
+      depthSlider.addEventListener('input', onDepth);
+      depthSlider.addEventListener('change', onDepth);
+    }
   }
 
   function onGps(posObj) {
