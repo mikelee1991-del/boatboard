@@ -1612,7 +1612,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
     </section>
 
     <section class="tabpanel" id="tab-wildlife" data-tab="wildlife">
-      <p class="prose" style="margin-bottom:10px">Offshore wildlife around <strong>Santa Monica Bay, PV, San Pedro Channel &amp; Catalina</strong> — recent sightings on the map plus a seasonal guide for <strong>late July</strong>. Live data from open APIs where CORS allows; toggle Point Blue map for professional West Coast reports.</p>
+      <p class="prose" id="wildIntro" style="margin-bottom:10px">Offshore wildlife around <strong>Santa Monica Bay, PV, San Pedro Channel &amp; Catalina</strong> — recent sightings on the map plus a seasonal guide. Live data from open APIs; toggle Point Blue map for professional West Coast reports.</p>
       <div class="grid3" id="wildGlance"><div class="skel">Loading wildlife intel…</div></div>
       <div class="wild-mapbox">
         <h3>Wildlife map — LA offshore</h3>
@@ -1634,7 +1634,7 @@ details.ocean-raw summary{font-size:11px;color:var(--accent);cursor:pointer;touc
         </div>
         <div class="wild-data-pill">Data: iNaturalist API · Point Blue embed uses <code>?nms=</code> region presets (nearest to your GPS/slip) · not exact lat/lon centering</div>
       </div>
-      <div class="sec">Late July offshore — seasonal guide</div>
+      <div class="sec" id="wildSeasonalSec">Offshore — seasonal guide</div>
       <div class="card" id="wildSeasonal"><div class="skel">Loading seasonal intel…</div></div>
       <div class="sec">Live sighting sources</div>
       <div id="wildLinks"></div>
@@ -3071,7 +3071,15 @@ const WILD_LA_BBOX = { latMin: 33.5, latMax: 34.2, lonMin: -118.8, lonMax: -117.
 const WILD_MAP_CENTER = [33.78, -118.35];
 const WILD_MAP_ZOOM = 10;
 const WILD_INAT_URL = 'https://api.inaturalist.org/v1/observations';
+/* iNat moved Cetacea under Artiodactyla — use baleen + toothed whale parvorders (not taxon_name=Cetacea). */
+const WILD_INAT_TAXON_IDS = '424321,424322';
 const WILD_WHALE_DATA_URL = 'https://api.whaledata.org/sightings/';
+/** Optional hosted CORS proxy (deploy wild-proxy-worker). Falls back to public proxies + local /wild-proxy. */
+const WILD_CORS_PROXY_DEFAULT = 'https://boatboard-wild.mikelee1.workers.dev';
+const WILD_CORS_PROXY_PUBLIC = [
+  u => 'https://proxy.cors.sh/' + u,
+  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u)
+];
 /* Point Blue whale-map: only ?nms= preset regions (no lat/lon) — bounds EPSG:900913 from geo.pointblue.org */
 const WILD_POINTBLUE_EMBED = 'https://geo.pointblue.org/whale-map/index.php';
 const WILD_POINTBLUE_NMS = {
@@ -13788,6 +13796,33 @@ function wildSightingMarkerHtml(color){
 function wildHotspotMarkerHtml(name){
   return '<div style="font:9px/1.1 ui-monospace,monospace;color:#8899aa;white-space:nowrap;text-shadow:0 1px 3px #000">'+esc(name)+'</div>';
 }
+async function fetchWildJson(url){
+  try{
+    const r = await fetch(url);
+    if(r.ok) return await r.json();
+    throw new Error('HTTP '+r.status);
+  }catch(directErr){
+    const proxies = [];
+    /* Same-origin local proxy (dev-server.py) — most reliable in this environment. */
+    if(typeof location !== 'undefined' && /^https?:$/.test(location.protocol || '')){
+      proxies.push(location.origin + '/wild-proxy?url=' + encodeURIComponent(url));
+    }
+    const hosted = (typeof store !== 'undefined' && store.get && store.get('wildCorsProxy')) || WILD_CORS_PROXY_DEFAULT;
+    if(hosted) proxies.push(String(hosted).replace(/\/$/, '') + '/?url=' + encodeURIComponent(url));
+    for(const make of WILD_CORS_PROXY_PUBLIC) proxies.push(make(url));
+    let last = directErr;
+    for(const p of proxies){
+      try{
+        const r = await fetch(p);
+        if(!r.ok) throw new Error('proxy HTTP '+r.status);
+        const ct = (r.headers.get('content-type') || '').toLowerCase();
+        if(ct.includes('text/html')) throw new Error('proxy returned HTML');
+        return await r.json();
+      }catch(e){ last = e; }
+    }
+    throw last;
+  }
+}
 async function fetchWildSightings(){
   const now = Date.now();
   if(wildSightingsCache && now - wildSightingsFetchedAt < WILD_SIGHTINGS_TTL) return wildSightingsCache;
@@ -13799,14 +13834,12 @@ async function fetchWildSightings(){
   const monthLabel = today.toLocaleString('en-US', { month: 'short', year: 'numeric' });
   try{
     const q = new URLSearchParams({
-      swlat: WILD_LA_BBOX.latMin, swlng: WILD_LA_BBOX.lonMin,
-      nelat: WILD_LA_BBOX.latMax, nelng: WILD_LA_BBOX.lonMax,
-      taxon_name: 'Cetacea', d1, d2, per_page: '200',
+      swlat: String(WILD_LA_BBOX.latMin), swlng: String(WILD_LA_BBOX.lonMin),
+      nelat: String(WILD_LA_BBOX.latMax), nelng: String(WILD_LA_BBOX.lonMax),
+      taxon_id: WILD_INAT_TAXON_IDS, d1, d2, per_page: '200',
       order_by: 'observed_on', order: 'desc', geo: 'true'
     });
-    const r = await fetch(WILD_INAT_URL + '?' + q);
-    if(!r.ok) throw new Error('iNat HTTP '+r.status);
-    const j = await r.json();
+    const j = await fetchWildJson(WILD_INAT_URL + '?' + q);
     inatOk = true;
     for(const o of j.results || []){
       if(!o.location) continue;
@@ -13827,9 +13860,7 @@ async function fetchWildSightings(){
   }
   try{
     const q = new URLSearchParams({ from_date: d1, to_date: d2, limit: '500' });
-    const r = await fetch(WILD_WHALE_DATA_URL + '?' + q);
-    if(!r.ok) throw new Error('whaledata HTTP '+r.status);
-    const j = await r.json();
+    const j = await fetchWildJson(WILD_WHALE_DATA_URL + '?' + q);
     whaleDataOk = true;
     for(const x of j.data || []){
       if(!wildInLaBbox(x.latitude, x.longitude)) continue;
@@ -13845,7 +13876,7 @@ async function fetchWildSightings(){
       });
     }
   }catch(e){
-    console.warn('wild whaledata fetch (CORS may block from file://)', e);
+    console.warn('wild whaledata fetch', e);
   }
   wildSightingsCache = { sightings, inatOk, whaleDataOk, monthLabel };
   wildSightingsFetchedAt = now;
@@ -13982,12 +14013,57 @@ async function loadWildSightings(){
     console.error('loadWildSightings', e);
   }
 }
+function wildSeasonCap(phrase){
+  if(!phrase) return '';
+  return phrase.charAt(0).toUpperCase() + phrase.slice(1);
+}
+/** Month-aware copy for Wildlife tab (aligned with ovWildlifeSeasonTakeaway). */
+function wildSeasonIntel(d){
+  d = d || new Date();
+  const m = d.getMonth();
+  const season = ovSeasonPhrase(d);
+  const seasonCap = wildSeasonCap(season);
+  if(m >= 11 || m <= 3){
+    return {
+      season, seasonCap,
+      glance: 'Gray whale migration along the nearshore route',
+      who: 'Gray whales are the headline — southbound through winter, northbound into spring, often within 1–3 nm of the beach. Humpbacks and fins turn up offshore of PV. Common and bottlenose dolphins stay year-round in the Catalina Channel and San Pedro shipping lanes. California sea lions pack breakwaters and buoys. Blue whales are largely absent until late spring.',
+      behavior: 'Migration, not peak feeding. Look for low bushy blows nearshore on north/south runs. Dawn and late-day light help pick out blows against darker water. Keep a sharp lookout in shipping lanes — whales and commercial traffic share the same corridor.',
+      where: 'Scan 1–3 nm off the beach from Santa Monica to PV while running the coast. The Catalina Channel still holds dolphins. Deeper basin water (SM Basin, 14-Mile Bank) is quieter for blues until spring feeding builds.'
+    };
+  }
+  if(m === 4 || m === 5){
+    return {
+      season, seasonCap,
+      glance: 'Blues & fins building over SM Basin / Catalina slope',
+      who: 'Blue and fin whales are building over the Santa Monica Basin and Catalina slope as krill returns. Humpbacks are common offshore. Common dolphins (short- and long-beaked), bottlenose pods, and Pacific white-sided dolphins patrol the Catalina Channel. Gray whales are mostly done — only late northbound stragglers remain. California sea lions are everywhere near breakwaters.',
+      behavior: 'Transition from migration to feeding. Blues start surface-feeding in early krill patches; fins move fast in straight lines. Dolphins bow-ride on crossings. Calm mornings before the afternoon west wind are best for spotting.',
+      where: 'Push southwest toward Catalina — channel waters for dolphins, then the basin / slope edge for early blues and fins. PV Point offshore and the San Pedro Channel hold humpbacks and bait-driven activity.'
+    };
+  }
+  if(m >= 6 && m <= 8){
+    return {
+      season, seasonCap,
+      glance: 'Peak blue whale season off Catalina / SM Basin',
+      who: 'Blue whales are the headline — summer krill aggregations over the Santa Monica Basin and Catalina slope draw surface-feeding blues daily. Humpbacks and fin whales are common offshore. Common dolphins (short- and long-beaked), bottlenose pods, and Pacific white-sided dolphins patrol the Catalina Channel and San Pedro shipping lanes. Minke whales turn up sporadically. Rare but possible: killer whales (transient ecotype). California sea lions are everywhere near breakwaters and buoys. Gray whales are absent — southbound migration ended in spring; northbound stragglers are gone by summer.',
+      behavior: 'Feeding, not migration. Blues lunge-feed at the surface in krill patches — look for tall vertical blows and long, low profiles. Humpbacks breach and tail-slap more than blues. Fin whales move fast in straight lines. Dolphins bow-ride and work baitballs near PV and Catalina. Most activity is diurnal; dawn through mid-morning offers the calmest seas for spotting.',
+      where: 'Run southwest toward Catalina — the channel between PV and the island is the busiest dolphin corridor. The 14-Mile Bank (≈33.70°N, 118.47°W) marks an upwelling edge where krill concentrates blues. Santa Monica Basin (≈33.76°N, 119.08°W) is deep blue-whale and fin-whale country. PV Point offshore and the San Pedro Channel hold humpbacks and bait-driven activity. On calm mornings, scan 2–5 nm offshore from the PV peninsula before the afternoon chop builds.'
+    };
+  }
+  return {
+    season, seasonCap,
+    glance: 'Blues tapering; humpbacks & dolphins still active',
+    who: 'Blue whale numbers taper as krill patches thin, but humpbacks and fin whales remain offshore of PV and Catalina. Common and bottlenose dolphins stay busy in the Catalina Channel. Pacific white-sided dolphins and minkes appear sporadically. California sea lions hold the breakwaters. Gray whales have not yet returned — southbound migration starts later in fall/winter.',
+    behavior: 'Feeding continues on remaining bait and krill edges. Expect fewer surface-feeding blues than mid-summer; humpbacks and dolphins are the more reliable show. Calm mornings still beat afternoon wind for visual spotting.',
+    where: 'Catalina Channel for dolphins; PV Point and San Pedro Channel for humpbacks; check SM Basin / 14-Mile Bank on green-water days when plankton filaments still show on the Plankton tab.'
+  };
+}
 function wildTimeOfDayIntel(){
   const h = new Date().getHours();
-  if(h < 6) return { phase: 'Pre-dawn', text: 'Dark until ~5:30 AM in late July. Not ideal for visual spotting unless bioluminescence nearshore. Most tour boats depart 7–9 AM.' };
+  if(h < 6) return { phase: 'Pre-dawn', text: 'Dark until first light. Not ideal for visual spotting unless bioluminescence nearshore. Most tour boats depart 7–9 AM.' };
   if(h < 9) return { phase: 'Early morning', text: 'Prime whale-watch window — calm wind and glassy sea before the afternoon west wind fills in. Look offshore from PV Point toward Catalina.' };
-  if(h < 12) return { phase: 'Late morning', text: 'Still good visibility. Dolphins often ride bow waves on crossings. Blue whales may surface irregularly while surface-feeding on krill.' };
-  if(h < 15) return { phase: 'Early afternoon', text: 'Sea breeze building; Santa Monica Bay can get choppy by 2 PM. Fin whales and dolphins still present but spotting gets harder in whitecaps.' };
+  if(h < 12) return { phase: 'Late morning', text: 'Still good visibility. Dolphins often ride bow waves on crossings. Large whales may surface irregularly while feeding.' };
+  if(h < 15) return { phase: 'Early afternoon', text: 'Sea breeze building; Santa Monica Bay can get choppy by mid-afternoon. Fin whales and dolphins still present but spotting gets harder in whitecaps.' };
   if(h < 18) return { phase: 'Late afternoon', text: 'West wind typical 10–15 kn — lee side of Catalina or stay closer to PV for calmer water. Feeding activity can pick up before sunset.' };
   if(h < 20) return { phase: 'Dusk', text: 'Golden hour can backlight blows — look for tall vertical plumes offshore. Return before full dark; maintain safe lookout.' };
   return { phase: 'Night', text: 'No visual scouting practical. Night transits require full nav lights and AIS vigilance in shipping lanes.' };
@@ -13996,10 +14072,11 @@ function renderWildGlance(data){
   const g = $('wildGlance');
   if(!g) return;
   const tod = wildTimeOfDayIntel();
+  const intel = wildSeasonIntel();
   const n = data?.sightings?.length || 0;
   const species = new Set((data?.sightings || []).map(s => wildSpeciesStyle(s.species).label));
   const cards = [
-    ['Season', 'Late July', 'Peak blue whale season off Catalina/SM Basin'],
+    ['Season', intel.seasonCap, intel.glance],
     ['Right now', tod.phase, tod.text.slice(0, 72) + (tod.text.length > 72 ? '…' : '')],
     ['Recent reports', n ? String(n) : '—', n ? [...species].slice(0, 3).join(', ') : 'Check live maps below']
   ];
@@ -14009,11 +14086,18 @@ function renderWildIntel(){
   const el = $('wildSeasonal');
   if(!el) return;
   const tod = wildTimeOfDayIntel();
-  const stamp = 'Seasonal guide · late July · refreshes with local time-of-day · sightings on map are best-effort API pulls, not live AIS';
+  const intel = wildSeasonIntel();
+  const intro = $('wildIntro');
+  if(intro){
+    intro.innerHTML = 'Offshore wildlife around <strong>Santa Monica Bay, PV, San Pedro Channel &amp; Catalina</strong> — recent sightings on the map plus a seasonal guide for <strong>'+esc(intel.season)+'</strong>. Live data from open APIs; toggle Point Blue map for professional West Coast reports.';
+  }
+  const sec = $('wildSeasonalSec');
+  if(sec) sec.textContent = intel.seasonCap + ' offshore — seasonal guide';
+  const stamp = 'Seasonal guide · '+intel.season+' · refreshes with local time-of-day · sightings on map are best-effort API pulls, not live AIS';
   el.innerHTML =
-    '<p class="wild-intel-sp"><strong>Who\'s here now (late July):</strong> Blue whales are the headline — summer krill aggregations over the Santa Monica Basin and Catalina slope draw surface-feeding blues daily. Humpbacks and fin whales are common offshore. Common dolphins (short- and long-beaked), bottlenose pods, and Pacific white-sided dolphins patrol the Catalina Channel and San Pedro shipping lanes. Minke whales turn up sporadically. Rare but possible: killer whales (transient ecotype). California sea lions are everywhere near breakwaters and buoys. Gray whales are absent — southbound migration ended in spring; northbound stragglers are gone by summer.</p>'+
-    '<p class="wild-intel-sp"><strong>Behavior this season:</strong> Feeding, not migration. Blues lunge-feed at the surface in krill patches — look for tall vertical blows and long, low profiles. Humpbacks breach and tail-slap more than blues. Fin whales move fast in straight lines. Dolphins bow-ride and work baitballs near PV and Catalina. Most activity is diurnal; dawn through mid-morning offers the calmest seas for spotting.</p>'+
-    '<p class="wild-intel-sp"><strong>Where to look from King Harbor:</strong> Run southwest toward Catalina — the channel between PV and the island is the busiest dolphin corridor. The 14-Mile Bank (≈33.70°N, 118.47°W) marks an upwelling edge where krill concentrates blues. Santa Monica Basin (≈33.76°N, 119.08°W) is deep blue-whale and fin-whale country. PV Point offshore and the San Pedro Channel hold humpbacks and bait-driven activity. On calm mornings, scan 2–5 nm offshore from the PV peninsula before the afternoon chop builds.</p>'+
+    '<p class="wild-intel-sp"><strong>Who\'s here now ('+esc(intel.season)+'):</strong> '+esc(intel.who)+'</p>'+
+    '<p class="wild-intel-sp"><strong>Behavior this season:</strong> '+esc(intel.behavior)+'</p>'+
+    '<p class="wild-intel-sp"><strong>Where to look from King Harbor:</strong> '+esc(intel.where)+'</p>'+
     '<p class="wild-intel-sp"><strong>Time of day — '+esc(tod.phase)+':</strong> '+esc(tod.text)+'</p>'+
     '<p class="wild-intel-sp"><strong>Boater etiquette (NOAA):</strong> Stay ≥100 yards from whales (≥500 yards for North Atlantic right whales — not applicable here). Do not pursue, encircle, or cut off their path. Reduce speed and shift to neutral when within 300 ft. Report entangled or injured animals to NOAA: 877-SOS-WHALE (877-767-9425). Channel Islands National Marine Sanctuary applies west of Catalina.</p>'+
     '<p class="mono" style="font-size:11px;color:var(--ink3);margin-top:10px">'+esc(stamp)+'</p>';
@@ -14096,8 +14180,8 @@ function renderWildlife(){
       linkHtml('https://pacificwhale.org/what-we-do/research/learn-about-marine-life/whale-dolphin-tracker-live-sightins-map/','Pacific Whale Foundation tracker','Citizen-science map — last 7 days worldwide (no public embed API)')+
       linkHtml('https://geo.pointblue.org/whale-map/index.php','Point Blue / Whale Alert map','West Coast professional & citizen sightings — embedded above via toggle')+
       linkHtml('https://whaleaware.org/where-are-the-whales/','Whale Alert — West Coast','NOAA/Point Blue/IFAW strike-avoidance program')+
-      linkHtml('https://www.inaturalist.org/observations?swlat=33.5&swlng=-118.8&nelat=34.2&nelng=-117.8&taxon_name=Cetacea','iNaturalist — LA cetaceans','Open observations API used for map markers')+
-      linkHtml('https://whaledata.org/','whaledata.org','Global open whale database (API may block CORS from file://)');
+      linkHtml('https://www.inaturalist.org/observations?swlat=33.5&swlng=-118.8&nelat=34.2&nelng=-117.8&taxon_id=424321,424322','iNaturalist — LA whales & dolphins','Baleen + toothed whale parvorders (map markers)')+
+      linkHtml('https://whaledata.org/','whaledata.org','Global open whale database (proxied when CORS blocks direct fetch)');
   }
 }
 
@@ -16989,7 +17073,7 @@ function chlMarineTakeawayBrief(samples, audience){
   const avg = valid.length ? valid.reduce((a, s) => a + s.val, 0) / valid.length : null;
   const maxS = valid.length ? valid.reduce((a, b) => a.val > b.val ? a : b) : null;
   const lv = chlLevel(avg, mode === 'both' ? 'fish' : mode);
-  const isLateJuly = new Date().getUTCMonth() === 6;
+  const isPeakWhale = (()=>{ const m = new Date().getMonth(); return m >= 6 && m <= 8; })();
   const densest = maxS ? maxS.zone.name : '';
 
   if(avg != null){
@@ -17038,8 +17122,8 @@ function chlMarineTakeawayBrief(samples, audience){
   // No point samples — audience-specific map-read guidance.
   let fish = 'Greener water = more phytoplankton → forage (anchovy, sardine, krill); predators stack on green-to-blue fronts. From King Harbor: SM Bay/PV kelp for calico & yt; Catalina Channel for pelagics.';
   let dive = 'Greener map pixels often mean reduced diving viz; prefer blue-water patches for clarity (Catalina front side vs backside plumes).';
-  if(isLateJuly){
-    fish = 'Late July LA offshore: whales often feed on krill along green filaments in SM Basin; dolphins patrol Catalina Channel; sea lions follow bait on San Pedro shelf. '+fish;
+  if(isPeakWhale){
+    fish = wildSeasonCap(ovSeasonPhrase())+' LA offshore: whales often feed on krill along green filaments in SM Basin; dolphins patrol Catalina Channel; sea lions follow bait on San Pedro shelf. '+fish;
   }
   return {
     cls: 'tk-fair',
@@ -17177,7 +17261,7 @@ function chlMarineLifeHtml(time, src, samples){
   const avg = valid.length ? valid.reduce((a, s) => a + s.val, 0) / valid.length : null;
   const maxS = valid.length ? valid.reduce((a, b) => a.val > b.val ? a : b) : null;
   chlStoreMarineTakeaway(samples, time);
-  const isLateJuly = new Date().getUTCMonth() === 6;
+  const isPeakWhale = (()=>{ const m = new Date().getMonth(); return m >= 6 && m <= 8; })();
   let html = '<div class="chl-marine-h">What this means for marine life</div>';
   if(avg != null){
     const fishBrief = chlMarineTakeawayBrief(samples, 'fish');
@@ -17187,8 +17271,8 @@ function chlMarineLifeHtml(time, src, samples){
     html += '<p class="chl-marine-item"><strong>Map read:</strong> Greener pixels = more phytoplankton → more forage fish (anchovy, sardine, krill). Predators (yellowtail, tuna, whales, dolphins) stack on chlorophyll <em>fronts</em> where green meets blue.</p>';
   }
   html += '<p class="chl-marine-item"><strong>Forage chain:</strong> Chlorophyll → zooplankton/krill → anchovy & sardine → yellowtail, bonito, tuna, seabirds, whales.</p>';
-  if(isLateJuly){
-    html += '<p class="chl-marine-item"><strong>Late July LA offshore:</strong> Blue & fin whales feed in Santa Monica Basin when krill aggregate on green filaments. Common & bottlenose dolphins patrol Catalina Channel. Sea lions follow bait along San Pedro shelf.</p>';
+  if(isPeakWhale){
+    html += '<p class="chl-marine-item"><strong>'+esc(wildSeasonCap(ovSeasonPhrase()))+' LA offshore:</strong> Blue & fin whales feed in Santa Monica Basin when krill aggregate on green filaments. Common & bottlenose dolphins patrol Catalina Channel. Sea lions follow bait along San Pedro shelf.</p>';
   }
   html += '<p class="chl-marine-item"><strong>From King Harbor:</strong> Run offshore toward greener water on the map — SM Bay/PV kelp edges for calico & yt; Catalina Channel for pelagics; San Pedro shelf for rockfish over structure.</p>';
   const diveBrief = chlMarineTakeawayBrief(samples, 'dive');
